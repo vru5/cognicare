@@ -16,27 +16,27 @@ This project focuses on the development of a supportive health platform designed
 Essential:
 
 - AI-Driven "Brain Dump" Analysis: 
- - Patient Action: Ability to offload raw thoughts or symptoms into a simple, unstructured text interface.
- - System Action: Automatically parsing and tagging entries into the five health pillars using NLP.
+  Patient Action: Ability to offload raw thoughts or symptoms into a simple, unstructured text interface.
+  System Action: Automatically parsing and tagging entries into the five health pillars using NLP.
 
 - Collaborative Symptom Tracking:
- - Patient Action: View a chronological feed of their categorized symptoms to track personal trends.
- - Carer Action: Ability to view the shared timeline and add "Observation Notes" to provide a second perspective on the patient's status.
+  Patient Action: View a chronological feed of their categorized symptoms to track personal trends.
+  Carer Action: Ability to view the shared timeline and add "Observation Notes" to provide a second perspective on the patient's status.
 
 - Granular Access Control: 
- - Patient Action: Use a "Care Circle" dashboard to invite carers and toggle permissions for specific health pillars (e.g., sharing Physical data but keeping Mood private).
- - System Action: Enforcement of role-based permissions to ensure data privacy and patient-led sharing.
+  Patient Action: Use a "Care Circle" dashboard to invite carers and toggle permissions for specific health pillars (e.g., sharing Physical data but keeping Mood private).
+  System Action: Enforcement of role-based permissions to ensure data privacy and patient-led sharing.
 
 - Clinical Summary Exports: 
- - User Action: Ability to trigger the generation of a structured weekly PDF summary.
- - System Action: Compiling categorized data into a professional format suitable for medical consultations.
+  User Action: Ability to trigger the generation of a structured weekly PDF summary.
+  System Action: Compiling categorized data into a professional format suitable for medical consultations.
 
 
 Desirable:
 
 - Voice-to-Text Integration:
- - Patient Action: Ability to record audio "brain dumps" to minimize typing fatigue.
- - System Action: Converting voice recordings into text for AI analysis.
+  Patient Action: Ability to record audio "brain dumps" to minimize typing fatigue.
+  System Action: Converting voice recordings into text for AI analysis.
 
 - Secure Care Circle Messaging: A real-time, text-based chat system for patients and authorized carers to coordinate care using Socket.io.
 
