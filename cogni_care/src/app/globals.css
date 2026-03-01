@@ -1,0 +1,99 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  
+  /* Your Custom Gradient */
+  --background-image-brand-gradient: var(--brand-gradient);
+}
+
+:root {
+  --radius: 0.75rem;
+
+  /* Main App Surface */
+  --background: oklch(0.98 0.01 170);    /* Soft Teal White */
+  --foreground: oklch(0.12 0.04 170);    /* Deep Teal Charcoal */
+
+  /* The "Action" Color (Buttons, Active Icons) */
+  --primary: oklch(0.58 0.16 175);       /* Vibrant Teal */
+  --primary-foreground: oklch(0.99 0.01 170);
+
+  /* The "Card" Color (Your text entry box) */
+  --card: oklch(1 0 0); 
+  --card-foreground: oklch(0.12 0.04 170);
+
+  /* Secondary/Muted (For labels like "Tap for voice dump") */
+  --muted: oklch(0.92 0.02 170);
+  --muted-foreground: oklch(0.45 0.08 175);
+
+  --border: oklch(0.9 0.03 170);
+  --ring: oklch(0.58 0.16 175);
+
+  /* Transparent Teal Background Gradient */
+  --brand-gradient: linear-gradient(
+    to bottom right in oklch, 
+    oklch(0.85 0.12 165 / 0.15), 
+    oklch(0.85 0.1 200 / 0.15)
+  );
+}
+
+.dark {
+  /* --- Teal Theme Colors (Dark Mode) --- */
+  --background: oklch(0.12 0.02 170); /* Deep Midnight Teal */
+  --foreground: oklch(0.95 0.03 170); /* Pale Mint text */
+  
+  --primary: oklch(0.65 0.18 175);    /* Brighter Teal for Dark Mode */
+  --primary-foreground: oklch(0.12 0.02 170);
+  
+  --accent: oklch(0.25 0.08 170);     /* Darker teal accent */
+  --accent-foreground: oklch(0.95 0.03 170);
+  
+  --border: oklch(0.25 0.05 170 / 0.5);
+  --input: oklch(0.25 0.05 170 / 0.5);
+  --ring: oklch(0.65 0.18 175);
+  --icon-primary: oklch(0.95 0.03 170);
+
+  /* Transparent Dark Gradient (15% Opacity) */
+  --brand-gradient: linear-gradient(
+    to right in oklch, 
+    oklch(0.35 0.12 165 / 0.15), 
+    oklch(0.35 0.1 190 / 0.15), 
+    oklch(0.35 0.08 215 / 0.15)
+  );
+}
+
+@layer base {
+  * {
+    /* Use standard CSS variables instead of @apply for custom names */
+    border-color: var(--border);
+    outline-color: color-mix(in oklch, var(--ring), transparent 50%);
+  }
+  body {
+    background-color: var(--background);
+    color: var(--foreground);
+    background-image: var(--brand-gradient);
+    background-attachment: fixed;
+  }
+}
