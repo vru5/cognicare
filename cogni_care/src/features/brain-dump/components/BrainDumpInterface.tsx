@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Loader2, Mic, Send } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import SummaryCard from "./SummaryCard";
+import { processBrainDump } from "../services/processText";
 
 export default function BrainDumpInterface() {
   const [text, setText] = useState("");
@@ -34,21 +35,35 @@ export default function BrainDumpInterface() {
       console.log("Audio captured:", audioResult);
 
       // 1. Voice Pipeline: Simulate Whisper Transcription -> Automated Summary
-      setTimeout(() => {
-        const transcribedText =
-          "I've been feeling quite a bit of pressure in my head today ...";
+      setTimeout(async () => {
+        // Use the text from the box if it exists, otherwise use a sample
+        const transcribedText = text || "I'm feeling quite a bit of headache today but overall happy";
 
-        // Automated flow for Voice Pipeline: Trigger analysis summary
-        setTimeout(() => {
+        // Automated flow for Voice Pipeline: Trigger real API analysis
+        try {
+          const response = await processBrainDump(transcribedText, "cm7pm9uog0000uxps30r9qnh2");
+
+          if (response.success && response.log) {
+            const log = response.log;
+            setProcessedText(transcribedText);
+            setSummary({
+              physical: log.physical,
+              mood: log.mood,
+              cognitive: log.cognitive,
+              sleep: log.sleep,
+              social: log.social,
+              message: "Analysis complete! Logged to your timeline.",
+            });
+          } else {
+            console.error("API error for voice:", response.error);
+            alert("Failed to process voice entry.");
+          }
+        } catch (err) {
+          console.error("Network error for voice:", err);
+          alert("Network error processing voice entry.");
+        } finally {
           setIsVoiceAnalyzing(false);
-          setProcessedText(transcribedText);
-          setSummary({
-            physical: "Headache detected",
-            cognitive: "Confusion noted",
-            message:
-              "Based on your voice entry, we've noticed impacts on your physical and Mood pillars.",
-          });
-        }, 1500);
+        }
       }, 1000);
     } else {
       // Start recording path
@@ -65,18 +80,35 @@ export default function BrainDumpInterface() {
   const handleSubmit = async () => {
     if (!text) return;
     setIsTextAnalyzing(true);
-    // Simulate NLP Analysis
-    setTimeout(() => {
+
+    try {
+      const response = await processBrainDump(text, "cm7pm9uog0000uxps30r9qnh2");
+
+      if (response.success && response.log) {
+        setProcessedText(text);
+
+        const log = response.log;
+        const newSummary = {
+          physical: log.physical,
+          mood: log.mood,
+          cognitive: log.cognitive,
+          sleep: log.sleep,
+          social: log.social,
+          message: "Analysis complete! Logged to your timeline.",
+        };
+        console.log("Setting Summary in Frontend:", newSummary);
+        setSummary(newSummary);
+        setText("");
+      } else {
+        console.error("API error:", response.error);
+        alert("Failed to process entry.");
+      }
+    } catch (err) {
+      console.error("Network error:", err);
+      alert("Network error while processing entry.");
+    } finally {
       setIsTextAnalyzing(false);
-      setProcessedText(text);
-      setSummary({
-        physical: "Headache detected",
-        cognitive: "Confusion noted",
-        message:
-          "Based on your written entry, we've noticed impacts on your physical and Mood pillars.",
-      });
-      setText(""); // Optionally clear the textarea after processing
-    }, 2000);
+    }
   };
 
   const handleReset = () => {
@@ -90,7 +122,7 @@ export default function BrainDumpInterface() {
   };
 
   return (
-    <div className="w-full max-w-4xl mx-auto p-6 min-h-screen flex flex-col gap-12 ">
+    <div className="w-full max-w-4xl mx-auto p-4 sm:p-6 min-h-screen flex flex-col gap-8 sm:gap-12 ">
       {/* Summary Card at the Top */}
       <AnimatePresence>
         {summary && processedText && (
@@ -100,17 +132,17 @@ export default function BrainDumpInterface() {
             exit={{ opacity: 0, y: -50 }}
             className="w-full"
           >
-            <SummaryCard handleReset={handleReset} summary={summary}/>
+            <SummaryCard handleReset={handleReset} summary={summary} />
           </motion.div>
         )}
       </AnimatePresence>
 
       <div className="flex-1 flex flex-col gap-10">
-        <div className="text-center space-y-4">
-          <h1 className="text-4xl font-black tracking-tight sm:text-6xl text-slate-900 leading-none">
+        <div className="text-center space-y-3 sm:space-y-4">
+          <h1 className="text-3xl font-black tracking-tight sm:text-6xl text-slate-900 leading-none">
             Mind Dump
           </h1>
-          <p className="text-slate-500 text-xl max-w-xl mx-auto">
+          <p className="text-slate-500 text-lg sm:text-xl max-w-xl mx-auto px-2">
             Speak or type your raw thoughts. Let us organize the insights.
           </p>
         </div>
@@ -188,8 +220,8 @@ export default function BrainDumpInterface() {
         </div>
 
         {/* Input Area for Text Pipeline */}
-        <div className="w-full space-y-6 pb-12">
-          <div className="rounded-t-[3rem] bg-card/80 backdrop-blur-md border-t border-border p-8">
+        <div className="w-full space-y-4 sm:space-y-6 pb-12">
+          <div className="rounded-t-[2.5rem] sm:rounded-t-[3rem] bg-card/80 backdrop-blur-md border-t border-border p-6 sm:p-8">
             <Textarea
               placeholder="How are you feeling today? e.g., 'Feeling a bit dizzy'..."
               value={text}
