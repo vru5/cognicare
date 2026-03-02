@@ -1,21 +1,26 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @typescript-eslint/ban-ts-comment */
 "use server";
 
 import { GoogleGenerativeAI } from "@google/generative-ai";
-import { redactPII } from "@/lib/pii-redactor";
-import { prisma } from "@/lib/prisma";
+import { mask } from "@yellowsakura/js-pii-mask";
+import { prisma } from "../../../lib/prisma";
 
 export async function processBrainDump(rawText: string, patientId: string) {
   const apiKey = (process.env.GEMINI_API_KEY || "").trim();
   console.log(`Gemini API Key check (first 5 chars): ${apiKey.substring(0, 5)}...`);
 
   const genAI = new GoogleGenerativeAI(apiKey);
-  // Switching to 2.0-flash as 1.5-flash and pro are returning 404s for this key
-  const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+  // gemini-2.5-flash is confirmed available for this API key
+  const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
   try {
-    // 1. Privacy First: Redact PII
-    const safeText = redactPII(rawText);
+    console.log("Processing Brain Dump for patient:", patientId);
+    console.log("Raw Text Input:", `>>>${rawText}<<<`);
+
+    // 1. Privacy First: Redact PII using the js-pii-mask plugin
+    const safeText = mask(rawText || "");
+    console.log("Safe Text (Redacted):", `>>>${safeText}<<<`);
 
     // 2. AI Analysis & Normalization (Gemini)
     console.log(`ENTRY_TEXT_TO_PROCESS: >>>${safeText}<<<`);
@@ -46,36 +51,54 @@ export async function processBrainDump(rawText: string, patientId: string) {
       const getBestMatch = (keywords: string[], inputText: string) => {
         const text = inputText.toLowerCase();
         const bodyParts = ["head", "stomach", "mind", "social", "people", "group"];
+        const negations = ["not ", "no ", "don't ", "dont ", "isn't ", "isnt ", "never "];
 
         const matches = keywords
-          .map(kw => ({
-            word: kw,
-            index: text.indexOf(kw.toLowerCase()),
-            length: kw.length
-          }))
-          .filter(m => m.index !== -1);
+          .map(kw => {
+            const index = text.indexOf(kw.toLowerCase());
+            if (index === -1) return null;
+
+            // Check for negations within the last 15 characters before the match
+            const precedingText = text.substring(Math.max(0, index - 15), index);
+            const hasNegation = negations.some(neg => precedingText.includes(neg));
+
+            return {
+              word: kw,
+              index: index,
+              length: kw.length,
+              hasNegation
+            };
+          })
+          .filter((m): m is any => m !== null);
 
         if (matches.length === 0) return null;
 
-        // Sort by: 1. Length (Longest first) 2. Symptom vs Body Part (Symptom first)
+        // Sort by: 1. Symptom vs Body Part (Symptom first) 2. Length (Longest first)
         matches.sort((a, b) => {
-          if (b.length !== a.length) return b.length - a.length;
           const aIsBody = bodyParts.includes(a.word.toLowerCase());
           const bIsBody = bodyParts.includes(b.word.toLowerCase());
           if (aIsBody && !bIsBody) return 1;
           if (!aIsBody && bIsBody) return -1;
-          return 0;
+          return b.length - a.length;
         });
 
         const finalMatch = matches[0];
-        return finalMatch.word.charAt(0).toUpperCase() + finalMatch.word.slice(1);
+        const result = finalMatch.word.charAt(0).toUpperCase() + finalMatch.word.slice(1);
+
+        // If 'feel' is the keyword and it's negated, e.g. "don't feel", return "Not feeling great"
+        if (finalMatch.word.toLowerCase() === "feel" && finalMatch.hasNegation) {
+          return "Lower mood/energy";
+        }
+
+        // If negated, return a modified string
+        return finalMatch.hasNegation ? `Not ${result.toLowerCase()}` : result;
       };
 
-      const physicalKws = ["headache", "aching", "pain", "ache", "pressure", "stomach", "hurt", "fever", "sore", "cough", "nausea", "tired", "fatigue", "dizzy", "weak", "cold", "flu", "vision", "balance", "head"];
-      const moodKws = ["happy", "joy", "glad", "good", "great", "fine", "okay", "sad", "anxious", "worry", "angry", "depressed", "worried", "calm", "stressed", "upset", "content", "mood"];
-      const cognitiveKws = ["confused", "forgot", "memory", "focus", "clarity", "brain fog", "thinking", "concentrate", "mind", "thought"];
-      const sleepKws = ["sleep", "insomnia", "tired", "awake", "dream", "nightmare", "restless", "nap", "bed", "exhausted"];
-      const socialKws = ["friends", "family", "talked", "visit", "alone", "lonely", "social", "people", "group", "meeting", "called"];
+      const physicalKws = ["headache", "aching", "pain", "ache", "pressure", "stomach", "hurt", "fever", "sore", "cough", "nausea", "tired", "fatigue", "dizzy", "weak", "cold", "flu", "vision", "balance", "head", "sick", "numb"];
+      const moodKws = ["happy", "joy", "glad", "good", "great", "fine", "okay", "sad", "anxious", "worry", "angry", "depressed", "worried", "calm", "stressed", "upset", "content", "mood", "feel", "motivated", "energy"];
+      const cognitiveKws = ["confused", "forgot", "memory", "focus", "clarity", "brain fog", "thinking", "concentrate", "mind", "thought", "attention"];
+      const sleepKws = ["sleep", "insomnia", "tired", "awake", "dream", "nightmare", "restless", "nap", "bed", "exhausted", "woke", "sleepy"];
+      const socialKws = ["friends", "family", "talked", "visit", "alone", "lonely", "social", "people", "group", "meeting", "called", "outside", "company", "party", "interact"];
 
       analysis = {
         physical: getBestMatch(physicalKws, text),
@@ -85,6 +108,7 @@ export async function processBrainDump(rawText: string, patientId: string) {
         social: getBestMatch(socialKws, text),
       };
 
+      console.log("Detected Keywords for Mood keywords search:", moodKws.filter(kw => text.includes(kw.toLowerCase())));
       console.log(`Heuristic match results:`, analysis);
 
       // Ensure at least physical shows something if everything is null

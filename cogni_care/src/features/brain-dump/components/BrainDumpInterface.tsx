@@ -9,6 +9,7 @@ import { Loader2, Mic, Send } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import SummaryCard from "./SummaryCard";
 import { processBrainDump } from "../services/processText";
+import { transcribeAudio } from "../services/google-transcribe";
 
 export default function BrainDumpInterface() {
   const [text, setText] = useState("");
@@ -32,20 +33,27 @@ export default function BrainDumpInterface() {
       setIsVoiceAnalyzing(true);
 
       const audioResult = await stopRecording();
-      console.log("Audio captured:", audioResult);
+      console.log("Audio captured, starting transcription...");
 
-      // 1. Voice Pipeline: Simulate Whisper Transcription -> Automated Summary
-      setTimeout(async () => {
-        // Use the text from the box if it exists, otherwise use a sample
-        const transcribedText = text || "I'm feeling quite a bit of headache today but overall happy";
+      try {
+        const base64Data = audioResult.recordDataBase64;
+        if (!base64Data) {
+          throw new Error("No audio data captured.");
+        }
 
-        // Automated flow for Voice Pipeline: Trigger real API analysis
-        try {
-          const response = await processBrainDump(transcribedText, "cm7pm9uog0000uxps30r9qnh2");
+        const transcription = await transcribeAudio(base64Data);
+
+        if (transcription.success && transcription.text) {
+          console.log("Transcript received:", transcription.text);
+          setProcessedText(transcription.text);
+
+          const response = await processBrainDump(
+            transcription.text,
+            "cm7pm9uog0000uxps30r9qnh2"
+          );
 
           if (response.success && response.log) {
             const log = response.log;
-            setProcessedText(transcribedText);
             setSummary({
               physical: log.physical,
               mood: log.mood,
@@ -56,15 +64,18 @@ export default function BrainDumpInterface() {
             });
           } else {
             console.error("API error for voice:", response.error);
-            alert("Failed to process voice entry.");
+            alert("Failed to process transcribed text.");
           }
-        } catch (err) {
-          console.error("Network error for voice:", err);
-          alert("Network error processing voice entry.");
-        } finally {
-          setIsVoiceAnalyzing(false);
+        } else {
+          console.error("Transcription error:", transcription.error);
+          alert("Transcription failed: " + (transcription.error || "Unknown error"));
         }
-      }, 1000);
+      } catch (err) {
+        console.error("Voice pipeline error:", err);
+        alert("An error occurred during voice processing.");
+      } finally {
+        setIsVoiceAnalyzing(false);
+      }
     } else {
       // Start recording path
       setIsVisuallyRecording(true);
