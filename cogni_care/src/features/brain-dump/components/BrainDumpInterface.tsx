@@ -160,10 +160,10 @@ export default function BrainDumpInterface() {
 
       <div className="flex-1 flex flex-col gap-10">
         <div className="text-center space-y-3 sm:space-y-4">
-          <h1 className="text-3xl font-black tracking-tight sm:text-6xl text-slate-900 leading-none">
+          <h1 className="text-3xl font-black tracking-tight sm:text-6xl text-foreground leading-none">
             Mind Dump
           </h1>
-          <p className="text-slate-500 text-lg sm:text-xl max-w-xl mx-auto px-2">
+          <p className="text-muted-foreground text-lg sm:text-xl max-w-xl mx-auto px-2">
             Speak or type your raw thoughts. Let us organize the insights.
           </p>
         </div>
@@ -210,8 +210,8 @@ export default function BrainDumpInterface() {
                 isTextAnalyzing || (isVoiceAnalyzing && !isVisuallyRecording)
               }
               className={`rounded-full w-48 h-48 sm:w-56 sm:h-56 shadow-[0_20px_50px_rgba(0,0,0,0.1)] transition-all duration-500 hover:scale-105 active:scale-95 z-10 relative 
-                ${isVisuallyRecording ? "shadow-destructive/40" : "bg-white"} 
-                ${isVoiceAnalyzing && !isVisuallyRecording ? "bg-slate-100 text-slate-400" : ""}`}
+                ${isVisuallyRecording ? "shadow-destructive/40" : "bg-card"} 
+                ${isVoiceAnalyzing && !isVisuallyRecording ? "bg-muted text-muted-foreground" : ""}`}
               onClick={handleVoiceToggle}
             >
               <div className="flex flex-col items-center justify-center gap-3">
@@ -226,18 +226,18 @@ export default function BrainDumpInterface() {
               </div>
             </Button>
 
-            <p className="absolute -bottom-14 left-1/2 -translate-x-1/2 text-slate-400 font-bold uppercase tracking-widest text-sm whitespace-nowrap">
+            <p className="absolute -bottom-14 left-1/2 -translate-x-1/2 text-foreground font-bold uppercase tracking-widest text-sm whitespace-nowrap">
               {isVisuallyRecording ? "Recording..." : "Tap for Voice Dump"}
             </p>
           </div>
         </div>
 
         <div className="flex items-center justify-center opacity-60 my-2">
-          <div className="h-px bg-slate-300 w-1/4" />
-          <span className="px-4 text-slate-400 font-black uppercase tracking-widest text-xs">
+          <div className="h-px bg-border w-1/4" />
+          <span className="px-4 text-muted-foreground font-black uppercase tracking-widest text-xs">
             Or type manually
           </span>
-          <div className="h-px bg-slate-300 w-1/4" />
+          <div className="h-px bg-border w-1/4" />
         </div>
 
         {/* Input Area for Text Pipeline */}
@@ -265,12 +265,12 @@ export default function BrainDumpInterface() {
             )}
           </div>
 
-          <div className="flex justify-end items-center px-4">
+          <div className="flex justify-center items-center px-4">
             <Button
               size="lg"
               onClick={handleSubmit}
               disabled={!text || isTextAnalyzing || isVoiceAnalyzing}
-              className="px-12 h-16 rounded-full text-lg font-black shadow-[0_10px_30px_rgba(var(--primary),0.3)] bg-primary text-white hover:translate-y-[-2px] active:translate-y-0 transition-all"
+              className="px-12 h-16 rounded-full text-lg font-black shadow-[0_10px_30px_rgba(var(--primary),0.3)] bg-primary text-foreground hover:translate-y-[-2px] active:translate-y-0 transition-all"
             >
               Process Written Entry
             </Button>

@@ -39,11 +39,11 @@ export default function SummaryCard({ handleReset, summary }: any) {
         <div className="space-y-5 sm:space-y-6">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
             {activeCategories.map((cat) => (
-              <div key={cat.key} className="p-4 sm:p-5 rounded-2xl bg-white border border-slate-100 shadow-sm transition-all hover:shadow-md">
-                <span className="text-[10px] sm:text-xs font-black uppercase text-secondary/60 tracking-[0.2em] block mb-1">
+              <div key={cat.key} className="p-4 sm:p-5 rounded-2xl bg-card border border-border shadow-sm transition-all hover:shadow-md">
+                <span className="text-[10px] sm:text-xs font-black uppercase text-secondary-foreground/60 tracking-[0.2em] block mb-1">
                   {cat.label}
                 </span>
-                <p className="text-lg sm:text-2xl font-black tracking-tight text-slate-900">
+                <p className="text-lg sm:text-2xl font-black tracking-tight text-foreground">
                   {summary[cat.key]}
                 </p>
               </div>
