@@ -29,6 +29,13 @@ export default function SummaryCard({ handleReset, summary }: any) {
             Clear
           </Button>
         </div>
+
+        {summary.message && (
+          <p className="text-sm font-medium text-primary/70 mb-6 italic">
+            {summary.message}
+          </p>
+        )}
+
         <div className="space-y-5 sm:space-y-6">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
             {activeCategories.map((cat) => (

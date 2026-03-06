@@ -34,6 +34,8 @@ export default function BrainDumpInterface() {
 
       const audioResult = await stopRecording();
       console.log("Audio captured, starting transcription...");
+      setSummary(null);
+      setProcessedText("");
 
       try {
         const base64Data = audioResult.recordDataBase64;
@@ -43,7 +45,13 @@ export default function BrainDumpInterface() {
 
         const transcription = await transcribeAudio(base64Data);
 
-        if (transcription.success && transcription.text) {
+        if (transcription.success) {
+          if (!transcription.text) {
+            console.warn("No speech detected in audio.");
+            alert("No speech detected. Please speak more clearly or check your microphone.");
+            return;
+          }
+
           console.log("Transcript received:", transcription.text);
           setProcessedText(transcription.text);
 
@@ -60,7 +68,7 @@ export default function BrainDumpInterface() {
               cognitive: log.cognitive,
               sleep: log.sleep,
               social: log.social,
-              message: "Analysis complete! Logged to your timeline.",
+              message: response.message || "Analysis complete! Logged to your timeline.",
             });
           } else {
             console.error("API error for voice:", response.error);
@@ -91,6 +99,8 @@ export default function BrainDumpInterface() {
   const handleSubmit = async () => {
     if (!text) return;
     setIsTextAnalyzing(true);
+    setSummary(null);
+    setProcessedText("");
 
     try {
       const response = await processBrainDump(text, "cm7pm9uog0000uxps30r9qnh2");
@@ -105,7 +115,7 @@ export default function BrainDumpInterface() {
           cognitive: log.cognitive,
           sleep: log.sleep,
           social: log.social,
-          message: "Analysis complete! Logged to your timeline.",
+          message: response.message || "Analysis complete! Logged to your timeline.",
         };
         console.log("Setting Summary in Frontend:", newSummary);
         setSummary(newSummary);
