@@ -47,10 +47,10 @@ export default function LogEntryCard({ log, patientId, onUpdate }: { log: any, p
     return (
         <div className="bg-card text-card-foreground rounded-[2rem] p-6 sm:p-8 border shadow-sm">
             <div className="flex justify-between items-start mb-3">
-                <div className="text-sm text-muted-foreground font-medium">{formattedTime}</div>
+                <div className="text-sm text-foreground font-bold">{formattedTime}</div>
                 {!isEditing && (
                     <Button variant="ghost" size="sm" onClick={() => setIsEditing(true)}>
-                        <Edit2 className="w-4 h-4 mr-1 text-muted-foreground" />
+                        <Edit2 className="w-4 h-4 mr-1 text-foreground" />
                         <span className="sr-only">Edit</span>
                     </Button>
                 )}

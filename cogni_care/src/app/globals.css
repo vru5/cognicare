@@ -24,7 +24,7 @@
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
-  
+
   /* Your Custom Gradient */
   --background-image-brand-gradient: var(--brand-gradient);
 }
@@ -33,55 +33,63 @@
   --radius: 0.75rem;
 
   /* Main App Surface */
-  --background: oklch(0.98 0.01 170);    /* Soft Teal White */
-  --foreground: oklch(0.12 0.04 170);    /* Deep Teal Charcoal */
+  --background: oklch(0.98 0.01 225);
+  /* Soft Sky White */
+  --foreground: oklch(0.42 0.14 232);
+  /* Distinct Dark Blue */
 
   /* The "Action" Color (Buttons, Active Icons) */
-  --primary: oklch(0.58 0.16 175);       /* Vibrant Teal */
-  --primary-foreground: oklch(0.99 0.01 170);
+  --primary: oklch(0.72 0.12 235);
+  /* Softer, Lighter Sky Blue */
+  --primary-foreground: oklch(0.99 0.01 225);
 
   /* The "Card" Color (Your text entry box) */
-  --card: oklch(1 0 0); 
-  --card-foreground: oklch(0.12 0.04 170);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.12 0.04 225);
 
   /* Secondary/Muted (For labels like "Tap for voice dump") */
-  --muted: oklch(0.92 0.02 170);
-  --muted-foreground: oklch(0.45 0.08 175);
+  --secondary: oklch(0.92 0.02 225);
+  --secondary-foreground: oklch(0.45 0.08 235);
+  --muted: oklch(0.92 0.02 225);
+  --muted-foreground: oklch(0.45 0.08 235);
 
-  --border: oklch(0.9 0.03 170);
-  --ring: oklch(0.58 0.16 175);
+  --accent: oklch(0.9 0.03 225);
+  --accent-foreground: oklch(0.45 0.08 235);
 
-  /* Transparent Teal Background Gradient */
-  --brand-gradient: linear-gradient(
-    to bottom right in oklch, 
-    oklch(0.85 0.12 165 / 0.15), 
-    oklch(0.85 0.1 200 / 0.15)
-  );
+  --border: oklch(0.9 0.03 225);
+  --ring: oklch(0.63 0.14 235);
+
+  /* Transparent Sky Background Gradient */
+  --brand-gradient: linear-gradient(to bottom right in oklch,
+      oklch(0.85 0.12 225 / 0.15),
+      oklch(0.85 0.1 240 / 0.15));
 }
 
 .dark {
-  /* --- Teal Theme Colors (Dark Mode) --- */
-  --background: oklch(0.12 0.02 170); /* Deep Midnight Teal */
-  --foreground: oklch(0.95 0.03 170); /* Pale Mint text */
-  
-  --primary: oklch(0.65 0.18 175);    /* Brighter Teal for Dark Mode */
-  --primary-foreground: oklch(0.12 0.02 170);
-  
-  --accent: oklch(0.25 0.08 170);     /* Darker teal accent */
-  --accent-foreground: oklch(0.95 0.03 170);
-  
-  --border: oklch(0.25 0.05 170 / 0.5);
-  --input: oklch(0.25 0.05 170 / 0.5);
-  --ring: oklch(0.65 0.18 175);
-  --icon-primary: oklch(0.95 0.03 170);
+  /* --- Sky Theme Colors (Dark Mode) --- */
+  --background: oklch(0.12 0.02 225);
+  /* Deep Midnight Sky */
+  --foreground: oklch(0.95 0.03 225);
+  /* Pale Sky text */
+
+  --primary: oklch(0.65 0.18 230);
+  /* Brighter Sky for Dark Mode */
+  --primary-foreground: oklch(0.12 0.02 225);
+
+  --accent: oklch(0.25 0.08 225);
+  /* Darker sky accent */
+  --accent-foreground: oklch(0.95 0.03 225);
+
+  --border: oklch(0.25 0.05 225 / 0.5);
+  --input: oklch(0.25 0.05 225 / 0.5);
+  --ring: oklch(0.65 0.18 230);
+  --icon-primary: oklch(0.95 0.03 225);
 
   /* Transparent Dark Gradient (15% Opacity) */
-  --brand-gradient: linear-gradient(
-    to right in oklch, 
-    oklch(0.35 0.12 165 / 0.15), 
-    oklch(0.35 0.1 190 / 0.15), 
-    oklch(0.35 0.08 215 / 0.15)
-  );
+  --brand-gradient: linear-gradient(to right in oklch,
+      oklch(0.35 0.12 225 / 0.15),
+      oklch(0.35 0.1 235 / 0.15),
+      oklch(0.35 0.08 245 / 0.15));
 }
 
 @layer base {
@@ -90,10 +98,21 @@
     border-color: var(--border);
     outline-color: color-mix(in oklch, var(--ring), transparent 50%);
   }
+
+  html,
+  body {
+    min-height: 100vh;
+  }
+
   body {
     background-color: var(--background);
     color: var(--foreground);
-    background-image: var(--brand-gradient);
+    background-image:
+      linear-gradient(rgba(255, 255, 255, 0.305), rgba(255, 255, 255, 0.41)),
+      url('/images/cogni-care-bg.jpg.jpeg');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
     background-attachment: fixed;
   }
 }

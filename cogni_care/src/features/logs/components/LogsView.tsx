@@ -228,12 +228,12 @@ export default function LogsView({ initialLogs, patientId }: { initialLogs: any[
                                                 onClick={() => setSelectedDate(date)}
                                                 className={`h-10 w-10 flex items-center justify-center rounded-full text-sm font-semibold transition-all
                                                     ${isSelected
-                                                        ? "bg-teal-600 text-white shadow-md shadow-teal-200"
+                                                        ? "bg-sky-600 text-white shadow-md shadow-sky-200"
                                                         : hasLog
-                                                            ? "bg-teal-400 text-white"
-                                                            : "text-foreground hover:bg-teal-50"
+                                                            ? "bg-sky-400 text-white"
+                                                            : "text-foreground hover:bg-sky-50"
                                                     }
-                                                    ${!isSelected && !hasLog && isToday ? "border-2 border-dashed border-teal-400 text-teal-600" : ""}
+                                                    ${!isSelected && !hasLog && isToday ? "border-2 border-dashed border-sky-400 text-sky-600" : ""}
                                                 `}
                                             >
                                                 {date.getDate()}
