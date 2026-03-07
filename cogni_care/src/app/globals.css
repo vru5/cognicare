@@ -59,6 +59,10 @@
   --border: oklch(0.9 0.03 225);
   --ring: oklch(0.63 0.14 235);
 
+  /* Destructive (Errors) */
+  --destructive: oklch(0.6 0.25 25);
+  --destructive-foreground: oklch(0.99 0 0);
+
   /* Transparent Sky Background Gradient */
   --brand-gradient: linear-gradient(to bottom right in oklch,
       oklch(0.85 0.12 225 / 0.15),
@@ -75,6 +79,9 @@
   --primary: oklch(0.65 0.18 230);
   /* Brighter Sky for Dark Mode */
   --primary-foreground: oklch(0.12 0.02 225);
+
+  --destructive: oklch(0.5 0.2 25);
+  --destructive-foreground: oklch(0.95 0 0);
 
   --accent: oklch(0.25 0.08 225);
   /* Darker sky accent */

@@ -1,6 +1,6 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { mask } from "@yellowsakura/js-pii-mask";
-import { prisma } from "../lib/prisma.js";
+import { prisma } from "../../lib/prisma.js";
 
 export async function processBrainDumpAction(rawText: string, patientId: string) {
     const apiKey = (process.env.GEMINI_API_KEY || "").trim();
@@ -53,20 +53,21 @@ export async function processBrainDumpAction(rawText: string, patientId: string)
             throw new Error("AI processing failed. Please check your API key and network connection.");
         }
 
-        console.log(`Checking existence for patientId: "${patientId}" (type: ${typeof patientId})`);
-        if (!patientId || typeof patientId !== 'string') {
-            console.error("Invalid patientId provided to processBrainDumpAction");
-            return { success: false, error: "Invalid patientId provided" };
-        }
+        console.log(`Verifying Patient Profile for ID: "${patientId}"`);
 
-        const userExists = await prisma.user.findUnique({ where: { id: patientId } });
-        if (!userExists) {
-            return { success: false, error: `Patient ID ${patientId} not found.` };
+        // We must check the Profile table because PAT- IDs are NOT in the User table
+        const profile = await (prisma as any).profilePatient.findUnique({
+            where: { id: patientId }
+        });
+
+        if (!profile) {
+            console.error(`Patient Profile not found for ID: ${patientId}`);
+            return { success: false, error: `Patient ID ${patientId} not found in Profile records.` };
         }
 
         const log = await prisma.symptomLog.create({
             data: {
-                patientId,
+                patientId: profile.id,
                 rawText: safeText,
                 physical: analysis.physical,
                 mood: analysis.mood,

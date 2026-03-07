@@ -2,9 +2,10 @@ import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 
-import { getLogsAction, updateSymptomLogAction } from "./actions/logsActions.js";
-import { processBrainDumpAction } from "./actions/processActions.js";
-import { transcribeAudioAction } from "./actions/transcribeActions.js";
+import { getLogsAction, updateSymptomLogAction } from "./actions/logs/logsActions.js";
+import { processBrainDumpAction } from "./actions/brain-dump/processActions.js";
+import { transcribeAudioAction } from "./actions/brain-dump/transcribeActions.js";
+import { registerUser, getProfileAction, loginUser } from "./actions/auth/authActions.js";
 
 console.log("Loading environment variables...");
 dotenv.config({ path: "../.env" }); // Load from root .env
@@ -58,6 +59,39 @@ app.post("/api/brain-dump/transcribe", async (req, res) => {
     }
     const result = await transcribeAudioAction(base64Audio);
     res.json(result);
+});
+
+
+// GET /api/auth/profile
+app.get("/api/auth/profile", async (req, res) => {
+    const { userId } = req.query;
+    if (!userId || typeof userId !== "string") {
+        return res.status(400).json({ success: false, error: "Missing userId" });
+    }
+    const result = await getProfileAction(userId);
+    res.json(result);
+});
+
+// POST /api/auth/login
+app.post("/api/auth/login", async (req, res) => {
+    try {
+        const result = await loginUser(req.body);
+        res.json(result);
+    } catch (error: any) {
+        console.error("Login error:", error);
+        res.status(401).json({ success: false, error: error.message });
+    }
+});
+
+// POST /api/auth/register
+app.post("/api/auth/register", async (req, res) => {
+    try {
+        const result = await registerUser(req.body);
+        res.status(201).json(result);
+    } catch (error: any) {
+        console.error("Registration error:", error);
+        res.status(error.message === "Missing required fields" ? 400 : 500).json({ error: error.message });
+    }
 });
 
 app.listen(port, () => {

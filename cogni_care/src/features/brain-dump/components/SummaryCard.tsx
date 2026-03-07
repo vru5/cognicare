@@ -1,8 +1,17 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Activity, Smile, Brain, Moon, Users } from "lucide-react";
 
 export default function SummaryCard({ handleReset, summary }: any) {
+  const pillarConfig: any = {
+    physical: { icon: Activity, color: "bg-red-100 text-red-700 border-red-200", label: "Physical" },
+    mood: { icon: Smile, color: "bg-purple-100 text-purple-700 border-purple-200", label: "Mood" },
+    cognitive: { icon: Brain, color: "bg-blue-100 text-blue-700 border-blue-200", label: "Cognitive" },
+    sleep: { icon: Moon, color: "bg-indigo-100 text-indigo-700 border-indigo-200", label: "Sleep" },
+    social: { icon: Users, color: "bg-green-100 text-green-700 border-green-200", label: "Social" },
+  };
+
   const categories = [
     { key: "physical", label: "PHYSICAL" },
     { key: "mood", label: "MOOD" },
@@ -10,45 +19,58 @@ export default function SummaryCard({ handleReset, summary }: any) {
     { key: "sleep", label: "SLEEP" },
     { key: "social", label: "SOCIAL" },
   ];
+
   const activeCategories = categories.filter(cat => summary[cat.key] && summary[cat.key] !== "N/A");
 
   return (
-    <Card className="bg-primary/5 border-primary/20 shadow-xl overflow-hidden rounded-[2rem] sm:rounded-[3rem]">
-      <div className="bg-primary h-1.5 w-full" />
-      <CardContent className="p-5 sm:p-8">
-        <div className="flex justify-between items-center mb-4 sm:mb-6">
-          <h3 className="text-xl sm:text-2xl font-black text-primary tracking-tight uppercase">
-            Analysis Pillars
-          </h3>
+    <Card className="bg-white border-border shadow-2xl overflow-hidden rounded-[2rem] sm:rounded-[3rem]">
+      {/* Subtle top indicator */}
+      <div className="bg-primary/20 h-1.5 w-full" />
+
+      <CardContent className="p-6 sm:p-10">
+        <div className="flex justify-between items-center mb-6 sm:mb-8">
+          <div className="space-y-1">
+            <h3 className="text-2xl sm:text-3xl font-black text-secondary-foreground tracking-tight uppercase">
+              Analysis Pillars
+            </h3>
+            {summary.message && (
+              <p className="text-sm font-medium text-muted-foreground/80 italic">
+                {summary.message}
+              </p>
+            )}
+          </div>
           <Button
             variant="outline"
             size="sm"
             onClick={handleReset}
-            className="rounded-full h-8 sm:h-9 text-xs sm:text-sm font-bold"
+            className="rounded-full h-10 px-6 text-sm font-bold border-2 hover:bg-destructive hover:text-white transition-all"
           >
             Clear
           </Button>
         </div>
 
-        {summary.message && (
-          <p className="text-sm font-medium text-primary/70 mb-6 italic">
-            {summary.message}
-          </p>
-        )}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+          {activeCategories.map((cat) => {
+            const config = pillarConfig[cat.key];
+            const Icon = config.icon;
 
-        <div className="space-y-5 sm:space-y-6">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
-            {activeCategories.map((cat) => (
-              <div key={cat.key} className="p-4 sm:p-5 rounded-2xl bg-card border border-border shadow-sm transition-all hover:shadow-md">
-                <span className="text-[10px] sm:text-xs font-black uppercase text-secondary-foreground/60 tracking-[0.2em] block mb-1">
-                  {cat.label}
-                </span>
-                <p className="text-lg sm:text-2xl font-black tracking-tight text-foreground">
+            return (
+              <div
+                key={cat.key}
+                className={`p-5 sm:p-6 rounded-3xl border shadow-sm transition-all hover:scale-[1.02] flex flex-col gap-3 ${config.color}`}
+              >
+                <div className="flex items-center gap-2 opacity-80">
+                  <Icon className="w-5 h-5" />
+                  <span className="text-xs font-black uppercase tracking-widest">
+                    {config.label}
+                  </span>
+                </div>
+                <p className="text-xl sm:text-3xl font-black tracking-tight leading-tight">
                   {summary[cat.key]}
                 </p>
               </div>
-            ))}
-          </div>
+            );
+          })}
         </div>
       </CardContent>
     </Card>
