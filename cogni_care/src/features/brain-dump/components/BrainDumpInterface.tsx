@@ -1,7 +1,7 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useAuth } from "@/contexts/AuthContext";
 import { useVoiceCapture } from "../hooks/useVoiceCapture";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
@@ -12,6 +12,10 @@ import { processBrainDump } from "../services/processText";
 import { transcribeAudio } from "../services/google-transcribe";
 
 export default function BrainDumpInterface() {
+  const { user } = useAuth();
+  // Read profileId directly from session
+  const patientId = user?.profileId ?? null;
+
   const [text, setText] = useState("");
   const [processedText, setProcessedText] = useState("");
   const [summary, setSummary] = useState<any>(null);
@@ -33,7 +37,6 @@ export default function BrainDumpInterface() {
       setIsVoiceAnalyzing(true);
 
       const audioResult = await stopRecording();
-      console.log("Audio captured, starting transcription...");
       setSummary(null);
       setProcessedText("");
 
@@ -47,17 +50,15 @@ export default function BrainDumpInterface() {
 
         if (transcription.success) {
           if (!transcription.text) {
-            console.warn("No speech detected in audio.");
             alert("No speech detected. Please speak more clearly or check your microphone.");
             return;
           }
 
-          console.log("Transcript received:", transcription.text);
           setProcessedText(transcription.text);
 
           const response = await processBrainDump(
             transcription.text,
-            "cm7pm9uog0000uxps30r9qnh2"
+            patientId || ""
           );
 
           if (response.success && response.log) {
@@ -103,7 +104,7 @@ export default function BrainDumpInterface() {
     setProcessedText("");
 
     try {
-      const response = await processBrainDump(text, "cm7pm9uog0000uxps30r9qnh2");
+      const response = await processBrainDump(text, patientId || "");
 
       if (response.success && response.log) {
         setProcessedText(text);
@@ -117,7 +118,6 @@ export default function BrainDumpInterface() {
           social: log.social,
           message: response.message || "Analysis complete! Logged to your timeline.",
         };
-        console.log("Setting Summary in Frontend:", newSummary);
         setSummary(newSummary);
         setText("");
       } else {

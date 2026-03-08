@@ -1,4 +1,4 @@
-import { prisma } from "@/lib/prisma";
+import { prisma } from "../../lib/prisma.js";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { mask } from "@yellowsakura/js-pii-mask";
 
@@ -44,7 +44,18 @@ export async function updateSymptomLogAction(logId: string, newText: string, pat
     
     Log: "${safeText}"`;
 
-        const result = await model.generateContent(prompt);
+        let result;
+        try {
+            result = await model.generateContent(prompt);
+        } catch (apiErr: any) {
+            if (apiErr.status === 503 || apiErr.message?.includes("503")) {
+                console.warn("Gemini 2.5 is overloaded (503), falling back to 1.5-flash...");
+                const fallbackModel = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+                result = await fallbackModel.generateContent(prompt);
+            } else {
+                throw apiErr;
+            }
+        }
         let responseText = result.response.text();
         responseText = responseText.replace(/```json/g, "").replace(/```/g, "").trim();
         const analysis = JSON.parse(responseText || "{}");

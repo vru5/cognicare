@@ -1,6 +1,6 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { mask } from "@yellowsakura/js-pii-mask";
-import { prisma } from "@/lib/prisma";
+import { prisma } from "../../lib/prisma.js";
 
 export async function processBrainDumpAction(rawText: string, patientId: string) {
     const apiKey = (process.env.GEMINI_API_KEY || "").trim();
@@ -24,10 +24,22 @@ export async function processBrainDumpAction(rawText: string, patientId: string)
         let analysis: any = null;
 
         try {
-            const result = await model.generateContent(prompt);
+            let result;
+            try {
+                result = await model.generateContent(prompt);
+            } catch (apiErr: any) {
+                if (apiErr.status === 503 || apiErr.message?.includes("503")) {
+                    console.warn("Gemini 2.5 is overloaded (503), falling back to 1.5-flash...");
+                    const fallbackModel = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+                    result = await fallbackModel.generateContent(prompt);
+                } else {
+                    throw apiErr;
+                }
+            }
             responseText = result.response.text();
             responseText = responseText.replace(/```json/g, "").replace(/```/g, "").trim();
             analysis = JSON.parse(responseText || "{}");
+            console.log("AI Analysis Result:", JSON.stringify(analysis, null, 2));
 
             // Post-processing: If AI returns "General wellness" or similar for nonsensical input, treat as null
             const genericPhrases = ["general wellness", "healthy", "normal", "no issues", "none"];
@@ -41,14 +53,21 @@ export async function processBrainDumpAction(rawText: string, patientId: string)
             throw new Error("AI processing failed. Please check your API key and network connection.");
         }
 
-        const userExists = await prisma.user.findUnique({ where: { id: patientId } });
-        if (!userExists) {
-            return { success: false, error: `Patient ID ${patientId} not found.` };
+        console.log(`Verifying Patient Profile for ID: "${patientId}"`);
+
+        // We must check the Profile table because PAT- IDs are NOT in the User table
+        const profile = await (prisma as any).profilePatient.findUnique({
+            where: { id: patientId }
+        });
+
+        if (!profile) {
+            console.error(`Patient Profile not found for ID: ${patientId}`);
+            return { success: false, error: `Patient ID ${patientId} not found in Profile records.` };
         }
 
         const log = await prisma.symptomLog.create({
             data: {
-                patientId,
+                patientId: profile.id,
                 rawText: safeText,
                 physical: analysis.physical,
                 mood: analysis.mood,
@@ -57,6 +76,13 @@ export async function processBrainDumpAction(rawText: string, patientId: string)
                 social: analysis.social,
             },
         });
+
+        // Check if all categories are null
+        const allNull = !analysis.physical && !analysis.mood && !analysis.cognitive && !analysis.sleep && !analysis.social;
+        if (allNull) {
+            return { success: true, log, message: "No specific symptoms detected in this entry." };
+        }
+
         return { success: true, log };
     } catch (err: any) {
         return { success: false, error: err.message || "Processing failed" };

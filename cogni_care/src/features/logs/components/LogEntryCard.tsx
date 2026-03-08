@@ -23,7 +23,7 @@ export default function LogEntryCard({ log, patientId, onUpdate }: { log: any, p
     // Filter out null pillars
     const activePillars = ["physical", "mood", "cognitive", "sleep", "social"].map((key) => {
         return { key, value: log[key] };
-    }).filter((pillar) => pillar.value && pillar.value !== "N/A" && pillar.value.trim() !== "");
+    }).filter((pillar) => pillar.value && pillar.value !== "N/A" && pillar.value !== "null" && pillar.value.trim() !== "");
 
     const handleSave = async () => {
         if (newText.trim() === log.rawText.trim()) {

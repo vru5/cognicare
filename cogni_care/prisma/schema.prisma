@@ -1,12 +1,5 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
-  provider   = "prisma-client-js"
-  engineType = "library"
+  provider = "prisma-client-js"
 }
 
 datasource db {
@@ -14,23 +7,73 @@ datasource db {
 }
 
 model User {
-  id String @id @default(cuid())
-  name String?
-  role String
-  logs SymptomLog[]
+  id       String  @id @default(cuid())
+  name     String?
+  email    String? @unique
+  phone    String?
+  role     String? // "PATIENT" or "CARER"
+  password String? // bcrypt hash
+
+  patient ProfilePatient?
+  carer   ProfileCarer?
+
+  @@map("users")
+}
+
+model ProfilePatient {
+  id             String          @id
+  userId         String          @unique
+  user           User            @relation(fields: [userId], references: [id])
+  familyMembers  FamilyMember[]
+  carers         CarersOnPatients[]
+  logs           SymptomLog[]
+
+  @@map("patient_profiles")
+}
+
+model ProfileCarer {
+  id       String             @id
+  userId   String             @unique
+  user     User               @relation(fields: [userId], references: [id])
+  patients CarersOnPatients[]
+
+  @@map("carer_profiles")
+}
+
+model FamilyMember {
+  id        String         @id @default(cuid())
+  name      String
+  email     String?
+  phone     String
+  patientId String
+  patient   ProfilePatient @relation(fields: [patientId], references: [id])
+
+  @@map("family_members")
+}
+
+model CarersOnPatients {
+  carerId   String
+  patientId String
+  carer     ProfileCarer   @relation(fields: [carerId], references: [id])
+  patient   ProfilePatient @relation(fields: [patientId], references: [id])
+
+  @@id([carerId, patientId])
+  @@map("carers_on_patients")
 }
 
 model SymptomLog {
-  id String @id @default(cuid())
+  id        String   @id @default(cuid())
   createdAt DateTime @default(now())
   patientId String
-  rawText String
+  rawText   String
 
-  physical String?
-  mood String?
+  physical  String?
+  mood      String?
   cognitive String?
-  sleep String?
-  social String?
+  sleep     String?
+  social    String?
 
-  patient User @relation(fields: [patientId], references: [id])
+  patient   ProfilePatient @relation(fields: [patientId], references: [id])
+
+  @@map("symptom_logs")
 }
