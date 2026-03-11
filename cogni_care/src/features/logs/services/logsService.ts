@@ -1,10 +1,10 @@
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "";
+import { API_BASE_URL } from "@/constants/auth";
 
 export async function getLogs(patientId: string) {
     try {
         const response = await fetch(`${API_BASE_URL}/api/logs?patientId=${patientId}`);
         return await response.json();
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error("Failed to fetch logs:", error);
         return { success: false, error: "Failed to fetch logs" };
     }
@@ -18,7 +18,7 @@ export async function updateSymptomLog(logId: string, newText: string, patientId
             body: JSON.stringify({ logId, newText, patientId }),
         });
         return await response.json();
-    } catch (err: any) {
+    } catch (err: unknown) {
         console.error("Failed to update log:", err);
         return { success: false, error: "Failed to update log" };
     }

@@ -10,7 +10,7 @@ export default function AuthLayout({
         <div className="relative min-h-screen flex flex-col items-center justify-center p-4 overflow-hidden bg-background">
             {/* Background Image with Light Overlay to match Home page */}
             <div
-                className="absolute inset-0 z-0"
+                className="fixed inset-0 z-0"
                 style={{
                     backgroundImage: "url('/images/landing-page.jpg')",
                     backgroundSize: "cover",
@@ -20,7 +20,7 @@ export default function AuthLayout({
                 <div className="absolute inset-0 bg-white/80 backdrop-blur-[2px]" />
             </div>
 
-            <nav className="fixed top-0 left-0 right-0 p-4 flex items-center justify-center bg-[#0a2e4d] backdrop-blur-md border-b border-white/10 shadow-xl z-50">
+            <nav className="fixed top-0 left-0 right-0 px-4 pb-4 pt-[calc(1rem+env(safe-area-inset-top,0px))] flex items-center justify-center bg-foreground backdrop-blur-md border-b border-white/10 shadow-xl z-50">
                 <Link href="/" className="flex items-center gap-2 group transition-transform hover:scale-105">
                     <Image
                         src="/images/cogni-care-logo.svg"

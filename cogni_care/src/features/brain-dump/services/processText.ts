@@ -1,6 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-/* eslint-disable @typescript-eslint/ban-ts-comment */
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "";
+import { API_BASE_URL } from "@/constants/auth";
 
 export async function processBrainDump(rawText: string, patientId: string) {
   try {
@@ -10,7 +8,7 @@ export async function processBrainDump(rawText: string, patientId: string) {
       body: JSON.stringify({ rawText, patientId }),
     });
     return await response.json();
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error("Failed to call process API:", err);
     return { success: false, error: "Failed to connect to processing service" };
   }

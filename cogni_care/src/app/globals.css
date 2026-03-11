@@ -122,4 +122,29 @@
     background-repeat: no-repeat;
     background-attachment: fixed;
   }
+
+  /* Mobile-only fixes for stability and scroll behavior */
+  @media (max-width: 768px) {
+
+    html,
+    body {
+      overflow-x: hidden;
+      width: 100%;
+      position: relative;
+      /* Fix for mobile browser toolbars */
+      min-height: -webkit-fill-available;
+      /* Disable pinch-zoom and horizontal swiping */
+      touch-action: pan-y;
+      /* Prevent bounce-back effect on some mobile browsers */
+      overscroll-behavior-x: none;
+    }
+  }
+
+  .pt-safe {
+    padding-top: env(safe-area-inset-top);
+  }
+
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
 }

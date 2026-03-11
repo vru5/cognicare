@@ -13,6 +13,7 @@ model User {
   phone    String?
   role     String? // "PATIENT" or "CARER"
   password String? // bcrypt hash
+  createdAt DateTime @default(now())
 
   patient ProfilePatient?
   carer   ProfileCarer?
@@ -27,6 +28,7 @@ model ProfilePatient {
   familyMembers  FamilyMember[]
   carers         CarersOnPatients[]
   logs           SymptomLog[]
+  createdAt      DateTime        @default(now())
 
   @@map("patient_profiles")
 }
@@ -36,6 +38,7 @@ model ProfileCarer {
   userId   String             @unique
   user     User               @relation(fields: [userId], references: [id])
   patients CarersOnPatients[]
+  createdAt DateTime           @default(now())
 
   @@map("carer_profiles")
 }
@@ -52,10 +55,11 @@ model FamilyMember {
 }
 
 model CarersOnPatients {
-  carerId   String
-  patientId String
-  carer     ProfileCarer   @relation(fields: [carerId], references: [id])
-  patient   ProfilePatient @relation(fields: [patientId], references: [id])
+  carerId      String
+  patientId    String
+  lastViewedAt DateTime       @default(now())
+  carer        ProfileCarer   @relation(fields: [carerId], references: [id])
+  patient      ProfilePatient @relation(fields: [patientId], references: [id])
 
   @@id([carerId, patientId])
   @@map("carers_on_patients")

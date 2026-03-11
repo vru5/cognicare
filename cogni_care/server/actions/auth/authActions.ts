@@ -1,7 +1,9 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import { RegistrationBody } from "server/types/authApi.js";
 import { prisma } from "../../lib/prisma.js";
 import bcrypt from "bcryptjs";
 
-export const registerUser = async (body: any) => {
+export const registerUser = async (body: RegistrationBody) => {
     console.log("!!! COGNICARE NEW AUTH LOGIC STARTING !!!");
     console.log("Request Body:", JSON.stringify(body, null, 2));
     const { role, name, emailOrPhone, patientId, familyMemberName, familyMemberEmail, familyMemberPhone, password } = body;
@@ -18,6 +20,7 @@ export const registerUser = async (body: any) => {
     const phone = !isEmail ? emailOrPhone : null;
 
     // Use transaction to ensure atomic creation
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return await (prisma as any).$transaction(async (tx: any) => {
         // 1. Check if user already exists
         const existingUser = await tx.user.findFirst({
@@ -117,7 +120,7 @@ export const getProfileAction = async (userId: string) => {
         if (carer) return { success: true, role: "CARER", profileId: carer.id };
 
         return { success: false, error: "Profile not found" };
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error("Failed to get profile:", error);
         return { success: false, error: "Internal server error" };
     }

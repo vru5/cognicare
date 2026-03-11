@@ -58,7 +58,7 @@ export default function Home() {
 
         {/* Action Buttons */}
         <div className="flex flex-col w-full gap-4">
-          <Link href="/registration" className="w-full">
+          <Link href="/register" className="w-full">
             <Button
               size="lg"
               className="w-full h-16 rounded-full text-lg font-black bg-primary text-foreground shadow-[0_10px_25px_rgba(var(--primary),0.3)] hover:scale-[1.02] transition-all"

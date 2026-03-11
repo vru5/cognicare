@@ -10,12 +10,13 @@ export interface AuthUser {
     profileId: string | null;
     role: string | null;
     name: string | null;
+    isCarer: boolean;
 }
 
 interface AuthContextType {
     user: AuthUser | null;
     loading: boolean;
-    login: (email: string, password: string) => Promise<void>;
+    login: (email: string, password: string) => Promise<AuthUser>;
     register: (formData: any) => Promise<void>;
     logout: () => void;
 }
@@ -23,7 +24,7 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType>({
     user: null,
     loading: true,
-    login: async () => { },
+    login: async () => { throw new Error("Not implemented"); },
     register: async () => { },
     logout: () => { },
 });
@@ -36,7 +37,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     useEffect(() => {
         try {
             const stored = localStorage.getItem(AUTH_STORAGE_KEY);
-            if (stored) setUser(JSON.parse(stored));
+            if (stored) {
+                const parsedUser = JSON.parse(stored) as AuthUser;
+                // Ensure isCarer is correctly set even if rehydrating from an old version of the object
+                if (parsedUser && typeof parsedUser.isCarer === "undefined") {
+                    parsedUser.isCarer = parsedUser.role === "CARER";
+                }
+                setUser(parsedUser);
+            }
         } catch {
             // ignore parse errors
         } finally {
@@ -62,10 +70,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             profileId: data.profileId,
             role: data.role,
             name: data.name,
+            isCarer: data.role === "CARER",
         };
 
         localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(authUser));
         setUser(authUser);
+        return authUser;
     };
 
     const register = async (formData: any) => {

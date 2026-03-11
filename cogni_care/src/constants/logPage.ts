@@ -1,0 +1,9 @@
+export const LOADING_LOGS = "Loading logs...";
+export const EMPTY_LOGS = "No patient profile found.";
+export const INITIALIZING = "Initializing...";
+export const EMPTY_DAY_LOG_TEXT = "No entries for this day.";
+export const EDIT = "Edit";
+export const CANCEL = "Cancel";
+export const BACK_BUTTON = "Back to Dashboard";
+export const SELECTED_DATE_ENTRIES = "Entries for";
+export const LOGS_TEXT = "LOGS";

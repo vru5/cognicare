@@ -1,13 +1,14 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Edit2, Save, X, Loader2, Activity, Smile, Brain, Moon, Users } from "lucide-react";
+import { Edit2, Save, X, Loader2, Activity, Smile, Brain, Moon, Users, LucideIcon } from "lucide-react";
 import { updateSymptomLog } from "@/features/logs/services/logsService";
+import { LogSumaryCard, MoodPillarsConfig, SymptomPillar } from "../types/logSummaryCard";
+import { CANCEL, EDIT } from "@/constants/logPage";
 
-const pillarConfig: any = {
+const pillarConfig: MoodPillarsConfig = {
     physical: { icon: Activity, color: "bg-red-100 text-red-700", label: "Physical" },
     mood: { icon: Smile, color: "bg-purple-100 text-purple-700", label: "Mood" },
     cognitive: { icon: Brain, color: "bg-blue-100 text-blue-700", label: "Cognitive" },
@@ -15,13 +16,22 @@ const pillarConfig: any = {
     social: { icon: Users, color: "bg-green-100 text-green-700", label: "Social" },
 };
 
-export default function LogEntryCard({ log, patientId, onUpdate }: { log: any, patientId: string, onUpdate: (log: any) => void }) {
+export default function LogEntryCard({ log, patientId, onUpdate }: { log: LogSumaryCard, patientId: string, onUpdate: (log: LogSumaryCard) => void }) {
     const [isEditing, setIsEditing] = useState(false);
     const [newText, setNewText] = useState(log.rawText);
     const [isSaving, setIsSaving] = useState(false);
+    const [mounted, setMounted] = useState(false);
+
+    useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setMounted(true);
+    }, []);
+
+    // List of symptom pillars to display
+    const symptomKeys: SymptomPillar[] = ["physical", "mood", "cognitive", "sleep", "social"];
 
     // Filter out null pillars
-    const activePillars = ["physical", "mood", "cognitive", "sleep", "social"].map((key) => {
+    const activePillars = symptomKeys.map((key) => {
         return { key, value: log[key] };
     }).filter((pillar) => pillar.value && pillar.value !== "N/A" && pillar.value !== "null" && pillar.value.trim() !== "");
 
@@ -42,7 +52,7 @@ export default function LogEntryCard({ log, patientId, onUpdate }: { log: any, p
         setIsSaving(false);
     };
 
-    const formattedTime = new Date(log.createdAt).toLocaleString();
+    const formattedTime = mounted ? new Date(log.createdAt).toLocaleString() : "";
 
     return (
         <div className="bg-card text-card-foreground rounded-[2rem] p-6 sm:p-8 border shadow-sm">
@@ -51,7 +61,7 @@ export default function LogEntryCard({ log, patientId, onUpdate }: { log: any, p
                 {!isEditing && (
                     <Button variant="ghost" size="sm" onClick={() => setIsEditing(true)}>
                         <Edit2 className="w-4 h-4 mr-1 text-foreground" />
-                        <span className="sr-only">Edit</span>
+                        <span className="sr-only">{EDIT}</span>
                     </Button>
                 )}
             </div>
@@ -65,7 +75,7 @@ export default function LogEntryCard({ log, patientId, onUpdate }: { log: any, p
                     />
                     <div className="flex justify-end gap-2">
                         <Button variant="outline" size="sm" onClick={() => { setIsEditing(false); setNewText(log.rawText); }} disabled={isSaving}>
-                            <X className="w-4 h-4 mr-1" /> Cancel
+                            <X className="w-4 h-4 mr-1" /> {CANCEL}
                         </Button>
                         <Button size="sm" onClick={handleSave} disabled={isSaving}>
                             {isSaving ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Save className="w-4 h-4 mr-1" />}
@@ -80,12 +90,12 @@ export default function LogEntryCard({ log, patientId, onUpdate }: { log: any, p
             {activePillars.length > 0 && !isEditing && (
                 <div className="flex flex-wrap gap-2 mt-4">
                     {activePillars.map(({ key, value }) => {
-                        const config = pillarConfig[key];
-                        const Icon = config.icon;
+                        const config = pillarConfig[key as keyof MoodPillarsConfig];
+                        const Icon = config?.icon as LucideIcon;
                         return (
-                            <div key={key} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold shadow-sm ${config.color}`}>
+                            <div key={key} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold shadow-sm ${config?.color}`}>
                                 <Icon className="w-3 h-3" />
-                                <span>{config.label}: {value}</span>
+                                <span>{config?.label}: {value}</span>
                             </div>
                         );
                     })}

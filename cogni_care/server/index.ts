@@ -6,6 +6,8 @@ import { getLogsAction, updateSymptomLogAction } from "./actions/logs/logsAction
 import { processBrainDumpAction } from "./actions/brain-dump/processActions.js";
 import { transcribeAudioAction } from "./actions/brain-dump/transcribeActions.js";
 import { registerUser, getProfileAction, loginUser } from "./actions/auth/authActions.js";
+import { getCarerPatientsAction, markPatientAsViewedAction } from "./actions/carer/carerActions.js";
+import { AppError } from "./types/logsApi.js";
 
 console.log("Loading environment variables...");
 dotenv.config({ path: "../.env" }); // Load from root .env
@@ -77,9 +79,10 @@ app.post("/api/auth/login", async (req, res) => {
     try {
         const result = await loginUser(req.body);
         res.json(result);
-    } catch (error: any) {
+    } catch (error: unknown) {
+        const err = error as AppError;
         console.error("Login error:", error);
-        res.status(401).json({ success: false, error: error.message });
+        res.status(401).json({ success: false, error: err.message });
     }
 });
 
@@ -88,10 +91,31 @@ app.post("/api/auth/register", async (req, res) => {
     try {
         const result = await registerUser(req.body);
         res.status(201).json(result);
-    } catch (error: any) {
+    } catch (error: unknown) {
+        const err = error as AppError;
         console.error("Registration error:", error);
-        res.status(error.message === "Missing required fields" ? 400 : 500).json({ error: error.message });
+        res.status(err.message === "Missing required fields" ? 400 : 500).json({ error: err.message });
     }
+});
+
+// GET /api/carer/patients
+app.get("/api/carer/patients", async (req, res) => {
+    const { carerProfileId } = req.query;
+    if (!carerProfileId || typeof carerProfileId !== "string") {
+        return res.status(400).json({ success: false, error: "Missing carerProfileId" });
+    }
+    const result = await getCarerPatientsAction(carerProfileId);
+    res.json(result);
+});
+
+// POST /api/carer/mark-viewed
+app.post("/api/carer/mark-viewed", async (req, res) => {
+    const { carerProfileId, patientId } = req.body;
+    if (!carerProfileId || !patientId) {
+        return res.status(400).json({ success: false, error: "Missing required fields" });
+    }
+    const result = await markPatientAsViewedAction(carerProfileId, patientId);
+    res.json(result);
 });
 
 app.listen(port, () => {

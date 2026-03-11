@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Eye, EyeOff, CheckCircle2, XCircle } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { AppError } from "server/types/logsApi";
 
 const passwordRules = [
     { id: "length", label: "At least 8 characters", test: (p: string) => p.length >= 8 },
@@ -70,7 +71,8 @@ export function RegistrationForm() {
             await register({ role, ...formData, password });
             await login(formData.emailOrPhone, password);
             router.push("/login");
-        } catch (err: any) {
+        } catch (error: unknown) {
+            const err = error as AppError;
             console.error("Registration error:", err);
             const fullMessage = err.message || "Registration failed. Please try again.";
             const firstLine = fullMessage.split("\n")[0].split(". ")[0];

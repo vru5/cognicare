@@ -1,3 +1,4 @@
+import { LogSumaryCard } from "@/features/logs/types/logSummaryCard.js";
 import { prisma } from "../../lib/prisma.js";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { mask } from "@yellowsakura/js-pii-mask";
@@ -8,8 +9,13 @@ export async function getLogsAction(patientId: string) {
             where: { patientId },
             orderBy: { createdAt: "desc" },
         });
-        return { success: true, logs };
-    } catch (error: any) {
+        const filteredLogs = logs.map((log: LogSumaryCard) =>
+            Object.fromEntries(
+                Object.entries(log).filter(([_, value]) => value !== null)
+            )
+        );
+        return { success: true, logs: filteredLogs };
+    } catch (error: unknown) {
         console.error("Failed to fetch logs:", error);
         return { success: false, error: "Failed to fetch logs" };
     }
@@ -47,8 +53,8 @@ export async function updateSymptomLogAction(logId: string, newText: string, pat
         let result;
         try {
             result = await model.generateContent(prompt);
-        } catch (apiErr: any) {
-            if (apiErr.status === 503 || apiErr.message?.includes("503")) {
+        } catch (apiErr: unknown) {
+            if (apiErr instanceof Error && apiErr.message?.includes("503")) {
                 console.warn("Gemini 2.5 is overloaded (503), falling back to 1.5-flash...");
                 const fallbackModel = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
                 result = await fallbackModel.generateContent(prompt);
@@ -72,9 +78,13 @@ export async function updateSymptomLogAction(logId: string, newText: string, pat
             }
         });
 
-        return { success: true, log: updatedLog };
+        const filteredLog = Object.fromEntries(
+            Object.entries(updatedLog).filter(([_, value]) => value !== null)
+        );
 
-    } catch (err: any) {
+        return { success: true, log: filteredLog };
+
+    } catch (err: unknown) {
         console.error("Failed to update log:", err);
         return { success: false, error: "Failed to update log processing text" };
     }

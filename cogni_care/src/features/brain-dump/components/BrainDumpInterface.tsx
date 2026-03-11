@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
+import { useRouter } from "next/navigation";
 import { useVoiceCapture } from "../hooks/useVoiceCapture";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
@@ -13,6 +14,7 @@ import { transcribeAudio } from "../services/google-transcribe";
 
 export default function BrainDumpInterface() {
   const { user } = useAuth();
+  const router = useRouter();
   // Read profileId directly from session
   const patientId = user?.profileId ?? null;
 
@@ -184,7 +186,7 @@ export default function BrainDumpInterface() {
                       duration: 1.5,
                       ease: "easeOut",
                     }}
-                    className="absolute inset-0 rounded-full border-[3px] border-destructive/30"
+                    className="absolute inset-0 rounded-full border-[3px] border-primary/30"
                   />
                   <motion.div
                     key="ring-pulse-outer"
@@ -197,26 +199,26 @@ export default function BrainDumpInterface() {
                       ease: "easeOut",
                       delay: 0.4,
                     }}
-                    className="absolute inset-0 rounded-full border-[3px] border-destructive/20"
+                    className="absolute inset-0 rounded-full border-[3px] border-primary/20"
                   />
                 </>
               )}
             </AnimatePresence>
 
             <Button
-              variant={isVisuallyRecording ? "destructive" : "secondary"}
+              variant={isVisuallyRecording ? "default" : "secondary"}
               size="lg"
               disabled={
                 isTextAnalyzing || (isVoiceAnalyzing && !isVisuallyRecording)
               }
               className={`rounded-full w-48 h-48 sm:w-56 sm:h-56 shadow-[0_20px_50px_rgba(0,0,0,0.1)] transition-all duration-500 hover:scale-105 active:scale-95 z-10 relative 
-                ${isVisuallyRecording ? "shadow-destructive/40" : "bg-card"} 
+                ${isVisuallyRecording ? "bg-primary shadow-primary/40" : "bg-card"} 
                 ${isVoiceAnalyzing && !isVisuallyRecording ? "bg-muted text-muted-foreground" : ""}`}
               onClick={handleVoiceToggle}
             >
               <div className="flex flex-col items-center justify-center gap-3">
                 <Mic
-                  className={`text-primary h-16 w-16 sm:h-20 sm:w-20 ${isVisuallyRecording ? "animate-pulse" : " "}`}
+                  className={`h-16 w-16 sm:h-20 sm:w-20 ${isVisuallyRecording ? "animate-pulse text-primary-foreground" : "text-primary"}`}
                 />
                 {isVoiceAnalyzing && !isVisuallyRecording && (
                   <span className="text-xs sm:text-sm font-black uppercase tracking-widest text-primary flex items-center gap-2 mt-2">
@@ -232,12 +234,12 @@ export default function BrainDumpInterface() {
           </div>
         </div>
 
-        <div className="flex items-center justify-center opacity-60 my-2">
-          <div className="h-px bg-border w-1/4" />
-          <span className="px-4 text-muted-foreground font-black uppercase tracking-widest text-xs">
+        <div className="flex items-center justify-center gap-4 opacity-60 my-2">
+          <div className="h-px bg-border flex-1 max-w-[100px]" />
+          <span className="text-muted-foreground font-black uppercase tracking-widest text-xs whitespace-nowrap">
             Or type manually
           </span>
-          <div className="h-px bg-border w-1/4" />
+          <div className="h-px bg-border flex-1 max-w-[100px]" />
         </div>
 
         {/* Input Area for Text Pipeline */}
