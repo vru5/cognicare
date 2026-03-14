@@ -21,7 +21,7 @@ import {
 } from "@/constants/registerationPage";
 import { Eye, EyeOff, CheckCircle2, XCircle } from "lucide-react";
 import { PATIENT_ID } from "@/constants/carerLandingPage";
-import { FormConfigProps, PasswordRulesConfig } from "../types/registerationForm";
+import { FormConfigProps, PasswordRulesConfig, RegistrationFieldConfig } from "../types/registerationForm";
 
 export const getRegisterationFields = ({
   showPassword,
@@ -41,10 +41,10 @@ export const getRegisterationFields = ({
   errorField,
   setErrorField,
   setError,
-}: FormConfigProps) => {
+}: FormConfigProps): { fields: RegistrationFieldConfig[]; familyFields: RegistrationFieldConfig[] } => {
   const fields = [
-    { name: "name", text: FULL_NAME, placeholder: NAME_PLACEHOLDER, required: true },
-    { name: "emailOrPhone", text: EMAIL_OR_PHONE_TEXT, placeholder: EMAIL_PLACEHOLDER, required: true },
+    { name: "name", text: FULL_NAME, placeholder: NAME_PLACEHOLDER, required: true, isRole: false as const, isFamilySection: false as const },
+    { name: "emailOrPhone", text: EMAIL_OR_PHONE_TEXT, required: true, isRole: false as const, isFamilySection: false as const },
     {
       name: "password",
       text: PASSWORD,
@@ -60,6 +60,8 @@ export const getRegisterationFields = ({
           setError("");
         }
       },
+      isRole: false as const,
+      isFamilySection: false as const,
       suffix: (
         <button
           type="button"
@@ -103,6 +105,8 @@ export const getRegisterationFields = ({
           setError("");
         }
       },
+      isRole: false as const,
+      isFamilySection: false as const,
       suffix: (
         <button
           type="button"
@@ -122,14 +126,15 @@ export const getRegisterationFields = ({
     {
       name: "role",
       text: PATIENT_OR_CARER,
-      isRole: true,
-      onChange: (r: string) => {
+      isRole: true as const,
+      onChange: (r: "PATIENT" | "CARER") => {
         setRole(r.toUpperCase() as "PATIENT" | "CARER");
         if (errorField === "role") {
           setErrorField("");
           setError("");
         }
       },
+      isFamilySection: false as const,
     },
     {
       name: "patientId",
@@ -138,22 +143,25 @@ export const getRegisterationFields = ({
       required: true,
       renderIf: role === "CARER",
       containerClass: "space-y-2 animate-in slide-in-from-top-4 fade-in duration-500",
+      isRole: false as const,
+      isFamilySection: false as const,
     },
     {
       name: "familySection",
       text: FAMILY_CONTACT,
-      isFamilySection: true,
+      isFamilySection: true as const,
+      isRole: false as const,
       renderIf: role === "PATIENT",
     },
   ];
 
-  const familyFields = [
-    { name: "familyMemberName", text: FULL_NAME, placeholder: FAMILY_NAME_PLACEHOLDER },
-    { name: "familyMemberEmail", text: EMAIL, placeholder: EMAIL_PLACEHOLDER },
-    { name: "familyMemberPhone", text: PHONE, placeholder: PHONE_PLACEHOLDER },
+  const familyFields: RegistrationFieldConfig[] = [
+    { name: "familyMemberName", text: FULL_NAME, placeholder: FAMILY_NAME_PLACEHOLDER, isRole: false as const, isFamilySection: false as const },
+    { name: "familyMemberEmail", text: EMAIL, placeholder: EMAIL_PLACEHOLDER, isRole: false as const, isFamilySection: false as const },
+    { name: "familyMemberPhone", text: PHONE, placeholder: PHONE_PLACEHOLDER, isRole: false as const, isFamilySection: false as const },
   ];
 
-  return { fields, familyFields };
+  return { fields: fields as RegistrationFieldConfig[], familyFields };
 };
 
 

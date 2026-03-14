@@ -13,6 +13,29 @@ export interface Analysis {
 } 
 
 export interface SymptomRecord extends Analysis {
+    id: string;
+    createdAt: Date | string;
     rawText: string;
-     carerComment?: string | null;
+    comments?: CarerCommentRecord[];
+}
+
+export interface SymptomLogUpdateData extends Analysis {
+    rawText?: string;
+}
+
+export interface CarerCommentRecord {
+    id: string;
+    createdAt: Date | string;
+    text: string;
+    carerId: string;
+    carerName?: string;
+}
+
+export interface CarerLogRecord {
+    id: string;
+    createdAt: Date | string;
+    patientId: string;
+    carerId: string;
+    rawText: string;
+    carerName?: string;
 }

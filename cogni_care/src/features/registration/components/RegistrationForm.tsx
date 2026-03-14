@@ -139,6 +139,7 @@ export function RegistrationForm() {
           errorField={errorField}
           setErrorField={setErrorField}
           setError={setError}
+          error={error}
         />
       </CardContent>
       <CardFooter className="justify-center pb-8 border-t border-slate-100/50 mt-4 pt-6">

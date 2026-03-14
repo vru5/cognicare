@@ -1,8 +1,8 @@
 import { Dispatch, SetStateAction } from "react";
 
 export interface LoginFormConfigProps {
-    email: string;
-    setEmail: (v: string) => void;
+    emailOrPhone: string;
+    setEmailOrPhone: (v: string) => void;
     password: string;
     setPassword: (v: string) => void;
     showPassword: boolean;

@@ -28,6 +28,7 @@ model ProfilePatient {
   familyMembers  FamilyMember[]
   carers         CarersOnPatients[]
   logs           SymptomLog[]
+  carerLogs      CarerLog[]
   createdAt      DateTime        @default(now())
 
   @@map("patient_profiles")
@@ -38,6 +39,8 @@ model ProfileCarer {
   userId   String             @unique
   user     User               @relation(fields: [userId], references: [id])
   patients CarersOnPatients[]
+  comments CarerComment[]
+  logs     CarerLog[]
   createdAt DateTime           @default(now())
 
   @@map("carer_profiles")
@@ -77,10 +80,35 @@ model SymptomLog {
   sleep     String?
   social    String?
 
-  carerComment String?
-  isFromCarer  Boolean @default(false)
-
   patient   ProfilePatient @relation(fields: [patientId], references: [id])
+  comments  CarerComment[]
 
   @@map("symptom_logs")
+}
+
+model CarerComment {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  text      String
+  
+  logId     String
+  log       SymptomLog @relation(fields: [logId], references: [id])
+  
+  carerId   String
+  carer     ProfileCarer @relation(fields: [carerId], references: [id])
+
+  @@map("carer_comments")
+}
+
+model CarerLog {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  patientId String
+  carerId   String
+  rawText   String
+
+  patient   ProfilePatient @relation(fields: [patientId], references: [id])
+  carer     ProfileCarer   @relation(fields: [carerId], references: [id])
+
+  @@map("carer_logs")
 }

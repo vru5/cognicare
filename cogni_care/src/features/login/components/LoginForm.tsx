@@ -17,7 +17,7 @@ import { LoginFieldConfig } from "../types/loginForm";
 export default function LoginForm() {
     const router = useRouter();
     const { login } = useAuth();
-    const [email, setEmail] = useState("");
+    const [emailOrPhone, setEmailOrPhone] = useState("");
     const [password, setPassword] = useState("");
     const [showPassword, setShowPassword] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -29,7 +29,7 @@ export default function LoginForm() {
         setLoading(true);
 
         try {
-            const authUser = await login(email, password);
+            const authUser = await login(emailOrPhone, password);
             if (authUser.isCarer) {
                 router.push("/dashboard");
             } else {
@@ -66,8 +66,8 @@ export default function LoginForm() {
             <CardContent>
                 <form onSubmit={handleSubmit} className="space-y-6">
                     {getLoginFields({
-                        email,
-                        setEmail,
+                        emailOrPhone,
+                        setEmailOrPhone,
                         password,
                         setPassword,
                         showPassword,

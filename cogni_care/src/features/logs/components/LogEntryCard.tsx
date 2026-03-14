@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Edit2, Save, X, Loader2, Activity, Smile, Brain, Moon, Users, LucideIcon } from "lucide-react";
+import { Edit2, Save, X, Loader2, Activity, Smile, Brain, Moon, Users, LucideIcon, Trash2 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { updateSymptomLog, addCarerComment } from "@/features/logs/services/logsService";
 import { LogSumaryCard, MoodPillarsConfig, SymptomPillar } from "../types/logSummaryCard";
@@ -18,16 +18,18 @@ const pillarConfig: MoodPillarsConfig = {
     social: { icon: Users, color: "bg-green-100 text-green-700", label: "Social" },
 };
 
-export default function LogEntryCard({ log, patientId, onUpdate }: { log: LogSumaryCard, patientId: string, onUpdate: (log: LogSumaryCard) => void }) {
+export default function LogEntryCard({ log, patientId, onUpdate, onDelete }: { log: LogSumaryCard, patientId: string, onUpdate: (log: LogSumaryCard) => void, onDelete?: (logId: string) => void }) {
     const { user } = useAuth();
-    const isCarer = user?.isCarer;
+    const isCarer = Boolean(user?.isCarer);
+    const profileId = user?.profileId;
 
     const [isEditing, setIsEditing] = useState(false);
     const [newText, setNewText] = useState(log.rawText);
     const [isSaving, setIsSaving] = useState(false);
+    const [isDeleting, setIsDeleting] = useState(false);
 
     const [isCommenting, setIsCommenting] = useState(false);
-    const [commentText, setCommentText] = useState(log.carerComment || "");
+    const [commentText, setCommentText] = useState("");
     const [isSavingComment, setIsSavingComment] = useState(false);
 
     const [mounted, setMounted] = useState(false);
@@ -52,21 +54,39 @@ export default function LogEntryCard({ log, patientId, onUpdate }: { log: LogSum
         }
 
         setIsSaving(true);
-        const result = await updateSymptomLog(log.id, newText, patientId);
+        const result = await updateSymptomLog(log.id, newText, patientId, isCarer, profileId || undefined);
         if (result.success) {
             onUpdate(result.log);
             setIsEditing(false);
         } else {
-            alert("Failed to update log. Ensure API keys are set up on the server.");
+            alert("Failed to update log.");
         }
         setIsSaving(false);
     };
 
+    const handleDelete = async () => {
+        if (!isCarer || !profileId) return;
+        if (!confirm("Are you sure you want to delete this log?")) return;
+
+        setIsDeleting(true);
+        // We need to import deleteCarerLog, assuming it's exported from logsService
+        const { deleteCarerLog } = await import("@/features/logs/services/logsService");
+        const result = await deleteCarerLog(log.id, profileId, log.patientId);
+        if (result.success) {
+            onDelete?.(log.id);
+        } else {
+            alert("Failed to delete log.");
+        }
+        setIsDeleting(false);
+    };
+
     const handleSaveComment = async () => {
+        if (!commentText.trim() || !profileId) return;
         setIsSavingComment(true);
-        const result = await addCarerComment(log.id, commentText, patientId);
+        const result = await addCarerComment(log.id, commentText, profileId);
         if (result.success) {
             onUpdate(result.log);
+            setCommentText("");
             setIsCommenting(false);
         } else {
             alert("Failed to save comment.");
@@ -87,11 +107,23 @@ export default function LogEntryCard({ log, patientId, onUpdate }: { log: LogSum
 
             <div className="flex justify-between items-start mb-4">
                 <div className="text-sm text-foreground font-bold opacity-60">{formattedTime}</div>
-                {!isEditing && !isCarer && !log.isFromCarer && (
-                    <Button variant="ghost" size="sm" onClick={() => setIsEditing(true)} className="rounded-full hover:bg-slate-100">
-                        <Edit2 className="w-4 h-4 mr-1 text-foreground" />
-                        <span className="sr-only">{EDIT}</span>
-                    </Button>
+                {!isEditing && (
+                    <div className="flex gap-2">
+                        {/* Only patients can edit patient logs, only carers can edit carer logs */}
+                        {((isCarer && log.isFromCarer) || (!isCarer && !log.isFromCarer)) && (
+                            <Button variant="ghost" size="sm" onClick={() => setIsEditing(true)} className="rounded-full hover:bg-slate-100" disabled={isDeleting}>
+                                <Edit2 className="w-4 h-4 mr-1 text-foreground" />
+                                <span className="sr-only">{EDIT}</span>
+                            </Button>
+                        )}
+                        {/* Only carers can delete their own logs */}
+                        {isCarer && log.isFromCarer && log.carerId === profileId && (
+                            <Button variant="ghost" size="sm" onClick={handleDelete} disabled={isDeleting} className="rounded-full hover:bg-red-50 hover:text-red-500">
+                                {isDeleting ? <Loader2 className="w-4 h-4 mr-1 animate-spin text-red-500" /> : <Trash2 className="w-4 h-4 mr-1 text-foreground" />}
+                                <span className="sr-only">Delete</span>
+                            </Button>
+                        )}
+                    </div>
                 )}
             </div>
 
@@ -133,13 +165,17 @@ export default function LogEntryCard({ log, patientId, onUpdate }: { log: LogSum
                     )}
 
                     {/* Carer Comment Section */}
-                    {(isCarer || log.carerComment) && (
+                    {log.type === "patient" && (isCarer || (log.comments && log.comments.length > 0)) && (
                         <div className="mt-6 pt-6 border-t border-slate-100 space-y-4">
                             <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-2 text-primary">
-                                    <MessageSquare className="w-5 h-5" />
-                                    <h4 className="text-sm font-black uppercase tracking-widest">{CARER_NOTE}</h4>
-                                </div>
+                                {(log.comments && log.comments.length > 0) || isCommenting ? (
+                                    <div className="flex items-center gap-2 text-primary">
+                                        <MessageSquare className="w-5 h-5" />
+                                        <h4 className="text-sm font-black uppercase tracking-widest">{CARER_NOTE}</h4>
+                                    </div>
+                                ) : (
+                                    <div />
+                                )}
                                 {isCarer && !isCommenting && (
                                     <Button
                                         variant="ghost"
@@ -147,12 +183,12 @@ export default function LogEntryCard({ log, patientId, onUpdate }: { log: LogSum
                                         onClick={() => setIsCommenting(true)}
                                         className="text-primary hover:bg-primary/5 rounded-full"
                                     >
-                                        {log.carerComment ? `${EDIT_NOTE}` : `${ADD_NOTE}`}
+                                        {ADD_NOTE}
                                     </Button>
                                 )}
                             </div>
 
-                            {isCommenting ? (
+                            {isCommenting && (
                                 <div className="space-y-3 animate-in fade-in slide-in-from-top-2 duration-300">
                                     <Textarea
                                         value={commentText}
@@ -170,11 +206,40 @@ export default function LogEntryCard({ log, patientId, onUpdate }: { log: LogSum
                                         </Button>
                                     </div>
                                 </div>
-                            ) : log.carerComment ? (
-                                <div className="bg-primary/5 p-4 rounded-2xl border border-primary/10 italic text-foreground/80 leading-relaxed">
-                                    &ldquo;{log.carerComment}&rdquo;
+                            )}
+
+                            {log.comments && log.comments.length > 0 ? (
+                                <div className="space-y-3">
+                                    {log.comments.map((comment) => (
+                                        <div key={comment.id} className="bg-primary/5 p-4 rounded-2xl border border-primary/10 space-y-1 relative group">
+                                            <div className="flex justify-between items-center text-[10px] font-bold text-primary/60 uppercase">
+                                                <span>{comment.carerName || "Carer"}</span>
+                                                <div className="flex items-center gap-2">
+                                                    <span>{mounted ? new Date(comment.createdAt).toLocaleDateString() : ""}</span>
+                                                    {isCarer && comment.carerId === profileId && (
+                                                        <button 
+                                                            onClick={async () => {
+                                                                if (!confirm("Delete this note?")) return;
+                                                                const { deleteCarerComment } = await import("@/features/logs/services/logsService");
+                                                                const result = await deleteCarerComment(comment.id, profileId, log.patientId);
+                                                                if (result.success) {
+                                                                    onUpdate(result.log);
+                                                                } else {
+                                                                    alert("Failed to delete note.");
+                                                                }
+                                                            }}
+                                                            className="text-primary/40 hover:text-red-500 transition-colors"
+                                                        >
+                                                            <Trash2 className="w-3.5 h-3.5" />
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            </div>
+                                            <p className="italic text-foreground/80 leading-relaxed">&ldquo;{comment.text}&rdquo;</p>
+                                        </div>
+                                    ))}
                                 </div>
-                            ) : isCarer ? (
+                            ) : !isCommenting && isCarer ? (
                                 <p className="text-muted-foreground text-sm italic py-2">{EMPTY_NOTE_TEXT}</p>
                             ) : null}
                         </div>

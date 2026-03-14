@@ -21,15 +21,13 @@ export function RegisterationFormFields(props: RegisterationFormFieldsProps) {
   const { fields, familyFields } = getRegisterationFields(props);
 
   const inputClass = (field: string) =>
-    `w-full p-4 rounded-2xl border bg-white/50 text-foreground placeholder:text-muted-foreground outline-none transition-all duration-300 shadow-sm focus:ring-2 ${
-      props.errorField === field
-        ? "border-destructive focus:ring-destructive/20"
-        : "border-slate-200 focus:ring-primary focus:border-primary"
+    `w-full p-4 rounded-2xl border bg-white/50 text-foreground placeholder:text-muted-foreground outline-none transition-all duration-300 shadow-sm focus:ring-2 ${props.errorField === field
+      ? "border-destructive focus:ring-destructive/20"
+      : "border-slate-200 focus:ring-primary focus:border-primary"
     }`;
 
   const labelClass = (field: string) =>
-    `text-sm font-bold ml-1 transition-colors ${
-      props.errorField === field ? "text-destructive" : "text-foreground/60"
+    `text-sm font-bold ml-1 transition-colors ${props.errorField === field ? "text-destructive" : "text-foreground/60"
     }`;
 
   return (
@@ -45,9 +43,8 @@ export function RegisterationFormFields(props: RegisterationFormFieldsProps) {
                 {[PATIENT, CARER].map((r) => (
                   <label
                     key={r}
-                    className={`flex flex-col items-center justify-center p-5 rounded-3xl border-2 transition-all cursor-pointer ${
-                      role === r ? "border-primary bg-primary/10" : "border-slate-100 bg-slate-50/50"
-                    }`}
+                    className={`flex flex-col items-center justify-center p-5 rounded-3xl border-2 transition-all cursor-pointer ${role === r.toUpperCase() ? "border-primary bg-primary/10" : "border-slate-100 bg-slate-50/50"
+                      }`}
                   >
                     <input
                       type="radio"
@@ -60,7 +57,7 @@ export function RegisterationFormFields(props: RegisterationFormFieldsProps) {
                       }}
                       required
                     />
-                    <span className={`text-lg font-bold ${role === r ? "text-primary" : "text-foreground/40"}`}>{r}</span>
+                    <span className={`text-lg font-bold ${role === r.toUpperCase() ? "text-primary" : "text-foreground/40"}`}>{r}</span>
                   </label>
                 ))}
               </div>
@@ -83,6 +80,7 @@ export function RegisterationFormFields(props: RegisterationFormFieldsProps) {
                     placeholder={f.placeholder}
                     inputClass={inputClass(f.name || "")}
                     onChangeHandler={handleInputChange}
+                    error={props.errorField === f.name ? props.error : ""}
                   />
                 ))}
               </div>
@@ -104,6 +102,7 @@ export function RegisterationFormFields(props: RegisterationFormFieldsProps) {
             onChangeHandler={field.onChange || handleInputChange}
             required={field.required}
             suffix={field.suffix}
+            error={props.errorField === field.name ? props.error : ""}
           >
             {field.children}
           </FormControl>
@@ -112,7 +111,7 @@ export function RegisterationFormFields(props: RegisterationFormFieldsProps) {
 
       <Button
         type="submit"
-        disabled={loading || !passwordValid || !passwordsMatch}
+        disabled={loading || !passwordValid || !passwordsMatch || !role}
         className="w-full py-8 rounded-full text-xl font-bold bg-primary hover:bg-primary/90 text-primary-foreground shadow-xl active:scale-[0.98] transition-all disabled:opacity-50"
       >
         {loading ? "Joining..." : "Join CogniCare"}

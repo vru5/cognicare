@@ -16,7 +16,8 @@ export function FormControl({
   suffix,
   children,
   id,
-  autoComplete
+  autoComplete,
+  error
 }: FormControlProps) {
   return (
     <div className={containerClass} onClick={onClick}>
@@ -36,6 +37,11 @@ export function FormControl({
         {suffix && suffix}
       </div>
       {children}
+      {error && (
+        <p className="text-xs font-bold text-destructive ml-1 mt-1 animate-in fade-in duration-300">
+          {error}
+        </p>
+      )}
     </div>
   );
 }

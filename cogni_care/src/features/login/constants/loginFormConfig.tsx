@@ -1,10 +1,10 @@
 import { Eye, EyeOff } from "lucide-react";
-import { EMAIL, EMAIL_PLACEHOLDER, PASSWORD, PASSWORD_PLACEHOLDER } from "@/constants/registerationPage";
+import { EMAIL_OR_PHONE_TEXT, EMAIL_PLACEHOLDER, PASSWORD, PASSWORD_PLACEHOLDER } from "@/constants/registerationPage";
 import { LoginFormConfigProps, LoginFieldConfig } from "../types/loginForm";
 
 export const getLoginFields = ({
-    email,
-    setEmail,
+    emailOrPhone,
+    setEmailOrPhone,
     password,
     setPassword,
     showPassword,
@@ -15,15 +15,15 @@ export const getLoginFields = ({
     return [
         {
             id: "email",
-            name: "email",
-            text: EMAIL,
+            name: "emailOrPhone",
+            text: EMAIL_OR_PHONE_TEXT,
             placeholder: EMAIL_PLACEHOLDER,
-            type: "email",
-            autoComplete: "email",
-            value: email,
+            type: "text",
+            autoComplete: "username",
+            value: emailOrPhone,
             required: true,
             onChange: (e: React.ChangeEvent<HTMLInputElement>) => {
-                setEmail(e.target.value);
+                setEmailOrPhone(e.target.value);
                 setError(null);
             },
         },

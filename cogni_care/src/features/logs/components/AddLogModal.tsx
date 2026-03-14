@@ -29,7 +29,7 @@ export default function AddLogModal({ isOpen, onClose, patientId, onSuccess }: A
 
         setIsSaving(true);
         try {
-            const result = await createManualLog(patientId, text, isCarer);
+            const result = await createManualLog(patientId, text, isCarer, user?.profileId || undefined);
             if (result.success) {
                 onSuccess(result.log);
                 setText("");

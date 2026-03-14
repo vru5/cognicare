@@ -25,6 +25,7 @@ export interface FormConfigProps {
   errorField: string;
   setErrorField: (v: string) => void;
   setError: (v: string) => void;
+  error?: string;
 }
 
 export interface RegisterationFormFieldsProps extends FormConfigProps {
@@ -34,21 +35,37 @@ export interface RegisterationFormFieldsProps extends FormConfigProps {
   passwordValid: boolean;
 }
 
-export interface RegistrationFieldConfig {
+export interface BaseFieldConfig {
   name: string;
   text?: string;
   placeholder?: string;
   required?: boolean;
-  type?: string;
-  value?: string;
-  onChange?: (val: any) => void;
-  suffix?: React.ReactNode;
-  children?: React.ReactNode;
   renderIf?: boolean;
-  isRole?: boolean;
-  isFamilySection?: boolean;
   containerClass?: string;
 }
+
+export interface InputFieldConfig extends BaseFieldConfig {
+  isRole?: false;
+  isFamilySection?: false;
+  type?: string;
+  value?: string;
+  onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  suffix?: React.ReactNode;
+  children?: React.ReactNode;
+}
+
+export interface RoleFieldConfig extends BaseFieldConfig {
+  isRole: true;
+  isFamilySection?: false;
+  onChange?: (val: "PATIENT" | "CARER") => void;
+}
+
+export interface SectionFieldConfig extends BaseFieldConfig {
+  isFamilySection: true;
+  isRole?: false;
+}
+
+export type RegistrationFieldConfig = InputFieldConfig | RoleFieldConfig | SectionFieldConfig;
 
 export interface FormControlProps {
   containerClass?: string;
@@ -66,6 +83,7 @@ export interface FormControlProps {
   children?: React.ReactNode;
   id?: string;
   autoComplete?: string;
+  error?: string;
 }
 
 export interface PasswordRulesConfig {

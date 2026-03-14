@@ -154,11 +154,18 @@ export const loginUser = async (body: { email: string; password: string }) => {
     throw new Error("Email and password are required");
   }
 
-  const user = await (prisma as any).user.findUnique({ where: { email } });
+  const user = await (prisma as any).user.findFirst({
+    where: {
+      OR: [
+        { email: email },
+        { phone: email },
+      ],
+    },
+  });
   console.log("LOGIN USER FOUND:", user ? `Yes (${user.id})` : "No");
 
   if (!user) {
-    throw new Error("Invalid email or password");
+    throw new Error("Invalid email or phone");
   }
 
   if (!user.password) {

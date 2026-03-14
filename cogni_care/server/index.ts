@@ -2,7 +2,7 @@ import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 
-import { getLogsAction, updateSymptomLogAction, createManualLogAction } from "./actions/logs/logsActions.js";
+import { getLogsAction, updateSymptomLogAction, createManualLogAction, addCarerCommentAction, deleteCarerLogAction } from "./actions/logs/logsActions.js";
 import { processBrainDumpAction } from "./actions/brain-dump/processActions.js";
 import { transcribeAudioAction } from "./actions/brain-dump/transcribeActions.js";
 import { registerUser, getProfileAction, loginUser } from "./actions/auth/authActions.js";
@@ -35,21 +35,41 @@ app.get("/api/logs", async (req, res) => {
 
 // POST /api/logs
 app.post("/api/logs", async (req, res) => {
-    const { patientId, rawText, isFromCarer } = req.body;
+    const { patientId, rawText, isFromCarer, carerId } = req.body;
     if (!patientId || !rawText) {
         return res.status(400).json({ success: false, error: "Missing required fields" });
     }
-    const result = await createManualLogAction({ patientId, rawText, isFromCarer });
+    const result = await createManualLogAction({ patientId, rawText, isFromCarer, carerId });
     res.json(result);
 });
 
 // PATCH /api/logs
 app.patch("/api/logs", async (req, res) => {
-    const { logId, newText, patientId, carerComment } = req.body;
-    if (!logId || !patientId) {
+    const { logId, newText, patientId, isFromCarer, carerId } = req.body;
+    if (!logId || !patientId || !newText) {
         return res.status(400).json({ success: false, error: "Missing required fields" });
     }
-    const result = await updateSymptomLogAction(logId, { newText, patientId, carerComment });
+    const result = await updateSymptomLogAction(logId, { newText, patientId, isFromCarer, carerId });
+    res.json(result);
+});
+
+// DELETE /api/logs
+app.delete("/api/logs", async (req, res) => {
+    const { logId, carerId, patientId } = req.body;
+    if (!logId || !carerId || !patientId) {
+        return res.status(400).json({ success: false, error: "Missing required fields" });
+    }
+    const result = await deleteCarerLogAction(logId, carerId, patientId);
+    res.json(result);
+});
+
+// POST /api/logs/comment
+app.post("/api/logs/comment", async (req, res) => {
+    const { logId, text, carerId } = req.body;
+    if (!logId || !text || !carerId) {
+        return res.status(400).json({ success: false, error: "Missing required fields" });
+    }
+    const result = await addCarerCommentAction(logId, { text, carerId });
     res.json(result);
 });
 
