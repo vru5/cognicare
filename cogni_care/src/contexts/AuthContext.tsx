@@ -1,8 +1,9 @@
 "use client";
 
+import { API_BASE_URL } from "@/constants/auth";
 import { createContext, useContext, useEffect, useState } from "react";
+import { RegistrationBody } from "server/types/authApi";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
 const AUTH_STORAGE_KEY = "cognicare_auth";
 
 export interface AuthUser {
@@ -17,7 +18,7 @@ interface AuthContextType {
     user: AuthUser | null;
     loading: boolean;
     login: (email: string, password: string) => Promise<AuthUser>;
-    register: (formData: any) => Promise<void>;
+    register: (formData: RegistrationBody) => Promise<void>;
     logout: () => void;
 }
 
@@ -53,7 +54,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }, []);
 
     const login = async (email: string, password: string) => {
-        const res = await fetch(`${API_URL}/api/auth/login`, {
+        const res = await fetch(`${API_BASE_URL}/api/auth/login`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ email, password }),
@@ -78,8 +79,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return authUser;
     };
 
-    const register = async (formData: any) => {
-        const res = await fetch(`${API_URL}/api/auth/register`, {
+    const register = async (formData: RegistrationBody) => {
+        const res = await fetch(`${API_BASE_URL}/api/auth/register`, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",

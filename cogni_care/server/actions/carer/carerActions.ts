@@ -13,6 +13,7 @@ export async function getCarerPatientsAction(carerProfileId: string) {
                             }
                         },
                         logs: {
+                            where: { isFromCarer: false },
                             orderBy: { createdAt: "desc" },
                             take: 1,
                             select: {

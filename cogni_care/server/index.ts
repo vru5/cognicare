@@ -2,7 +2,7 @@ import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 
-import { getLogsAction, updateSymptomLogAction } from "./actions/logs/logsActions.js";
+import { getLogsAction, updateSymptomLogAction, createManualLogAction } from "./actions/logs/logsActions.js";
 import { processBrainDumpAction } from "./actions/brain-dump/processActions.js";
 import { transcribeAudioAction } from "./actions/brain-dump/transcribeActions.js";
 import { registerUser, getProfileAction, loginUser } from "./actions/auth/authActions.js";
@@ -33,13 +33,23 @@ app.get("/api/logs", async (req, res) => {
     res.json(result);
 });
 
-// PATCH /api/logs
-app.patch("/api/logs", async (req, res) => {
-    const { logId, newText, patientId } = req.body;
-    if (!logId || !newText || !patientId) {
+// POST /api/logs
+app.post("/api/logs", async (req, res) => {
+    const { patientId, rawText, isFromCarer } = req.body;
+    if (!patientId || !rawText) {
         return res.status(400).json({ success: false, error: "Missing required fields" });
     }
-    const result = await updateSymptomLogAction(logId, newText, patientId);
+    const result = await createManualLogAction({ patientId, rawText, isFromCarer });
+    res.json(result);
+});
+
+// PATCH /api/logs
+app.patch("/api/logs", async (req, res) => {
+    const { logId, newText, patientId, carerComment } = req.body;
+    if (!logId || !patientId) {
+        return res.status(400).json({ success: false, error: "Missing required fields" });
+    }
+    const result = await updateSymptomLogAction(logId, { newText, patientId, carerComment });
     res.json(result);
 });
 

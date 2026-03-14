@@ -11,3 +11,8 @@ export interface Analysis {
     sleep?: string | null;
     social?: string | null;
 } 
+
+export interface SymptomRecord extends Analysis {
+    rawText: string;
+     carerComment?: string | null;
+}

@@ -1,3 +1,4 @@
+import { SymptomRecord } from './../../types/logsApi';
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { mask } from "@yellowsakura/js-pii-mask";
 import { prisma } from "../../lib/prisma.js";
@@ -80,8 +81,6 @@ export async function processBrainDumpAction(
       );
     }
 
-    // console.log(`Verifying Patient Profile for ID: "${patientId}"`);
-
     // We must check the Profile table because PAT- IDs are NOT in the User table
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const profile = await (prisma as any).profilePatient.findUnique({
@@ -96,7 +95,7 @@ export async function processBrainDumpAction(
       };
     }
 
-    const log = await prisma.symptomLog.create({
+    const log : SymptomRecord = await prisma.symptomLog.create({
       data: {
         patientId: profile.id,
         rawText: safeText,

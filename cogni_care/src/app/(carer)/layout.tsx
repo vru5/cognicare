@@ -8,7 +8,7 @@ export default function CarerLayout({
 }) {
     return (
         <ProtectedRoute>
-            <div className="pb-24">
+            <div className="pb-24 pt-[calc(2rem+env(safe-area-inset-top,0px))] px-4">
                 {children}
             </div>
             <BottomNavbar />

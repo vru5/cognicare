@@ -4,6 +4,8 @@ import Link from "next/link";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
+import { JOIN_CONGNICARE, SIGN_IN } from "@/constants/registerationPage";
+import { COGNICARE, EMPOWERING_SUB_HEADING, HEALTH_COMPANION_TEXT, INSIGHT_SUB_HEADING } from "@/constants/landingPage";
 
 export default function Home() {
   return (
@@ -48,11 +50,11 @@ export default function Home() {
         {/* Text Section */}
         <div className="space-y-4 mb-12">
           <h1 className="text-4xl sm:text-5xl font-black tracking-tight text-foreground">
-            CogniCare
+            {COGNICARE}
           </h1>
           <p className="text-muted-foreground text-lg sm:text-xl font-medium leading-relaxed">
-            Empowering caregivers & patients with <br />
-            <span className="text-primary font-bold italic">intelligent health insights.</span>
+            {EMPOWERING_SUB_HEADING} <br />
+            <span className="text-primary font-bold italic">{INSIGHT_SUB_HEADING}</span>
           </p>
         </div>
 
@@ -63,7 +65,7 @@ export default function Home() {
               size="lg"
               className="w-full h-16 rounded-full text-lg font-black bg-primary text-foreground shadow-[0_10px_25px_rgba(var(--primary),0.3)] hover:scale-[1.02] transition-all"
             >
-              Join CogniCare
+              {JOIN_CONGNICARE}
             </Button>
           </Link>
 
@@ -73,7 +75,7 @@ export default function Home() {
               size="lg"
               className="w-full h-16 rounded-full text-lg font-black border-2 border-primary/20 text-primary hover:bg-primary/5 transition-all"
             >
-              Sign In
+              {SIGN_IN}
             </Button>
           </Link>
         </div>
@@ -85,7 +87,7 @@ export default function Home() {
           transition={{ delay: 1, duration: 1 }}
           className="mt-12 text-xs font-black uppercase tracking-[0.2em] text-muted-foreground"
         >
-          Your personal health companion
+          {HEALTH_COMPANION_TEXT}
         </motion.p>
       </motion.div>
     </div>

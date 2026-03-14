@@ -5,6 +5,8 @@ export interface LogSumaryCard extends Record<SymptomPillar, string | null | und
     createdAt: Date | string;
     patientId: string;
     rawText: string;
+    carerComment?: string | null;
+    isFromCarer?: boolean;
 };
 
 export type MoodPillarsConfig = Partial<Record<SymptomPillar, Config>>;

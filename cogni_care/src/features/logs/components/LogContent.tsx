@@ -1,7 +1,8 @@
+"use client";
+
 import LogsView from "./LogsView";
 import { useAuth } from "@/contexts/AuthContext";
 import { getLogs } from "@/features/logs/services/logsService";
-import { useSearchParams } from "next/navigation";
 import { LogSumaryCard } from "@/features/logs/types/logSummaryCard";
 import { EMPTY_LOGS, LOADING_LOGS } from "@/constants/logPage";
 import { useEffect, useState } from "react";
@@ -12,21 +13,25 @@ import { useEffect, useState } from "react";
  */
 export default function LogsContent() {
     const { user, loading: authLoading } = useAuth();
-    const searchParams = useSearchParams();
-    const urlPatientId = searchParams.get("patientId");
 
     const [logs, setLogs] = useState<LogSumaryCard[]>([]);
     const [finalPatientId, setFinalPatientId] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        const controller = new AbortController();
         async function fetchLogs() {
             if (authLoading) return;
             try {
-                // Priority: 
-                // 1. patientId from URL (for carers)
-                // 2. profileId from user context (for patients)
+                // For static export / Capacitor apps, useSearchParams() always returns null.
+                // Read query params directly from window.location.search instead.
+                const urlParams = typeof window !== "undefined"
+                    ? new URLSearchParams(window.location.search)
+                    : null;
+                const urlPatientId = urlParams?.get("patientId") ?? null;
+
+                // Priority:
+                // 1. patientId from URL (for carers viewing a patient)
+                // 2. profileId from user context (for patients viewing their own logs)
                 const targetId = urlPatientId || user?.profileId;
 
                 if (!targetId) {
@@ -46,8 +51,7 @@ export default function LogsContent() {
             }
         }
         fetchLogs();
-        return () => controller.abort();
-    }, [user, authLoading, urlPatientId]);
+    }, [user, authLoading]);
 
     if (loading) {
         return (

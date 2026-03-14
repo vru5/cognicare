@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { Loader2, User, ChevronRight } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import Link from "next/link";
-import { EMPTY_LIST_SUBHEADING, EMPTY_PATIENT_LIST, HEADING, PATIENT_ID, SUB_HEADING } from "@/constants/dashboard";
+import { EMPTY_LIST_SUBHEADING, EMPTY_PATIENT_LIST, HEADING, PATIENT_ID, SUB_HEADING } from "@/constants/carerLandingPage";
 import { API_BASE_URL } from "@/constants/auth";
 
 interface Patient {

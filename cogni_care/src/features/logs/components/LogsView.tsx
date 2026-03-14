@@ -1,15 +1,18 @@
+/* eslint-disable react-hooks/set-state-in-effect */
+/* eslint-disable react-hooks/immutability */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import LogEntryCard from "@/features/logs/components/LogEntryCard";
-import { ChevronLeft, ChevronRight, ArrowLeft } from "lucide-react";
+import AddLogModal from "@/features/logs/components/AddLogModal";
+import { ChevronLeft, ChevronRight, ArrowLeft, Plus } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "next/navigation";
 import { LogSumaryCard } from "../types/logSummaryCard";
-import { BACK_BUTTON, EMPTY_DAY_LOG_TEXT, LOGS_TEXT, SELECTED_DATE_ENTRIES } from "@/constants/logPage";
+import { ADD_LOG_TEXT, BACK_BUTTON, EMPTY_DAY_LOG_TEXT, SELECTED_DATE_ENTRIES } from "@/constants/logPage";
 
 type LogViewType = "day" | "week" | "month";
 
@@ -19,19 +22,19 @@ export default function LogsView({ initialLogs, patientId }: { initialLogs: LogS
     const [viewMode, setViewMode] = useState<LogViewType>("day");
     const [logs, setLogs] = useState<LogSumaryCard[]>([]);
     const [mounted, setMounted] = useState(false);
-
-    // Sync logs state when initialLogs prop changes (e.g. switching patients)
-    useEffect(() => {
-        // eslint-disable-next-line react-hooks/set-state-in-effect
-        setLogs(initialLogs || []);
-        setMounted(true);
-    }, [initialLogs]);
+    const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
     const today = useMemo(() => new Date(), []);
     // currentDate controls which month/week we are viewing
     const [currentDate, setCurrentDate] = useState(() => new Date(today));
     // selectedDate is the exact day we are viewing logs for
     const [selectedDate, setSelectedDate] = useState(() => new Date(today));
+
+    // Sync logs state when initialLogs prop changes (e.g. switching patients)
+    useEffect(() => {
+        setLogs(initialLogs || []);
+        setMounted(true);
+    }, [initialLogs]);
 
     // Carousel direction: 1 for right (next), -1 for left (prev)
     const [direction, setDirection] = useState(0);
@@ -69,6 +72,10 @@ export default function LogsView({ initialLogs, patientId }: { initialLogs: LogS
         setLogs(currentLogs =>
             currentLogs.map(log => log.id === updatedLog.id ? updatedLog : log)
         );
+    };
+
+    const handleAddLog = (newLog: LogSumaryCard) => {
+        setLogs(currentLogs => [newLog, ...currentLogs]);
     };
 
     // Helper to check if two dates are the same day
@@ -162,7 +169,7 @@ export default function LogsView({ initialLogs, patientId }: { initialLogs: LogS
     };
 
     return (
-        <div className="w-full max-w-xl mx-auto p-4 sm:p-6 min-h-screen flex flex-col gap-6 text-foreground overflow-hidden">
+        <div className="w-full max-w-xl mx-auto p-4 sm:p-6 min-h-screen flex flex-col gap-6 text-foreground">
             {user?.isCarer && (
                 <Button
                     variant="ghost"
@@ -279,13 +286,23 @@ export default function LogsView({ initialLogs, patientId }: { initialLogs: LogS
 
             {/* Logs List for Selected Date */}
             <div className="flex-1 space-y-4">
-                <div className="flex items-center justify-between border-b border-border pb-2">
-                    <h3 className="text-foreground font-bold uppercase tracking-wider text-sm">
+                <div className="flex items-center justify-between border-b border-border pb-4">
+                    <h3 className="text-foreground font-black uppercase tracking-widest text-sm flex items-center gap-2">
                         {SELECTED_DATE_ENTRIES} {mounted && selectedDate.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                        <span className="text-[10px] font-black bg-muted px-2 py-1 rounded-full text-muted-foreground">
+                            {selectedLogs.length}
+                        </span>
                     </h3>
-                    <span className="text-xs font-bold text-muted-foreground bg-muted px-2 py-1 rounded-full">
-                        {selectedLogs.length} {LOGS_TEXT}
-                    </span>
+                    {user?.isCarer && (
+                        <Button
+                            size="sm"
+                            onClick={() => setIsAddModalOpen(true)}
+                            className="rounded-full bg-primary text-white shadow-md shadow-primary/20 flex items-center gap-2 hover:scale-105 transition-transform px-4"
+                        >
+                            <Plus className="w-4 h-4" />
+                            <span className="text-xs font-black uppercase tracking-wider">{ADD_LOG_TEXT}</span>
+                        </Button>
+                    )}
                 </div>
 
                 <div className="space-y-4 pt-2">
@@ -299,13 +316,25 @@ export default function LogsView({ initialLogs, patientId }: { initialLogs: LogS
                             />
                         ))
                     ) : (
-                        <div className="text-center text-muted-foreground py-12 flex flex-col items-center">
-                            <span className="text-4xl mb-3 opacity-20">📝</span>
-                            <p>{EMPTY_DAY_LOG_TEXT}</p>
+                        <div className="text-center text-muted-foreground py-16 flex flex-col items-center bg-muted/30 rounded-[2.5rem] border-2 border-dashed border-muted">
+                            <span className="text-4xl mb-4 grayscale opacity-30">✍️</span>
+                            <p className="font-bold uppercase tracking-widest text-xs opacity-60 px-8 text-center leading-loose">
+                                {EMPTY_DAY_LOG_TEXT}
+                            </p>
                         </div>
                     )}
                 </div>
             </div>
+
+            {user?.isCarer && (
+                <AddLogModal
+                    isOpen={isAddModalOpen}
+                    onClose={() => setIsAddModalOpen(false)}
+                    patientId={patientId}
+                    onSuccess={handleAddLog}
+                />
+            )}
         </div>
     );
 }
+

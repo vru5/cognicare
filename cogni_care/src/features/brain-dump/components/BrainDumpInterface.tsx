@@ -1,26 +1,26 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import { useRouter } from "next/navigation";
 import { useVoiceCapture } from "../hooks/useVoiceCapture";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { Loader2, Mic, Send } from "lucide-react";
+import { Loader2, Mic } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import SummaryCard from "./SummaryCard";
 import { processBrainDump } from "../services/processText";
 import { transcribeAudio } from "../services/google-transcribe";
+import { ANALYZING_TEXT, MIND_DUMP, MIND_DUMP_SUB_HEADING, PROCESS_WRITTEN_ENTRY, PROCESSING_ENTRY_TEXT, RECORDING, TEXTAREA_PLACEHOLDER, TYPE_MANUALLY, VOICE_DUMP_TEXT } from "@/constants/brainDumpPage";
+import { AnalysisCard } from "../types/analysisSummaryCard";
 
 export default function BrainDumpInterface() {
   const { user } = useAuth();
-  const router = useRouter();
   // Read profileId directly from session
   const patientId = user?.profileId ?? null;
 
   const [text, setText] = useState("");
   const [processedText, setProcessedText] = useState("");
-  const [summary, setSummary] = useState<any>(null);
+  const [summary, setSummary] = useState<AnalysisCard | null>(null);
   const [isFocused, setIsFocused] = useState(false);
 
   const [isVoiceAnalyzing, setIsVoiceAnalyzing] = useState(false);
@@ -163,10 +163,10 @@ export default function BrainDumpInterface() {
       <div className="flex-1 flex flex-col gap-10">
         <div className="text-center space-y-3 sm:space-y-4">
           <h1 className="text-3xl font-black tracking-tight sm:text-6xl text-foreground leading-none">
-            Mind Dump
+            {MIND_DUMP}
           </h1>
           <p className="text-muted-foreground text-lg sm:text-xl max-w-xl mx-auto px-2">
-            Speak or type your raw thoughts. Let us organize the insights.
+            {MIND_DUMP_SUB_HEADING}
           </p>
         </div>
 
@@ -222,14 +222,14 @@ export default function BrainDumpInterface() {
                 />
                 {isVoiceAnalyzing && !isVisuallyRecording && (
                   <span className="text-xs sm:text-sm font-black uppercase tracking-widest text-primary flex items-center gap-2 mt-2">
-                    <Loader2 className="h-4 w-4 animate-spin" /> Analyzing
+                    <Loader2 className="h-4 w-4 animate-spin" /> {ANALYZING_TEXT}
                   </span>
                 )}
               </div>
             </Button>
 
             <p className="absolute -bottom-14 left-1/2 -translate-x-1/2 text-foreground font-bold uppercase tracking-widest text-sm whitespace-nowrap">
-              {isVisuallyRecording ? "Recording..." : "Tap for Voice Dump"}
+              {isVisuallyRecording ? `${RECORDING}` : `${VOICE_DUMP_TEXT}`}
             </p>
           </div>
         </div>
@@ -237,7 +237,7 @@ export default function BrainDumpInterface() {
         <div className="flex items-center justify-center gap-4 opacity-60 my-2">
           <div className="h-px bg-border flex-1 max-w-[100px]" />
           <span className="text-muted-foreground font-black uppercase tracking-widest text-xs whitespace-nowrap">
-            Or type manually
+            {TYPE_MANUALLY}
           </span>
           <div className="h-px bg-border flex-1 max-w-[100px]" />
         </div>
@@ -246,7 +246,7 @@ export default function BrainDumpInterface() {
         <div className="w-full space-y-4 sm:space-y-6 pb-12">
           <div className="rounded-t-[2.5rem] sm:rounded-t-[3rem] bg-card/80 backdrop-blur-md border-t border-border p-6 sm:p-8">
             <Textarea
-              placeholder="How are you feeling today? e.g., 'Feeling a bit dizzy'..."
+              placeholder={TEXTAREA_PLACEHOLDER}
               value={text}
               onFocus={() => setIsFocused(true)}
               onChange={(e) => setText(e.target.value)}
@@ -260,7 +260,7 @@ export default function BrainDumpInterface() {
                     <div className="absolute inset-0 blur-xl bg-primary/20 animate-pulse rounded-full" />
                   </div>
                   <p className="text-primary font-black uppercase tracking-widest">
-                    Processing entry...
+                    {PROCESSING_ENTRY_TEXT}
                   </p>
                 </div>
               </div>
@@ -274,7 +274,7 @@ export default function BrainDumpInterface() {
               disabled={!text || isTextAnalyzing || isVoiceAnalyzing}
               className="px-12 h-16 rounded-full text-lg font-black shadow-[0_10px_30px_rgba(var(--primary),0.3)] bg-primary text-foreground hover:translate-y-[-2px] active:translate-y-0 transition-all"
             >
-              Process Written Entry
+              {PROCESS_WRITTEN_ENTRY}
             </Button>
           </div>
         </div>

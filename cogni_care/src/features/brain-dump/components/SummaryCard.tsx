@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { ANALYSIS_PILLAR, CLEAR } from "@/constants/brainDumpPage";
 import { Activity, Smile, Brain, Moon, Users } from "lucide-react";
 
 export default function SummaryCard({ handleReset, summary }: any) {
@@ -31,7 +32,7 @@ export default function SummaryCard({ handleReset, summary }: any) {
         <div className="flex justify-between items-center mb-6 sm:mb-8">
           <div className="space-y-1">
             <h3 className="text-2xl sm:text-3xl font-black text-secondary-foreground tracking-tight uppercase">
-              Analysis Pillars
+              {ANALYSIS_PILLAR}
             </h3>
             {summary.message && (
               <p className="text-sm font-medium text-muted-foreground/80 italic">
@@ -45,7 +46,7 @@ export default function SummaryCard({ handleReset, summary }: any) {
             onClick={handleReset}
             className="rounded-full h-10 px-6 text-sm font-bold border-2 hover:bg-destructive hover:text-white transition-all"
           >
-            Clear
+            {CLEAR}
           </Button>
         </div>
 
