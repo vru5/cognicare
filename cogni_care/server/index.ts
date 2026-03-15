@@ -2,7 +2,8 @@ import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 
-import { getLogsAction, updateSymptomLogAction, createManualLogAction, addCarerCommentAction, deleteCarerLogAction } from "./actions/logs/logsActions.js";
+import { prisma } from "./lib/prisma.js";
+import { getLogsAction, updateSymptomLogAction, createManualLogAction, addCarerCommentAction, deleteCarerNoteAction } from "./actions/logs/logsActions.js";
 import { processBrainDumpAction } from "./actions/brain-dump/processActions.js";
 import { transcribeAudioAction } from "./actions/brain-dump/transcribeActions.js";
 import { registerUser, getProfileAction, loginUser } from "./actions/auth/authActions.js";
@@ -53,16 +54,6 @@ app.patch("/api/logs", async (req, res) => {
     res.json(result);
 });
 
-// DELETE /api/logs
-app.delete("/api/logs", async (req, res) => {
-    const { logId, carerId, patientId } = req.body;
-    if (!logId || !carerId || !patientId) {
-        return res.status(400).json({ success: false, error: "Missing required fields" });
-    }
-    const result = await deleteCarerLogAction(logId, carerId, patientId);
-    res.json(result);
-});
-
 // POST /api/logs/comment
 app.post("/api/logs/comment", async (req, res) => {
     const { logId, text, carerId } = req.body;
@@ -73,7 +64,25 @@ app.post("/api/logs/comment", async (req, res) => {
     res.json(result);
 });
 
-// POST /api/brain-dump/process
+// DELETE /api/logs/carer-note
+app.delete("/api/logs/carer-note", async (req, res) => {
+    const { noteId, carerId, patientId } = req.body;
+    if (!noteId || !carerId || !patientId) {
+        return res.status(400).json({ success: false, error: "Missing required fields" });
+    }
+    const result = await deleteCarerNoteAction(noteId, carerId, patientId);
+    res.json(result);
+});
+
+// DELETE /api/logs/comment (legacy but redirecting to note)
+app.delete("/api/logs/comment", async (req, res) => {
+    const { commentId, carerId, patientId } = req.body;
+    if (!commentId || !carerId || !patientId) {
+        return res.status(400).json({ success: false, error: "Missing required fields" });
+    }
+    const result = await deleteCarerNoteAction(commentId, carerId, patientId);
+    res.json(result);
+});
 app.post("/api/brain-dump/process", async (req, res) => {
     const { rawText, patientId } = req.body;
     if (!rawText || !patientId) {
@@ -146,6 +155,29 @@ app.post("/api/carer/mark-viewed", async (req, res) => {
     }
     const result = await markPatientAsViewedAction(carerProfileId, patientId);
     res.json(result);
+});
+
+// POST /api/auth/push-token
+app.post("/api/auth/push-token", async (req, res) => {
+    const { profileId, pushToken } = req.body;
+    if (!profileId || !pushToken) {
+        return res.status(400).json({ success: false, error: "Missing required fields" });
+    }
+    
+    try {
+        if (!profileId.startsWith("PAT-")) {
+            return res.status(400).json({ success: false, error: "Only patients can register push tokens" });
+        }
+        
+        await prisma.profilePatient.update({
+            where: { id: profileId },
+            data: { pushToken }
+        });
+        res.json({ success: true });
+    } catch (error) {
+        console.error("Failed to register push token:", error);
+        res.status(500).json({ success: false, error: "Failed to register push token" });
+    }
 });
 
 app.listen(port, () => {

@@ -3,6 +3,7 @@
 import { API_BASE_URL } from "@/constants/auth";
 import { createContext, useContext, useEffect, useState } from "react";
 import { RegistrationBody } from "server/types/authApi";
+import { useSecureStorage } from "@/hooks/useSecureStorage";
 
 const AUTH_STORAGE_KEY = "cognicare_auth";
 
@@ -33,25 +34,29 @@ const AuthContext = createContext<AuthContextType>({
 export function AuthProvider({ children }: { children: React.ReactNode }) {
     const [user, setUser] = useState<AuthUser | null>(null);
     const [loading, setLoading] = useState(true);
+    const { setItem, getItem, removeItem } = useSecureStorage();
 
-    // Rehydrate from localStorage on mount
+    // Rehydrate from secure storage on mount
     useEffect(() => {
-        try {
-            const stored = localStorage.getItem(AUTH_STORAGE_KEY);
-            if (stored) {
-                const parsedUser = JSON.parse(stored) as AuthUser;
-                // Ensure isCarer is correctly set even if rehydrating from an old version of the object
-                if (parsedUser && typeof parsedUser.isCarer === "undefined") {
-                    parsedUser.isCarer = parsedUser.role === "CARER";
+        const rehydrate = async () => {
+            try {
+                const stored = await getItem(AUTH_STORAGE_KEY);
+                if (stored) {
+                    const parsedUser = JSON.parse(stored) as AuthUser;
+                    // Ensure isCarer is correctly set even if rehydrating from an old version of the object
+                    if (parsedUser && typeof parsedUser.isCarer === "undefined") {
+                        parsedUser.isCarer = parsedUser.role === "CARER";
+                    }
+                    setUser(parsedUser);
                 }
-                setUser(parsedUser);
+            } catch {
+                // ignore parse errors
+            } finally {
+                setLoading(false);
             }
-        } catch {
-            // ignore parse errors
-        } finally {
-            setLoading(false);
-        }
-    }, []);
+        };
+        rehydrate();
+    }, [getItem]);
 
     const login = async (email: string, password: string) => {
         const res = await fetch(`${API_BASE_URL}/api/auth/login`, {
@@ -74,7 +79,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             isCarer: data.role === "CARER",
         };
 
-        localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(authUser));
+        await setItem(AUTH_STORAGE_KEY, JSON.stringify(authUser));
         setUser(authUser);
         return authUser;
     };
@@ -94,8 +99,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
     };
 
-    const logout = () => {
-        localStorage.removeItem(AUTH_STORAGE_KEY);
+    const logout = async () => {
+        await removeItem(AUTH_STORAGE_KEY);
         setUser(null);
     };
 

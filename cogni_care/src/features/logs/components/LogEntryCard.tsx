@@ -101,7 +101,7 @@ export default function LogEntryCard({ log, patientId, onUpdate, onDelete }: { l
             {log.isFromCarer && (
                 <div className="absolute top-0 right-0 bg-primary/10 text-primary px-4 py-1.5 rounded-bl-2xl text-[10px] font-black uppercase tracking-widest flex items-center gap-1.5">
                     <BadgeCheck className="w-3 h-3" />
-                    Added by Carer
+                    Added by {log.carerName || "Carer"}
                 </div>
             )}
 
@@ -165,13 +165,19 @@ export default function LogEntryCard({ log, patientId, onUpdate, onDelete }: { l
                     )}
 
                     {/* Carer Comment Section */}
-                    {log.type === "patient" && (isCarer || (log.comments && log.comments.length > 0)) && (
+                    {log.type === "patient" && (isCarer || (log.notes && log.notes.length > 0) || (log.comments && log.comments.length > 0)) && (
                         <div className="mt-6 pt-6 border-t border-slate-100 space-y-4">
                             <div className="flex items-center justify-between">
-                                {(log.comments && log.comments.length > 0) || isCommenting ? (
+                                {(log.notes && log.notes.length > 0) || (log.comments && log.comments.length > 0) || isCommenting ? (
                                     <div className="flex items-center gap-2 text-primary">
                                         <MessageSquare className="w-5 h-5" />
-                                        <h4 className="text-sm font-black uppercase tracking-widest">{CARER_NOTE}</h4>
+                                        <h4 className="text-sm font-black uppercase tracking-widest">
+                                            {(log.notes && log.notes.length > 0) || (log.comments && log.comments.length > 0)
+                                                ? `${(log.notes?.[0] || log.comments?.[0])?.carerName || "Carer"}'s Note`
+                                                : isCarer && user?.name
+                                                    ? `${user.name}'s ${CARER_NOTE}`
+                                                    : CARER_NOTE}
+                                        </h4>
                                     </div>
                                 ) : (
                                     <div />
@@ -208,9 +214,9 @@ export default function LogEntryCard({ log, patientId, onUpdate, onDelete }: { l
                                 </div>
                             )}
 
-                            {log.comments && log.comments.length > 0 ? (
+                            {((log.notes && log.notes.length > 0) || (log.comments && log.comments.length > 0)) ? (
                                 <div className="space-y-3">
-                                    {log.comments.map((comment) => (
+                                    {(log.notes || log.comments || []).map((comment) => (
                                         <div key={comment.id} className="bg-primary/5 p-4 rounded-2xl border border-primary/10 space-y-1 relative group">
                                             <div className="flex justify-between items-center text-[10px] font-bold text-primary/60 uppercase">
                                                 <span>{comment.carerName || "Carer"}</span>
@@ -220,8 +226,8 @@ export default function LogEntryCard({ log, patientId, onUpdate, onDelete }: { l
                                                         <button 
                                                             onClick={async () => {
                                                                 if (!confirm("Delete this note?")) return;
-                                                                const { deleteCarerComment } = await import("@/features/logs/services/logsService");
-                                                                const result = await deleteCarerComment(comment.id, profileId, log.patientId);
+                                                                const { deleteCarerNote } = await import("@/features/logs/services/logsService");
+                                                                const result = await deleteCarerNote(comment.id, profileId, log.patientId);
                                                                 if (result.success) {
                                                                     onUpdate(result.log);
                                                                 } else {

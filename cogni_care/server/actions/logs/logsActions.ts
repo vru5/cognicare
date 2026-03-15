@@ -1,18 +1,20 @@
-import { LogSumaryCard } from "@/features/logs/types/logSummaryCard";
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import { CarerNote, LogSumaryCard } from "@/features/logs/types/logSummaryCard";
 import { prisma } from "../../lib/prisma";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { mask } from "@yellowsakura/js-pii-mask";
 import { ApiError } from "next/dist/server/api-utils";
 import { Analysis, SymptomRecord, SymptomLogUpdateData } from "../../types/logsApi";
 import { markPatientAsViewedAction } from "../carer/carerActions";
+import { sendPushNotificationAction } from "../../lib/notificationService";
 
 export async function getLogsAction(patientId: string) {
     try {
-        const [symptomLogs, carerLogs] = await Promise.all([
+        const [symptomLogs, carerNotes] = await Promise.all([
             prisma.symptomLog.findMany({
                 where: { patientId },
                 include: {
-                    comments: {
+                    notes: {
                         include: {
                             carer: {
                                 include: { user: { select: { name: true } } },
@@ -23,8 +25,8 @@ export async function getLogsAction(patientId: string) {
                 },
                 orderBy: { createdAt: "desc" },
             }),
-            prisma.carerLog.findMany({
-                where: { patientId },
+            prisma.carerNote.findMany({
+                where: { patientId, logId: null },
                 include: {
                     carer: {
                         include: { user: { select: { name: true } } },
@@ -37,7 +39,7 @@ export async function getLogsAction(patientId: string) {
         const formattedSymptomLogs = symptomLogs.map((log) => ({
             ...log,
             type: "patient" as const,
-            comments: log.comments.map((c) => ({
+            comments: log.notes.map((c) => ({
                 id: c.id,
                 createdAt: c.createdAt,
                 text: c.text,
@@ -46,11 +48,11 @@ export async function getLogsAction(patientId: string) {
             })),
         }));
 
-        const formattedCarerLogs = carerLogs.map((log) => ({
+        const formattedCarerLogs = carerNotes.map((log) => ({
             id: log.id,
             createdAt: log.createdAt,
             patientId: log.patientId,
-            rawText: log.rawText,
+            rawText: log.text,
             isFromCarer: true,
             type: "carer" as const,
             carerName: log.carer.user.name ?? undefined,
@@ -88,11 +90,12 @@ export async function createManualLogAction(data: {
             // Mark patient as viewed for this carer since they are interacting with it
             await markPatientAsViewedAction(carerId, patientId);
 
-            const log = await prisma.carerLog.create({
+            const log = await prisma.carerNote.create({
                 data: {
                     patientId,
                     carerId,
-                    rawText,
+                    text: rawText,
+                    logId: null,
                 },
                 include: {
                     carer: { include: { user: { select: { name: true } } } },
@@ -102,9 +105,11 @@ export async function createManualLogAction(data: {
                 success: true,
                 log: {
                     ...log,
+                    rawText: log.text,
                     type: "carer" as const,
                     isFromCarer: true,
-                    carerName: log.carer.user.name,
+                    carerName: log.carer.user.name ?? "Carer",
+                    carerId: log.carerId,
                     physical: null,
                     mood: null,
                     cognitive: null,
@@ -171,7 +176,7 @@ Log: "${safeText}"`;
                 social: analysis.social || null,
             },
             include: {
-                comments: true,
+                notes: true,
             },
         });
 
@@ -215,24 +220,28 @@ export async function updateSymptomLogAction(
                 where: { id: logId },
                 data: { rawText: newText },
                 include: {
-                    comments: {
+                    notes: {
                         include: {
                             carer: { include: { user: { select: { name: true } } } },
                         },
                     },
                 },
             });
+
+            // Cast to include notes property that TypeScript might struggle to infer correctly from prisma.update
+            const logWithNotes = updatedLog as typeof updatedLog & { notes: CarerNote[] };
+
             return {
                 success: true,
                 log: {
-                    ...updatedLog,
+                    ...(logWithNotes as unknown as SymptomRecord),
                     type: "patient" as const,
-                    comments: updatedLog.comments.map((c) => ({
+                    comments: logWithNotes.notes.map((c) => ({
                         id: c.id,
                         createdAt: c.createdAt,
                         text: c.text,
                         carerId: c.carerId,
-                        carerName: c.carer.user.name ?? undefined,
+                        carerName: (c as any).carer?.user?.name ?? undefined,
                     })),
                 },
             };
@@ -299,23 +308,26 @@ export async function updateSymptomLogAction(
             where: { id: logId },
             data: updateData,
             include: {
-                comments: {
+                notes: {
                     include: { carer: { include: { user: { select: { name: true } } } } },
                 },
             },
         });
 
+        const logWithNotes = updatedLog as typeof updatedLog & { notes: CarerNote[] };
+
         return {
             success: true,
             log: {
-                ...updatedLog,
+                ...(logWithNotes as unknown as SymptomRecord),
                 type: "patient" as const,
-                comments: updatedLog.comments.map((c) => ({
+                comments: logWithNotes.notes.map((c) => ({
                     id: c.id,
                     createdAt: c.createdAt,
                     text: c.text,
                     carerId: c.carerId,
-                    carerName: c.carer.user.name ?? undefined,
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    carerName: (c as any).carer?.user?.name ?? undefined,
                 })),
             },
         };
@@ -337,41 +349,50 @@ export async function addCarerCommentAction(
             where: { id: logId },
             select: { patientId: true },
         });
-        if (existingLog) {
-            await markPatientAsViewedAction(carerId, existingLog.patientId);
+        if (!existingLog) {
+            return { success: false, error: "Log not found" };
         }
+        const patientIdFromLog = existingLog.patientId;
+        await markPatientAsViewedAction(carerId, patientIdFromLog);
 
-        const comment = await prisma.carerComment.create({
+        const note = await prisma.carerNote.create({
             data: {
                 logId,
                 carerId,
                 text,
+                patientId: patientIdFromLog,
             },
             include: {
+                carer: { include: { user: { select: { name: true } } } },
                 log: {
                     include: {
-                        comments: {
+                        notes: {
                             include: {
                                 carer: { include: { user: { select: { name: true } } } },
                             },
+                            orderBy: { createdAt: "asc" },
                         },
                     },
                 },
             },
         });
 
+        // Trigger push notification via Supabase Edge Function
+        await sendPushNotificationAction(note.id);
+
         return {
             success: true,
             log: {
-                ...comment.log,
+                ...note.log,
                 type: "patient" as const,
-                comments: comment.log.comments.map((c) => ({
+                carerName: undefined, // SymptomLog doesn't have a single creator carer
+                comments: note.log?.notes.map((c) => ({
                     id: c.id,
                     createdAt: c.createdAt,
                     text: c.text,
                     carerId: c.carerId,
                     carerName: c.carer.user.name ?? undefined,
-                })),
+                })) || [],
             },
         };
     } catch (error) {
@@ -380,75 +401,57 @@ export async function addCarerCommentAction(
     }
 }
 
-export async function deleteCarerLogAction(logId: string, carerId: string, patientId: string) {
+export async function deleteCarerNoteAction(noteId: string, carerId: string, patientId: string) {
     try {
-        const log = await prisma.carerLog.findUnique({
-             where: { id: logId }
-        });
-
-        if (!log || log.patientId !== patientId || log.carerId !== carerId) {
-             return { success: false, error: "Log not found or unauthorized" };
-        }
-
-        await prisma.carerLog.delete({
-            where: { id: logId }
-        });
-
-        return { success: true };
-    } catch (error) {
-        console.error("Failed to delete carer log:", error);
-        return { success: false, error: "Failed to delete log" };
-    }
-}
-
-export async function deleteCarerCommentAction(commentId: string, carerId: string, patientId: string) {
-    try {
-        const comment = await prisma.carerComment.findUnique({
-            where: { id: commentId },
+        const note = await prisma.carerNote.findUnique({
+            where: { id: noteId },
             include: { log: true }
         });
 
-        if (!comment || comment.carerId !== carerId || comment.log.patientId !== patientId) {
-            return { success: false, error: "Comment not found or unauthorized" };
+        if (!note || note.carerId !== carerId || note.patientId !== patientId) {
+            return { success: false, error: "Note not found or unauthorized" };
         }
 
-        await prisma.carerComment.delete({
-            where: { id: commentId }
+        await prisma.carerNote.delete({
+            where: { id: noteId }
         });
 
-        // Fetch updated log to return to frontend
-        const updatedLog = await prisma.symptomLog.findUnique({
-            where: { id: comment.logId },
-            include: {
-                comments: {
-                    include: {
-                        carer: { include: { user: { select: { name: true } } } },
+        if (note.logId) {
+            // Fetch updated log to return to frontend if it was a comment
+            const updatedLog = await prisma.symptomLog.findUnique({
+                where: { id: note.logId },
+                include: {
+                    notes: {
+                        include: {
+                            carer: { include: { user: { select: { name: true } } } },
+                        },
+                        orderBy: { createdAt: "asc" },
                     },
-                    orderBy: { createdAt: "asc" },
                 },
-            },
-        });
+            });
 
-        if (!updatedLog) {
-            return { success: true }; // Comment deleted, but log gone? Unexpected but success.
+            if (updatedLog) {
+                const logWithNotes = updatedLog as typeof updatedLog & { notes: CarerNote[] };
+                return {
+                    success: true,
+                    log: {
+                        ...(logWithNotes as unknown as SymptomRecord),
+                        type: "patient" as const,
+                        comments: logWithNotes.notes.map((c: CarerNote) => ({
+                            id: c.id,
+                            createdAt: c.createdAt,
+                            text: c.text,
+                            carerId: c.carerId,
+                            carerName: (c as any).carer?.user?.name ?? undefined,
+                        })),
+                    },
+                };
+            }
         }
 
-        return {
-            success: true,
-            log: {
-                ...updatedLog,
-                type: "patient" as const,
-                comments: updatedLog.comments.map((c) => ({
-                    id: c.id,
-                    createdAt: c.createdAt,
-                    text: c.text,
-                    carerId: c.carerId,
-                    carerName: c.carer.user.name ?? undefined,
-                })),
-            },
-        };
+        return { success: true };
     } catch (error) {
-        console.error("Failed to delete carer comment:", error);
-        return { success: false, error: "Failed to delete comment" };
+        console.error("Failed to delete carer note:", error);
+        return { success: false, error: "Failed to delete note" };
     }
 }

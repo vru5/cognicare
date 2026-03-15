@@ -2,58 +2,47 @@
 
 import LogsView from "./LogsView";
 import { useAuth } from "@/contexts/AuthContext";
-import { getLogs } from "@/features/logs/services/logsService";
-import { LogSumaryCard } from "@/features/logs/types/logSummaryCard";
+import { useLogs } from "@/contexts/LogsContext";
 import { EMPTY_LOGS, LOADING_LOGS } from "@/constants/logPage";
 import { useEffect, useState } from "react";
 
 /**
- * Displays the logs content
+ * Displays the logs content using useLogs for caching and memoization
  * @returns 
  */
 export default function LogsContent() {
     const { user, loading: authLoading } = useAuth();
+    const { fetchLogs, getCachedLogs, hasFetched, loading: logsLoading } = useLogs();
 
-    const [logs, setLogs] = useState<LogSumaryCard[]>([]);
     const [finalPatientId, setFinalPatientId] = useState<string | null>(null);
-    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        async function fetchLogs() {
+        async function loadLogs() {
             if (authLoading) return;
-            try {
-                // For static export / Capacitor apps, useSearchParams() always returns null.
-                // Read query params directly from window.location.search instead.
-                const urlParams = typeof window !== "undefined"
-                    ? new URLSearchParams(window.location.search)
-                    : null;
-                const urlPatientId = urlParams?.get("patientId") ?? null;
+            
+            const urlParams = typeof window !== "undefined"
+                ? new URLSearchParams(window.location.search)
+                : null;
+            const urlPatientId = urlParams?.get("patientId") ?? null;
+            const targetId = urlPatientId || user?.profileId;
 
-                // Priority:
-                // 1. patientId from URL (for carers viewing a patient)
-                // 2. profileId from user context (for patients viewing their own logs)
-                const targetId = urlPatientId || user?.profileId;
+            if (!targetId) {
+                return;
+            }
 
-                if (!targetId) {
-                    setLoading(false);
-                    return;
-                }
-
-                setFinalPatientId(targetId);
-                const result = await getLogs(targetId);
-                if (result.success) {
-                    setLogs(result.logs || []);
-                }
-            } catch (error) {
-                console.error("Failed to fetch logs:", error);
-            } finally {
-                setLoading(false);
+            setFinalPatientId(targetId);
+            
+            // Only fetch if we haven't fetched for this patient yet
+            if (!hasFetched(targetId)) {
+                await fetchLogs(targetId);
             }
         }
-        fetchLogs();
-    }, [user, authLoading]);
+        loadLogs();
+    }, [user, authLoading, fetchLogs, hasFetched]);
 
-    if (loading) {
+    const logs = finalPatientId ? getCachedLogs(finalPatientId) : [];
+
+    if (authLoading || (logsLoading && logs.length === 0)) {
         return (
             <div className="w-full min-h-screen flex items-center justify-center bg-brand-gradient">
                 <div className="animate-pulse text-white font-bold">{LOADING_LOGS}</div>
@@ -74,4 +63,4 @@ export default function LogsContent() {
             <LogsView initialLogs={logs} patientId={finalPatientId} />
         </div>
     );
-}
+}

@@ -15,20 +15,24 @@ export interface Analysis {
 export interface SymptomRecord extends Analysis {
     id: string;
     createdAt: Date | string;
+    patientId: string;
     rawText: string;
-    comments?: CarerCommentRecord[];
+    notes?: CarerNoteRecord[];
+    comments?: CarerNoteRecord[];
 }
 
 export interface SymptomLogUpdateData extends Analysis {
     rawText?: string;
 }
 
-export interface CarerCommentRecord {
+export interface CarerNoteRecord {
     id: string;
     createdAt: Date | string;
     text: string;
     carerId: string;
     carerName?: string;
+    patientId: string;
+    logId?: string | null;
 }
 
 export interface CarerLogRecord {
