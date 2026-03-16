@@ -1,20 +1,12 @@
 "use client";
 
-import React, { createContext, useContext, useEffect } from 'react';
+import React, { createContext, useContext, useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from './AuthContext';
-
-interface Notification {
-    id: string;
-    title: string;
-    body: string;
-    read: boolean;
-    createdAt: string;
-    data?: any;
-}
+import { NotificationRecord } from '@/features/notifications/types/notificationType';
 
 interface NotificationContextType {
-    notifications: Notification[];
+    notifications: NotificationRecord[];
     unreadCount: number;
     markAsRead: (id: string) => Promise<void>;
     markAllAsRead: () => Promise<void>;
@@ -24,8 +16,8 @@ const NotificationContext = createContext<NotificationContextType | undefined>(u
 
 export function NotificationProvider({ children }: { children: React.ReactNode }) {
     const { user } = useAuth();
-    const [notifications, setNotifications] = React.useState<Notification[]>([]);
-    const [unreadCount, setUnreadCount] = React.useState(0);
+    const [notifications, setNotifications] = useState<NotificationRecord[]>([]);
+    const [unreadCount, setUnreadCount] = useState(0);
 
     const markAsRead = async (id: string) => {
         const { error } = await supabase
@@ -71,7 +63,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
             }
 
             if (data) {
-                setNotifications(data);
+                setNotifications(data as NotificationRecord[]);
                 setUnreadCount(data.filter(n => !n.read).length);
             }
         };
@@ -84,16 +76,9 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
             .on(
                 'broadcast',
                 { event: 'new_notification' },
-                (payload) => {
+                (payload: { payload: NotificationRecord }) => {
                     console.log('[NotificationProvider] New broadcast notification received:', payload);
-                    const newNotif: Notification = {
-                        id: payload.payload.id,
-                        title: payload.payload.title,
-                        body: payload.payload.body,
-                        read: false,
-                        createdAt: payload.payload.createdAt,
-                        data: payload.payload.data
-                    };
+                    const newNotif = payload.payload;
                     setNotifications(prev => [newNotif, ...prev]);
                     setUnreadCount(prev => prev + 1);
                 }
@@ -116,7 +101,6 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
         </NotificationContext.Provider>
     );
 }
-
 
 export function useNotifications() {
     const context = useContext(NotificationContext);
