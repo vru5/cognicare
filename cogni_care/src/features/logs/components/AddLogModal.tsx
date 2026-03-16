@@ -7,6 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { createManualLog } from "../services/logsService";
 import { useAuth } from "@/contexts/AuthContext";
+import { useLogs } from "@/contexts/LogsContext";
+import { supabase } from "@/lib/supabase";
 import { LogSumaryCard } from "../types/logSummaryCard";
 import { ADD_LOG, CARER_ENTRY_TEXT, SAVE_LOG_TEXT } from "@/constants/logPage";
 
@@ -19,6 +21,7 @@ interface AddLogModalProps {
 
 export default function AddLogModal({ isOpen, onClose, patientId, onSuccess }: AddLogModalProps) {
     const { user } = useAuth();
+    const { clearCache } = useLogs();
     const isCarer = user?.role === "CARER";
 
     const [text, setText] = useState("");
@@ -31,6 +34,23 @@ export default function AddLogModal({ isOpen, onClose, patientId, onSuccess }: A
         try {
             const result = await createManualLog(patientId, text, isCarer, user?.profileId || undefined);
             if (result.success) {
+                // Invalidate cache so other views fetch fresh data
+                clearCache(patientId);
+
+                // Realtime "Green Dot" trigger for carers (Free Tier Fallback)
+                if (!isCarer) {
+                    const activityChannel = supabase.channel('patient_activity');
+                    activityChannel.subscribe((status) => {
+                        if (status === 'SUBSCRIBED') {
+                            activityChannel.send({
+                                type: "broadcast",
+                                event: "new_log",
+                                payload: { patientId, timestamp: new Date().toISOString() }
+                            });
+                        }
+                    });
+                }
+
                 onSuccess(result.log);
                 setText("");
                 onClose();

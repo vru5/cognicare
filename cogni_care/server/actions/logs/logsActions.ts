@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { CarerNote, LogSumaryCard } from "@/features/logs/types/logSummaryCard";
 import { prisma } from "../../lib/prisma";
 import { GoogleGenerativeAI } from "@google/generative-ai";
@@ -7,6 +6,15 @@ import { ApiError } from "next/dist/server/api-utils";
 import { Analysis, SymptomRecord, SymptomLogUpdateData } from "../../types/logsApi";
 import { markPatientAsViewedAction } from "../carer/carerActions";
 import { sendPushNotificationAction } from "../../lib/notificationService";
+import { Prisma } from "@prisma/client";
+
+type CarerNoteWithUser = Prisma.CarerNoteGetPayload<{
+    include: {
+        carer: {
+            include: { user: { select: { name: true } } }
+        }
+    }
+}>;
 
 export async function getLogsAction(patientId: string) {
     try {
@@ -39,7 +47,7 @@ export async function getLogsAction(patientId: string) {
         const formattedSymptomLogs = symptomLogs.map((log) => ({
             ...log,
             type: "patient" as const,
-            comments: log.notes.map((c) => ({
+            notes: log.notes.map((c) => ({
                 id: c.id,
                 createdAt: c.createdAt,
                 text: c.text,
@@ -57,6 +65,7 @@ export async function getLogsAction(patientId: string) {
             type: "carer" as const,
             carerName: log.carer.user.name ?? undefined,
             carerId: log.carerId,
+            notes: [], // Standalone logs start with no comments
             // Add null pillars for UI compatibility if needed
             physical: null,
             mood: null,
@@ -101,6 +110,10 @@ export async function createManualLogAction(data: {
                     carer: { include: { user: { select: { name: true } } } },
                 },
             });
+
+            // Trigger push notification for independent log
+            await sendPushNotificationAction(log.id);
+
             return {
                 success: true,
                 log: {
@@ -110,6 +123,7 @@ export async function createManualLogAction(data: {
                     isFromCarer: true,
                     carerName: log.carer.user.name ?? "Carer",
                     carerId: log.carerId,
+                    notes: [], // Independent notes start with no sub-comments
                     physical: null,
                     mood: null,
                     cognitive: null,
@@ -202,62 +216,30 @@ export async function updateSymptomLogAction(
     try {
         const { newText, patientId, isFromCarer = false, carerId } = data;
 
-        const existingLog = await prisma.symptomLog.findUnique({
+        // 1. Try to find the log in SymptomLog or CarerNote
+        const symptomLog = await prisma.symptomLog.findUnique({
             where: { id: logId },
         });
 
-        if (!existingLog || existingLog.patientId !== patientId) {
-            return { success: false, error: "Log not found or unauthorized" };
-        }
-
-        if (isFromCarer) {
-            // Update viewed status if we have the carerId
-            if (carerId) {
-                await markPatientAsViewedAction(carerId, patientId);
+        if (symptomLog) {
+            // Permission Check: Patients can edit patient logs, carers cannot edit patient logs
+            if (isFromCarer) {
+                return { success: false, error: "Carers cannot edit patient logs" };
             }
-            // Skip AI analysis for carer notes/updates
-            const updatedLog = await prisma.symptomLog.update({
-                where: { id: logId },
-                data: { rawText: newText },
-                include: {
-                    notes: {
-                        include: {
-                            carer: { include: { user: { select: { name: true } } } },
-                        },
-                    },
-                },
-            });
 
-            // Cast to include notes property that TypeScript might struggle to infer correctly from prisma.update
-            const logWithNotes = updatedLog as typeof updatedLog & { notes: CarerNote[] };
+            if (symptomLog.patientId !== patientId) {
+                return { success: false, error: "Unauthorized" };
+            }
 
-            return {
-                success: true,
-                log: {
-                    ...(logWithNotes as unknown as SymptomRecord),
-                    type: "patient" as const,
-                    comments: logWithNotes.notes.map((c) => ({
-                        id: c.id,
-                        createdAt: c.createdAt,
-                        text: c.text,
-                        carerId: c.carerId,
-                        carerName: (c as any).carer?.user?.name ?? undefined,
-                    })),
-                },
-            };
-        }
+            const apiKey = (process.env.GEMINI_API_KEY || "").trim();
+            if (!apiKey) {
+                return { success: false, error: "Server missing Gemini API Key" };
+            }
 
-        const apiKey = (process.env.GEMINI_API_KEY || "").trim();
-        if (!apiKey) {
-            return { success: false, error: "Server missing Gemini API Key" };
-        }
-
-        const genAI = new GoogleGenerativeAI(apiKey);
-        const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
-
-        const safeText = mask(newText || "");
-
-        const prompt = `Analyze the following patient health log.
+            const genAI = new GoogleGenerativeAI(apiKey);
+            const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+            const safeText = mask(newText || "");
+            const prompt = `Analyze the following patient health log.
     Categorize the content into exactly these fields: physical, mood, cognitive, sleep, social.
     - For each field, provide a single word or very short phrase (e.g., 'Headache', 'Happy', 'Exhausted').
     - If a category is not mentioned, return null for that field.
@@ -265,75 +247,111 @@ export async function updateSymptomLogAction(
     
     Log: "${safeText}"`;
 
-        let updateData: SymptomLogUpdateData = { rawText: newText };
+            let updateData: SymptomLogUpdateData = { rawText: newText };
 
-        try {
-            let result;
             try {
-                result = await model.generateContent(prompt);
-            } catch (err: unknown) {
-                const apiErr = err as ApiError;
-                if (apiErr?.message?.includes("503")) {
-                    console.warn(
-                        "Gemini 2.5 is overloaded, falling back to 1.5-flash...",
-                    );
-                    const fallbackModel = genAI.getGenerativeModel({
-                        model: "gemini-1.5-flash",
-                    });
-                    result = await fallbackModel.generateContent(prompt);
-                } else {
-                    throw apiErr;
+                let result;
+                try {
+                    result = await model.generateContent(prompt);
+                } catch (err: unknown) {
+                    const apiErr = err as ApiError;
+                    if (apiErr?.message?.includes("503")) {
+                        const fallbackModel = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+                        result = await fallbackModel.generateContent(prompt);
+                    } else {
+                        throw apiErr;
+                    }
                 }
+                let responseText = result.response.text();
+                responseText = responseText.replace(/```json/g, "").replace(/```/g, "").trim();
+                const analysis: Analysis = JSON.parse(responseText || "{}");
+                updateData = {
+                    ...updateData,
+                    physical: analysis.physical || null,
+                    mood: analysis.mood || null,
+                    cognitive: analysis.cognitive || null,
+                    sleep: analysis.sleep || null,
+                    social: analysis.social || null,
+                };
+            } catch (apiErr: unknown) {
+                console.error("Gemini processing failed during update:", apiErr);
             }
-            let responseText = result.response.text();
-            responseText = responseText
-                .replace(/```json/g, "")
-                .replace(/```/g, "")
-                .trim();
-            const analysis: Analysis = JSON.parse(responseText || "{}");
 
-            updateData = {
-                ...updateData,
-                physical: analysis.physical || null,
-                mood: analysis.mood || null,
-                cognitive: analysis.cognitive || null,
-                sleep: analysis.sleep || null,
-                social: analysis.social || null,
+            const updatedLog = await prisma.symptomLog.update({
+                where: { id: logId },
+                data: updateData,
+                include: {
+                    notes: {
+                        include: { carer: { include: { user: { select: { name: true } } } } },
+                        orderBy: { createdAt: "asc" },
+                    },
+                },
+            });
+
+            const logWithNotes = updatedLog as typeof updatedLog & { notes: CarerNote[] };
+
+            return {
+                success: true,
+                log: {
+                    ...(logWithNotes as unknown as SymptomRecord),
+                    type: "patient" as const,
+                    notes: logWithNotes.notes.map((c) => {
+                        const note = c as unknown as CarerNoteWithUser;
+                        return {
+                            id: note.id,
+                            createdAt: note.createdAt,
+                            text: note.text,
+                            carerId: note.carerId,
+                            carerName: note.carer?.user?.name ?? undefined,
+                        };
+                    }),
+                },
             };
-        } catch (apiErr: unknown) {
-            console.error("Gemini processing failed during update:", apiErr);
         }
 
-        const updatedLog = await prisma.symptomLog.update({
+        // 2. Check CarerNote (standalone log)
+        const carerNote = await prisma.carerNote.findUnique({
             where: { id: logId },
-            data: updateData,
-            include: {
-                notes: {
-                    include: { carer: { include: { user: { select: { name: true } } } } },
-                },
-            },
+            include: { carer: { include: { user: { select: { name: true } } } } }
         });
 
-        const logWithNotes = updatedLog as typeof updatedLog & { notes: CarerNote[] };
+        if (carerNote && !carerNote.logId) {
+            // Permission Check: Carers can edit their logs, patients cannot edit carer logs
+            if (!isFromCarer || carerNote.carerId !== carerId) {
+                return { success: false, error: "Unauthorized or not your log" };
+            }
 
-        return {
-            success: true,
-            log: {
-                ...(logWithNotes as unknown as SymptomRecord),
-                type: "patient" as const,
-                comments: logWithNotes.notes.map((c) => ({
-                    id: c.id,
-                    createdAt: c.createdAt,
-                    text: c.text,
-                    carerId: c.carerId,
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    carerName: (c as any).carer?.user?.name ?? undefined,
-                })),
-            },
-        };
+            if (carerId) {
+                await markPatientAsViewedAction(carerId, patientId);
+            }
+
+            const updated = await prisma.carerNote.update({
+                where: { id: logId },
+                data: { text: newText },
+                include: { carer: { include: { user: { select: { name: true } } } } }
+            });
+
+            return {
+                success: true,
+                log: {
+                    id: updated.id,
+                    createdAt: updated.createdAt,
+                    patientId: updated.patientId,
+                    rawText: updated.text,
+                    isFromCarer: true,
+                    type: "carer" as const,
+                    carerName: updated.carer.user.name ?? "Carer",
+                    carerId: updated.carerId,
+                    notes: [],
+                    physical: null, mood: null, cognitive: null, sleep: null, social: null,
+                }
+            };
+        }
+
+        return { success: false, error: "Log not found" };
     } catch (err: unknown) {
         console.error("Failed to update log:", err);
-        return { success: false, error: "Failed to update log processing text" };
+        return { success: false, error: "Failed to update log" };
     }
 }
 
@@ -386,7 +404,7 @@ export async function addCarerCommentAction(
                 ...note.log,
                 type: "patient" as const,
                 carerName: undefined, // SymptomLog doesn't have a single creator carer
-                comments: note.log?.notes.map((c) => ({
+                notes: note.log?.notes.map((c) => ({
                     id: c.id,
                     createdAt: c.createdAt,
                     text: c.text,
@@ -401,8 +419,44 @@ export async function addCarerCommentAction(
     }
 }
 
-export async function deleteCarerNoteAction(noteId: string, carerId: string, patientId: string) {
+export async function deleteSymptomLogAction(logId: string, patientId: string, isFromCarer: boolean) {
     try {
+        // Permission Check: Only patients can delete patient logs
+        if (isFromCarer) {
+            return { success: false, error: "Carers cannot delete patient logs" };
+        }
+
+        const log = await prisma.symptomLog.findUnique({
+            where: { id: logId }
+        });
+
+        if (!log || log.patientId !== patientId) {
+            return { success: false, error: "Log not found or unauthorized" };
+        }
+
+        // Delete all associated notes first (Prisma doesn't have cascade in some configs, safer to do manually or verify schema)
+        await prisma.carerNote.deleteMany({
+            where: { logId: logId }
+        });
+
+        await prisma.symptomLog.delete({
+            where: { id: logId }
+        });
+
+        return { success: true };
+    } catch (error) {
+        console.error("Failed to delete symptom log:", error);
+        return { success: false, error: "Failed to delete log" };
+    }
+}
+
+export async function deleteCarerNoteAction(noteId: string, carerId: string, patientId: string, isFromCarer: boolean) {
+    try {
+        // Permission Check: Patients cannot delete carer notes
+        if (!isFromCarer) {
+            return { success: false, error: "Patients cannot delete carer logs/notes" };
+        }
+
         const note = await prisma.carerNote.findUnique({
             where: { id: noteId },
             include: { log: true }
@@ -412,14 +466,16 @@ export async function deleteCarerNoteAction(noteId: string, carerId: string, pat
             return { success: false, error: "Note not found or unauthorized" };
         }
 
+        const logId = note.logId;
+
         await prisma.carerNote.delete({
             where: { id: noteId }
         });
 
-        if (note.logId) {
+        if (logId) {
             // Fetch updated log to return to frontend if it was a comment
             const updatedLog = await prisma.symptomLog.findUnique({
-                where: { id: note.logId },
+                where: { id: logId },
                 include: {
                     notes: {
                         include: {
@@ -437,13 +493,16 @@ export async function deleteCarerNoteAction(noteId: string, carerId: string, pat
                     log: {
                         ...(logWithNotes as unknown as SymptomRecord),
                         type: "patient" as const,
-                        comments: logWithNotes.notes.map((c: CarerNote) => ({
-                            id: c.id,
-                            createdAt: c.createdAt,
-                            text: c.text,
-                            carerId: c.carerId,
-                            carerName: (c as any).carer?.user?.name ?? undefined,
-                        })),
+                        notes: logWithNotes.notes.map((c: CarerNote) => {
+                            const note = c as unknown as CarerNoteWithUser;
+                            return {
+                                id: note.id,
+                                createdAt: note.createdAt,
+                                text: note.text,
+                                carerId: note.carerId,
+                                carerName: note.carer?.user?.name ?? undefined,
+                            };
+                        }),
                     },
                 };
             }
@@ -455,3 +514,4 @@ export async function deleteCarerNoteAction(noteId: string, carerId: string, pat
         return { success: false, error: "Failed to delete note" };
     }
 }
+

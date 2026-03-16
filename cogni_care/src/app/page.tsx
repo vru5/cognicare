@@ -6,8 +6,42 @@ import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 import { JOIN_CONGNICARE, SIGN_IN } from "@/constants/registerationPage";
 import { COGNICARE, EMPOWERING_SUB_HEADING, HEALTH_COMPANION_TEXT, INSIGHT_SUB_HEADING } from "@/constants/landingPage";
+import { useAuth } from "@/contexts/AuthContext";
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
+import { Loader2 } from "lucide-react";
 
 export default function Home() {
+  const { user, loading } = useAuth();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!loading && user) {
+      // Auto-redirect logged-in users to their home screen
+      if (user.isCarer) {
+        router.replace("/dashboard");
+      } else {
+        router.replace("/brain-dump");
+      }
+    }
+  }, [user, loading, router]);
+
+  // While rehydrating from secure storage, show a blank loader
+  // so the landing page doesn't flash before the redirect
+  if (loading) {
+    return (
+      <div className="w-full min-h-screen flex items-center justify-center bg-[#f8fafc]">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="w-10 h-10 text-primary animate-spin" />
+          <p className="text-slate-600 font-medium">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // If user is logged in, the redirect is in progress — render nothing
+  if (user) return null;
+
   return (
     <div className="relative min-h-screen flex items-center justify-center overflow-hidden">
       {/* Background Image with Heavy Overlay */}

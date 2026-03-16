@@ -78,25 +78,29 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
 
         fetchNotifications();
 
-        console.log(`[NotificationProvider] Subscribing to notifications for user profile ${targetId}`);
+        console.log(`[NotificationProvider] Subscribing to notifications for user ${targetId}`);
 
         const channel = supabase.channel(`user_notifications:${targetId}`)
-            .on('broadcast', { event: 'new_notification' }, (payload) => {
-                console.log('New notification received:', payload);
-                const newNotif: Notification = {
-                    id: payload.payload.id,
-                    title: payload.payload.title,
-                    body: payload.payload.body,
-                    read: false,
-                    createdAt: payload.payload.createdAt,
-                    data: payload.payload.data
-                };
-                setNotifications(prev => [newNotif, ...prev]);
-                setUnreadCount(prev => prev + 1);
-            })
+            .on(
+                'broadcast',
+                { event: 'new_notification' },
+                (payload) => {
+                    console.log('[NotificationProvider] New broadcast notification received:', payload);
+                    const newNotif: Notification = {
+                        id: payload.payload.id,
+                        title: payload.payload.title,
+                        body: payload.payload.body,
+                        read: false,
+                        createdAt: payload.payload.createdAt,
+                        data: payload.payload.data
+                    };
+                    setNotifications(prev => [newNotif, ...prev]);
+                    setUnreadCount(prev => prev + 1);
+                }
+            )
             .subscribe((status) => {
                 if (status === 'SUBSCRIBED') {
-                    console.log('[NotificationProvider] Successfully subscribed to realtime notifications');
+                    console.log('[NotificationProvider] Successfully subscribed to realtime broadcasts');
                 }
             });
 

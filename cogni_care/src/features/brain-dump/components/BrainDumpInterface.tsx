@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
+import { useLogs } from "@/contexts/LogsContext";
 import { useVoiceCapture } from "../hooks/useVoiceCapture";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
@@ -15,6 +16,7 @@ import { AnalysisCard } from "../types/analysisSummaryCard";
 
 export default function BrainDumpInterface() {
   const { user } = useAuth();
+  const { clearCache } = useLogs();
   // Read profileId directly from session
   const patientId = user?.profileId ?? null;
 
@@ -73,6 +75,8 @@ export default function BrainDumpInterface() {
               social: log.social,
               message: response.message || "Analysis complete! Logged to your timeline.",
             });
+            // Invalidate the logs cache so the Logs page re-fetches fresh data
+            if (patientId) clearCache(patientId);
           } else {
             console.error("API error for voice:", response.error);
             alert("Failed to process transcribed text.");
@@ -122,6 +126,8 @@ export default function BrainDumpInterface() {
         };
         setSummary(newSummary);
         setText("");
+        // Invalidate the logs cache so the Logs page re-fetches fresh data
+        if (patientId) clearCache(patientId);
       } else {
         console.error("API error:", response.error);
         alert("Failed to process entry.");

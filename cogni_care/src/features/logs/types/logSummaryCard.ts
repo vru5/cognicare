@@ -14,7 +14,6 @@ export interface LogSumaryCard extends Record<SymptomPillar, string | null | und
     patientId: string;
     rawText: string;
     notes?: CarerNote[];
-    comments?: CarerNote[]; // Keep for compatibility if still used in components during transition
     isFromCarer?: boolean; // Kept for UI compatibility during transition or for standalone logs
     carerId?: string;
     carerName?: string;

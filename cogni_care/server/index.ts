@@ -3,7 +3,7 @@ import cors from "cors";
 import dotenv from "dotenv";
 
 import { prisma } from "./lib/prisma.js";
-import { getLogsAction, updateSymptomLogAction, createManualLogAction, addCarerCommentAction, deleteCarerNoteAction } from "./actions/logs/logsActions.js";
+import { getLogsAction, updateSymptomLogAction, createManualLogAction, addCarerCommentAction, deleteCarerNoteAction, deleteSymptomLogAction } from "./actions/logs/logsActions.js";
 import { processBrainDumpAction } from "./actions/brain-dump/processActions.js";
 import { transcribeAudioAction } from "./actions/brain-dump/transcribeActions.js";
 import { registerUser, getProfileAction, loginUser } from "./actions/auth/authActions.js";
@@ -54,6 +54,16 @@ app.patch("/api/logs", async (req, res) => {
     res.json(result);
 });
 
+// DELETE /api/logs
+app.delete("/api/logs", async (req, res) => {
+    const { logId, patientId, isFromCarer } = req.body;
+    if (!logId || !patientId) {
+        return res.status(400).json({ success: false, error: "Missing required fields" });
+    }
+    const result = await deleteSymptomLogAction(logId, patientId, isFromCarer === true || isFromCarer === "true");
+    res.json(result);
+});
+
 // POST /api/logs/comment
 app.post("/api/logs/comment", async (req, res) => {
     const { logId, text, carerId } = req.body;
@@ -66,21 +76,21 @@ app.post("/api/logs/comment", async (req, res) => {
 
 // DELETE /api/logs/carer-note
 app.delete("/api/logs/carer-note", async (req, res) => {
-    const { noteId, carerId, patientId } = req.body;
+    const { noteId, carerId, patientId, isFromCarer } = req.body;
     if (!noteId || !carerId || !patientId) {
         return res.status(400).json({ success: false, error: "Missing required fields" });
     }
-    const result = await deleteCarerNoteAction(noteId, carerId, patientId);
+    const result = await deleteCarerNoteAction(noteId, carerId, patientId, isFromCarer === true || isFromCarer === "true");
     res.json(result);
 });
 
 // DELETE /api/logs/comment (legacy but redirecting to note)
 app.delete("/api/logs/comment", async (req, res) => {
-    const { commentId, carerId, patientId } = req.body;
+    const { commentId, carerId, patientId, isFromCarer } = req.body;
     if (!commentId || !carerId || !patientId) {
         return res.status(400).json({ success: false, error: "Missing required fields" });
     }
-    const result = await deleteCarerNoteAction(commentId, carerId, patientId);
+    const result = await deleteCarerNoteAction(commentId, carerId, patientId, isFromCarer === true || isFromCarer === "true");
     res.json(result);
 });
 app.post("/api/brain-dump/process", async (req, res) => {
@@ -159,21 +169,33 @@ app.post("/api/carer/mark-viewed", async (req, res) => {
 
 // POST /api/auth/push-token
 app.post("/api/auth/push-token", async (req, res) => {
-    const { profileId, pushToken } = req.body;
-    if (!profileId || !pushToken) {
+    const { userId, pushToken } = req.body;
+    if (!userId || !pushToken) {
         return res.status(400).json({ success: false, error: "Missing required fields" });
     }
     
     try {
-        if (!profileId.startsWith("PAT-")) {
-            return res.status(400).json({ success: false, error: "Only patients can register push tokens" });
-        }
-        
-        await prisma.profilePatient.update({
-            where: { id: profileId },
-            data: { pushToken }
+        // Try to update patient profile first
+        const patientResult = await prisma.profilePatient.updateMany({
+            where: { userId },
+            data: { pushToken },
         });
-        res.json({ success: true });
+
+        if (patientResult.count > 0) {
+            return res.json({ success: true, message: "Patient push token updated" });
+        }
+
+        // If no patient profile found, try carer profile
+        const carerResult = await prisma.profileCarer.updateMany({
+            where: { userId },
+            data: { pushToken },
+        });
+
+        if (carerResult.count > 0) {
+            return res.json({ success: true, message: "Carer push token updated" });
+        }
+
+        res.status(404).json({ success: false, error: "User profile not found" });
     } catch (error) {
         console.error("Failed to register push token:", error);
         res.status(500).json({ success: false, error: "Failed to register push token" });

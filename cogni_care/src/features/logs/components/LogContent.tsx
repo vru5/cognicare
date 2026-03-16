@@ -5,6 +5,9 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useLogs } from "@/contexts/LogsContext";
 import { EMPTY_LOGS, LOADING_LOGS } from "@/constants/logPage";
 import { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
+import { supabase } from "@/lib/supabase";
+import { RealtimeChannel } from "@supabase/supabase-js";
 
 /**
  * Displays the logs content using useLogs for caching and memoization
@@ -12,33 +15,51 @@ import { useEffect, useState } from "react";
  */
 export default function LogsContent() {
     const { user, loading: authLoading } = useAuth();
-    const { fetchLogs, getCachedLogs, hasFetched, loading: logsLoading } = useLogs();
+    const { fetchLogs, getCachedLogs, loading: logsLoading } = useLogs();
+    const searchParams = useSearchParams();
+    const urlPatientId = searchParams?.get("patientId") ?? null;
+    const focusedLogId = searchParams?.get('logId') ?? undefined;
 
     const [finalPatientId, setFinalPatientId] = useState<string | null>(null);
 
     useEffect(() => {
+        let channel: RealtimeChannel;
+
         async function loadLogs() {
             if (authLoading) return;
             
-            const urlParams = typeof window !== "undefined"
-                ? new URLSearchParams(window.location.search)
-                : null;
-            const urlPatientId = urlParams?.get("patientId") ?? null;
             const targetId = urlPatientId || user?.profileId;
-
-            if (!targetId) {
-                return;
-            }
+            if (!targetId) return;
 
             setFinalPatientId(targetId);
             
-            // Only fetch if we haven't fetched for this patient yet
-            if (!hasFetched(targetId)) {
-                await fetchLogs(targetId);
-            }
+            // Always trigger a fetch on mount to ensure freshness (force=true)
+            console.log(`[LogsContent] Revalidating logs for: ${targetId}`);
+            fetchLogs(targetId, true);
+
+            // Subscribe to notifications for real-time log refresh
+            console.log(`[LogsContent] Subscribing to refresh triggers for: ${targetId}`);
+            channel = supabase.channel(`logs_refresh:${targetId}`)
+                .on(
+                    'broadcast',
+                    { event: 'new_notification' },
+                    () => {
+                        console.log(`[LogsContent] Notification received, refetching logs...`);
+                        fetchLogs(targetId, true);
+                    }
+                )
+                .subscribe();
         }
+        
         loadLogs();
-    }, [user, authLoading, fetchLogs, hasFetched]);
+
+        return () => {
+            if (channel) {
+                console.log(`[LogsContent] Cleaning up logs refresh subscription`);
+                supabase.removeChannel(channel);
+            }
+        };
+    }, [user?.profileId, authLoading, fetchLogs, urlPatientId]);
 
     const logs = finalPatientId ? getCachedLogs(finalPatientId) : [];
 
@@ -60,7 +81,7 @@ export default function LogsContent() {
 
     return (
         <div className="w-full min-h-screen">
-            <LogsView initialLogs={logs} patientId={finalPatientId} />
+            <LogsView initialLogs={logs} patientId={finalPatientId} focusedLogId={focusedLogId} />
         </div>
     );
 }

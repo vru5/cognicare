@@ -42,6 +42,7 @@ model ProfileCarer {
   patients CarersOnPatients[]
   notes    CarerNote[]
   createdAt DateTime           @default(now())
+  pushToken String?
 
   @@map("carer_profiles")
 }

@@ -18,7 +18,7 @@ const pillarConfig: MoodPillarsConfig = {
     social: { icon: Users, color: "bg-green-100 text-green-700", label: "Social" },
 };
 
-export default function LogEntryCard({ log, patientId, onUpdate, onDelete }: { log: LogSumaryCard, patientId: string, onUpdate: (log: LogSumaryCard) => void, onDelete?: (logId: string) => void }) {
+export default function LogEntryCard({ log, patientId, onUpdate, onDelete, highlighted }: { log: LogSumaryCard, patientId: string, onUpdate: (log: LogSumaryCard) => void, onDelete?: (logId: string) => void, highlighted?: boolean }) {
     const { user } = useAuth();
     const isCarer = Boolean(user?.isCarer);
     const profileId = user?.profileId;
@@ -65,17 +65,20 @@ export default function LogEntryCard({ log, patientId, onUpdate, onDelete }: { l
     };
 
     const handleDelete = async () => {
-        if (!isCarer || !profileId) return;
-        if (!confirm("Are you sure you want to delete this log?")) return;
+        const confirmMsg = log.isFromCarer ? "Delete this carer log?" : "Delete your log?";
+        if (!confirm(confirmMsg)) return;
 
         setIsDeleting(true);
-        // We need to import deleteCarerLog, assuming it's exported from logsService
-        const { deleteCarerLog } = await import("@/features/logs/services/logsService");
-        const result = await deleteCarerLog(log.id, profileId, log.patientId);
+        const { deleteCarerLog, deleteSymptomLog } = await import("@/features/logs/services/logsService");
+        
+        const result = log.type === "carer" 
+            ? await deleteCarerLog(log.id, profileId || "", log.patientId, isCarer)
+            : await deleteSymptomLog(log.id, log.patientId, isCarer);
+
         if (result.success) {
             onDelete?.(log.id);
         } else {
-            alert("Failed to delete log.");
+            alert(result.error || "Failed to delete log.");
         }
         setIsDeleting(false);
     };
@@ -97,7 +100,7 @@ export default function LogEntryCard({ log, patientId, onUpdate, onDelete }: { l
     const formattedTime = mounted ? new Date(log.createdAt).toLocaleString() : "";
 
     return (
-        <div className="bg-card text-card-foreground rounded-[2rem] p-6 sm:p-8 border shadow-sm relative overflow-hidden">
+        <div className={`bg-card text-card-foreground rounded-[2rem] p-6 sm:p-8 border shadow-sm relative overflow-hidden transition-all ${highlighted ? 'ring-2 ring-sky-500 ring-offset-2' : ''}`}>
             {log.isFromCarer && (
                 <div className="absolute top-0 right-0 bg-primary/10 text-primary px-4 py-1.5 rounded-bl-2xl text-[10px] font-black uppercase tracking-widest flex items-center gap-1.5">
                     <BadgeCheck className="w-3 h-3" />
@@ -109,15 +112,15 @@ export default function LogEntryCard({ log, patientId, onUpdate, onDelete }: { l
                 <div className="text-sm text-foreground font-bold opacity-60">{formattedTime}</div>
                 {!isEditing && (
                     <div className="flex gap-2">
-                        {/* Only patients can edit patient logs, only carers can edit carer logs */}
+                        {/* Edit permissions: Carers edit carer logs, Patients edit patient logs */}
                         {((isCarer && log.isFromCarer) || (!isCarer && !log.isFromCarer)) && (
                             <Button variant="ghost" size="sm" onClick={() => setIsEditing(true)} className="rounded-full hover:bg-slate-100" disabled={isDeleting}>
                                 <Edit2 className="w-4 h-4 mr-1 text-foreground" />
                                 <span className="sr-only">{EDIT}</span>
                             </Button>
                         )}
-                        {/* Only carers can delete their own logs */}
-                        {isCarer && log.isFromCarer && log.carerId === profileId && (
+                        {/* Delete permissions: Carers delete their own logs, Patients delete their own logs */}
+                        {((isCarer && log.isFromCarer && log.carerId === profileId) || (!isCarer && !log.isFromCarer)) && (
                             <Button variant="ghost" size="sm" onClick={handleDelete} disabled={isDeleting} className="rounded-full hover:bg-red-50 hover:text-red-500">
                                 {isDeleting ? <Loader2 className="w-4 h-4 mr-1 animate-spin text-red-500" /> : <Trash2 className="w-4 h-4 mr-1 text-foreground" />}
                                 <span className="sr-only">Delete</span>
@@ -165,15 +168,15 @@ export default function LogEntryCard({ log, patientId, onUpdate, onDelete }: { l
                     )}
 
                     {/* Carer Comment Section */}
-                    {log.type === "patient" && (isCarer || (log.notes && log.notes.length > 0) || (log.comments && log.comments.length > 0)) && (
+                    {log.type === "patient" && (isCarer || (log.notes && log.notes.length > 0)) && (
                         <div className="mt-6 pt-6 border-t border-slate-100 space-y-4">
                             <div className="flex items-center justify-between">
-                                {(log.notes && log.notes.length > 0) || (log.comments && log.comments.length > 0) || isCommenting ? (
+                                {(log.notes && log.notes.length > 0) || isCommenting ? (
                                     <div className="flex items-center gap-2 text-primary">
                                         <MessageSquare className="w-5 h-5" />
                                         <h4 className="text-sm font-black uppercase tracking-widest">
-                                            {(log.notes && log.notes.length > 0) || (log.comments && log.comments.length > 0)
-                                                ? `${(log.notes?.[0] || log.comments?.[0])?.carerName || "Carer"}'s Note`
+                                            {(log.notes && log.notes.length > 0)
+                                                ? `${log.notes[0]?.carerName || "Carer"}'s Note`
                                                 : isCarer && user?.name
                                                     ? `${user.name}'s ${CARER_NOTE}`
                                                     : CARER_NOTE}
@@ -214,9 +217,9 @@ export default function LogEntryCard({ log, patientId, onUpdate, onDelete }: { l
                                 </div>
                             )}
 
-                            {((log.notes && log.notes.length > 0) || (log.comments && log.comments.length > 0)) ? (
+                            {(log.notes && log.notes.length > 0) ? (
                                 <div className="space-y-3">
-                                    {(log.notes || log.comments || []).map((comment) => (
+                                    {log.notes.map((comment) => (
                                         <div key={comment.id} className="bg-primary/5 p-4 rounded-2xl border border-primary/10 space-y-1 relative group">
                                             <div className="flex justify-between items-center text-[10px] font-bold text-primary/60 uppercase">
                                                 <span>{comment.carerName || "Carer"}</span>
@@ -227,7 +230,7 @@ export default function LogEntryCard({ log, patientId, onUpdate, onDelete }: { l
                                                             onClick={async () => {
                                                                 if (!confirm("Delete this note?")) return;
                                                                 const { deleteCarerNote } = await import("@/features/logs/services/logsService");
-                                                                const result = await deleteCarerNote(comment.id, profileId, log.patientId);
+                                                                const result = await deleteCarerNote(comment.id, profileId, log.patientId, isCarer);
                                                                 if (result.success) {
                                                                     onUpdate(result.log);
                                                                 } else {

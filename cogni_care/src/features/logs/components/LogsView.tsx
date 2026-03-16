@@ -16,7 +16,7 @@ import { ADD_LOG_TEXT, BACK_BUTTON, EMPTY_DAY_LOG_TEXT, SELECTED_DATE_ENTRIES } 
 
 type LogViewType = "day" | "week" | "month";
 
-export default function LogsView({ initialLogs, patientId }: { initialLogs: LogSumaryCard[], patientId: string }) {
+export default function LogsView({ initialLogs, patientId, focusedLogId }: { initialLogs: LogSumaryCard[], patientId: string, focusedLogId?: string }) {
     const { user } = useAuth();
     const router = useRouter();
     const [viewMode, setViewMode] = useState<LogViewType>("day");
@@ -35,6 +35,17 @@ export default function LogsView({ initialLogs, patientId }: { initialLogs: LogS
         setLogs(initialLogs || []);
         setMounted(true);
     }, [initialLogs]);
+
+    // When a focusedLogId is provided (from a notification tap), navigate to that log's date
+    useEffect(() => {
+        if (!focusedLogId || !logs.length) return;
+        const targetLog = logs.find(l => l.id === focusedLogId);
+        if (targetLog) {
+            const logDate = new Date(targetLog.createdAt);
+            setSelectedDate(logDate);
+            setCurrentDate(logDate);
+        }
+    }, [focusedLogId, logs]);
 
     // Carousel direction: 1 for right (next), -1 for left (prev)
     const [direction, setDirection] = useState(0);
@@ -313,6 +324,7 @@ export default function LogsView({ initialLogs, patientId }: { initialLogs: LogS
                                 log={log}
                                 patientId={patientId}
                                 onUpdate={handleUpdateLog}
+                                highlighted={log.id === focusedLogId}
                             />
                         ))
                     ) : (

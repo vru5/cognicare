@@ -55,12 +55,26 @@ export async function addCarerNote(logId: string, text: string, carerId: string)
 // Keep addCarerComment for backward compatibility if needed, but it's now the same as addCarerNote
 export const addCarerComment = addCarerNote;
 
-export async function deleteCarerNote(noteId: string, carerId: string, patientId: string) {
+export async function deleteSymptomLog(logId: string, patientId: string, isFromCarer: boolean) {
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/logs`, {
+            method: "DELETE",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ logId, patientId, isFromCarer }),
+        });
+        return await response.json();
+    } catch (err: unknown) {
+        console.error("Failed to delete log:", err);
+        return { success: false, error: "Failed to delete log" };
+    }
+}
+
+export async function deleteCarerNote(noteId: string, carerId: string, patientId: string, isFromCarer: boolean = true) {
     try {
         const response = await fetch(`${API_BASE_URL}/api/logs/carer-note`, {
             method: "DELETE",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ noteId, carerId, patientId }),
+            body: JSON.stringify({ noteId, carerId, patientId, isFromCarer }),
         });
         return await response.json();
     } catch (err: unknown) {
@@ -69,16 +83,16 @@ export async function deleteCarerNote(noteId: string, carerId: string, patientId
     }
 }
 
-export async function deleteCarerLog(logId: string, carerId: string, patientId: string) {
-    return deleteCarerNote(logId, carerId, patientId);
+export async function deleteCarerLog(logId: string, carerId: string, patientId: string, isFromCarer: boolean = true) {
+    return deleteCarerNote(logId, carerId, patientId, isFromCarer);
 }
 
-export async function deleteCarerComment(commentId: string, carerId: string, patientId: string) {
+export async function deleteCarerComment(commentId: string, carerId: string, patientId: string, isFromCarer: boolean = true) {
     try {
         const response = await fetch(`${API_BASE_URL}/api/logs/comment`, {
             method: "DELETE",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ commentId, carerId, patientId }),
+            body: JSON.stringify({ commentId, carerId, patientId, isFromCarer }),
         });
         return await response.json();
     } catch (err: unknown) {

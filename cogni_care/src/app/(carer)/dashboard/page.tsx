@@ -8,6 +8,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import Link from "next/link";
 import { EMPTY_LIST_SUBHEADING, EMPTY_PATIENT_LIST, HEADING, PATIENT_ID, SUB_HEADING } from "@/constants/carerLandingPage";
 import { API_BASE_URL } from "@/constants/auth";
+import { supabase } from "@/lib/supabase";
 
 interface Patient {
     id: string;
@@ -35,8 +36,37 @@ export default function CarerDashboard() {
     useEffect(() => {
         if (user?.isCarer && user.profileId) {
             fetchPatients();
+
+            // Realtime listener for new logs (Free Tier Fallback)
+            const channel = supabase.channel("patient_activity")
+                .on(
+                    "broadcast",
+                    { event: "new_log" },
+                    (payload) => {
+                        console.log("[CarerDashboard] Broadcast received:", payload);
+                        const { patientId } = payload.payload;
+                        
+                        setPatients(prev => {
+                            console.log("[CarerDashboard] Current patients in state:", prev.map(p => p.id));
+                            return prev.map(p => {
+                                if (p.id.trim().toLowerCase() === patientId.trim().toLowerCase()) {
+                                    console.log(`[CarerDashboard] MATCH found for patient ${patientId}. Updating dot.`);
+                                    return { ...p, hasNewLog: true };
+                                }
+                                return p;
+                            });
+                        });
+                    }
+                )
+                .subscribe((status) => {
+                    console.log(`[CarerDashboard] Realtime subscription status: ${status}`);
+                });
+
+            return () => {
+                supabase.removeChannel(channel);
+            };
         }
-    }, [user]);
+    }, [user, user?.isCarer, user?.profileId]);
 
     const fetchPatients = async () => {
         try {
