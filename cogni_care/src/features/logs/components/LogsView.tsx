@@ -1,22 +1,51 @@
+/* eslint-disable react-hooks/set-state-in-effect */
+/* eslint-disable react-hooks/immutability */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import LogEntryCard from "@/features/logs/components/LogEntryCard";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import AddLogModal from "@/features/logs/components/AddLogModal";
+import { ChevronLeft, ChevronRight, ArrowLeft, Plus } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useAuth } from "@/contexts/AuthContext";
+import { useRouter } from "next/navigation";
+import { LogSumaryCard } from "../types/logSummaryCard";
+import { ADD_LOG_TEXT, BACK_BUTTON, EMPTY_DAY_LOG_TEXT, SELECTED_DATE_ENTRIES } from "@/constants/logPage";
 
 type LogViewType = "day" | "week" | "month";
 
-export default function LogsView({ initialLogs, patientId }: { initialLogs: any[], patientId: string }) {
+export default function LogsView({ initialLogs, patientId, focusedLogId }: { initialLogs: LogSumaryCard[], patientId: string, focusedLogId?: string }) {
+    const { user } = useAuth();
+    const router = useRouter();
     const [viewMode, setViewMode] = useState<LogViewType>("day");
-    const [logs, setLogs] = useState(initialLogs);
+    const [logs, setLogs] = useState<LogSumaryCard[]>([]);
+    const [mounted, setMounted] = useState(false);
+    const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
+    const today = useMemo(() => new Date(), []);
     // currentDate controls which month/week we are viewing
-    const [currentDate, setCurrentDate] = useState(new Date());
+    const [currentDate, setCurrentDate] = useState(() => new Date(today));
     // selectedDate is the exact day we are viewing logs for
-    const [selectedDate, setSelectedDate] = useState(new Date());
+    const [selectedDate, setSelectedDate] = useState(() => new Date(today));
+
+    // Sync logs state when initialLogs prop changes (e.g. switching patients)
+    useEffect(() => {
+        setLogs(initialLogs || []);
+        setMounted(true);
+    }, [initialLogs]);
+
+    // When a focusedLogId is provided (from a notification tap), navigate to that log's date
+    useEffect(() => {
+        if (!focusedLogId || !logs.length) return;
+        const targetLog = logs.find(l => l.id === focusedLogId);
+        if (targetLog) {
+            const logDate = new Date(targetLog.createdAt);
+            setSelectedDate(logDate);
+            setCurrentDate(logDate);
+        }
+    }, [focusedLogId, logs]);
 
     // Carousel direction: 1 for right (next), -1 for left (prev)
     const [direction, setDirection] = useState(0);
@@ -50,10 +79,14 @@ export default function LogsView({ initialLogs, patientId }: { initialLogs: any[
         }
     };
 
-    const handleUpdateLog = (updatedLog: any) => {
+    const handleUpdateLog = (updatedLog: LogSumaryCard) => {
         setLogs(currentLogs =>
             currentLogs.map(log => log.id === updatedLog.id ? updatedLog : log)
         );
+    };
+
+    const handleAddLog = (newLog: LogSumaryCard) => {
+        setLogs(currentLogs => [newLog, ...currentLogs]);
     };
 
     // Helper to check if two dates are the same day
@@ -65,7 +98,7 @@ export default function LogsView({ initialLogs, patientId }: { initialLogs: any[
 
     // Identify which dates have logs
     const datesWithLogs = useMemo(() => {
-        return logs.map(log => new Date(log.createdAt));
+        return (logs || []).map(log => new Date(log.createdAt));
     }, [logs]);
 
     const hasLogOnDate = (date: Date) => {
@@ -74,7 +107,7 @@ export default function LogsView({ initialLogs, patientId }: { initialLogs: any[
 
     // Filter logs for the selected date
     const selectedLogs = useMemo(() => {
-        return logs.filter(log => isSameDay(new Date(log.createdAt), selectedDate));
+        return (logs || []).filter(log => isSameDay(new Date(log.createdAt), selectedDate));
     }, [logs, selectedDate]);
 
     // Calendar logic
@@ -103,8 +136,12 @@ export default function LogsView({ initialLogs, patientId }: { initialLogs: any[
 
             if (viewMode === "week") {
                 const day = currentDate.getDay();
-                const diff = currentDate.getDate() - day + (day === 0 ? -6 : 1); // Adjust when day is sunday
-                startDate = new Date(currentDate.setDate(diff));
+                // Calculate difference to Monday (1)
+                const diff = currentDate.getDate() - (day === 0 ? 6 : day - 1);
+
+                startDate = new Date(currentDate);
+                startDate.setDate(diff);
+
                 endDate = new Date(startDate);
                 endDate.setDate(endDate.getDate() + 6);
             } else {
@@ -143,7 +180,18 @@ export default function LogsView({ initialLogs, patientId }: { initialLogs: any[
     };
 
     return (
-        <div className="w-full max-w-xl mx-auto p-4 sm:p-6 min-h-screen flex flex-col gap-6 text-foreground overflow-hidden">
+        <div className="w-full max-w-xl mx-auto p-4 sm:p-6 min-h-screen flex flex-col gap-6 text-foreground">
+            {user?.isCarer && (
+                <Button
+                    variant="ghost"
+                    size="sm"
+                    className="self-start -mb-2 flex items-center gap-2 text-muted-foreground hover:text-foreground p-0 h-auto"
+                    onClick={() => router.push('/dashboard')}
+                >
+                    <ArrowLeft className="w-4 h-4" />
+                    {BACK_BUTTON}
+                </Button>
+            )}
             {/* Top Navigation */}
             <div className="flex justify-between items-center pb-2">
                 <Button variant="ghost" size="icon" onClick={() => navigateDate(-1)}>
@@ -175,10 +223,10 @@ export default function LogsView({ initialLogs, patientId }: { initialLogs: any[
             {/* Calendar Header Date */}
             <div className="text-center py-4">
                 <h2 className="text-lg font-bold text-foreground">
-                    {viewMode === "day"
+                    {mounted && (viewMode === "day"
                         ? selectedDate.toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
                         : currentDate.toLocaleDateString(undefined, { year: 'numeric', month: 'long' })
-                    }
+                    )}
                 </h2>
             </div>
 
@@ -220,7 +268,7 @@ export default function LogsView({ initialLogs, patientId }: { initialLogs: any[
 
                                     const isSelected = isSameDay(date, selectedDate);
                                     const hasLog = hasLogOnDate(date);
-                                    const isToday = isSameDay(date, new Date());
+                                    const isToday = isSameDay(date, today);
 
                                     return (
                                         <div key={date.toISOString()} className="flex justify-center items-center relative">
@@ -249,33 +297,56 @@ export default function LogsView({ initialLogs, patientId }: { initialLogs: any[
 
             {/* Logs List for Selected Date */}
             <div className="flex-1 space-y-4">
-                <div className="flex items-center justify-between border-b border-border pb-2">
-                    <h3 className="text-foreground font-bold uppercase tracking-wider text-sm">
-                        Entries for {selectedDate.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                <div className="flex items-center justify-between border-b border-border pb-4">
+                    <h3 className="text-foreground font-black uppercase tracking-widest text-sm flex items-center gap-2">
+                        {SELECTED_DATE_ENTRIES} {mounted && selectedDate.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                        <span className="text-[10px] font-black bg-muted px-2 py-1 rounded-full text-muted-foreground">
+                            {selectedLogs.length}
+                        </span>
                     </h3>
-                    <span className="text-xs font-bold text-muted-foreground bg-muted px-2 py-1 rounded-full">
-                        {selectedLogs.length} LOGS
-                    </span>
+                    {user?.isCarer && (
+                        <Button
+                            size="sm"
+                            onClick={() => setIsAddModalOpen(true)}
+                            className="rounded-full bg-primary text-white shadow-md shadow-primary/20 flex items-center gap-2 hover:scale-105 transition-transform px-4"
+                        >
+                            <Plus className="w-4 h-4" />
+                            <span className="text-xs font-black uppercase tracking-wider">{ADD_LOG_TEXT}</span>
+                        </Button>
+                    )}
                 </div>
 
                 <div className="space-y-4 pt-2">
                     {selectedLogs.length > 0 ? (
-                        selectedLogs.map((log: any) => (
+                        selectedLogs.map((log: LogSumaryCard) => (
                             <LogEntryCard
                                 key={log.id}
                                 log={log}
                                 patientId={patientId}
                                 onUpdate={handleUpdateLog}
+                                highlighted={log.id === focusedLogId}
                             />
                         ))
                     ) : (
-                        <div className="text-center text-muted-foreground py-12 flex flex-col items-center">
-                            <span className="text-4xl mb-3 opacity-20">📝</span>
-                            <p>No entries for this day.</p>
+                        <div className="text-center text-muted-foreground py-16 flex flex-col items-center bg-muted/30 rounded-[2.5rem] border-2 border-dashed border-muted">
+                            <span className="text-4xl mb-4 grayscale opacity-30">✍️</span>
+                            <p className="font-bold uppercase tracking-widest text-xs opacity-60 px-8 text-center leading-loose">
+                                {EMPTY_DAY_LOG_TEXT}
+                            </p>
                         </div>
                     )}
                 </div>
             </div>
+
+            {user?.isCarer && (
+                <AddLogModal
+                    isOpen={isAddModalOpen}
+                    onClose={() => setIsAddModalOpen(false)}
+                    patientId={patientId}
+                    onSuccess={handleAddLog}
+                />
+            )}
         </div>
     );
 }
+

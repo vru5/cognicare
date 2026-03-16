@@ -1,8 +1,12 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState } from "react";
+import { API_BASE_URL } from "@/constants/auth";
+import { createContext, useContext, useEffect, useState, useCallback } from "react";
+import { RegistrationBody } from "server/types/authApi";
+import { useSecureStorage } from "@/hooks/useSecureStorage";
+import { useServiceError } from "@/hooks/useServiceError";
+import { useRouter } from "next/navigation";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
 const AUTH_STORAGE_KEY = "cognicare_auth";
 
 export interface AuthUser {
@@ -10,20 +14,21 @@ export interface AuthUser {
     profileId: string | null;
     role: string | null;
     name: string | null;
+    isCarer: boolean;
 }
 
 interface AuthContextType {
     user: AuthUser | null;
     loading: boolean;
-    login: (email: string, password: string) => Promise<void>;
-    register: (formData: any) => Promise<void>;
+    login: (email: string, password: string) => Promise<AuthUser>;
+    register: (formData: RegistrationBody) => Promise<void>;
     logout: () => void;
 }
 
 const AuthContext = createContext<AuthContextType>({
     user: null,
     loading: true,
-    login: async () => { },
+    login: async () => { throw new Error("Not implemented"); },
     register: async () => { },
     logout: () => { },
 });
@@ -31,60 +36,106 @@ const AuthContext = createContext<AuthContextType>({
 export function AuthProvider({ children }: { children: React.ReactNode }) {
     const [user, setUser] = useState<AuthUser | null>(null);
     const [loading, setLoading] = useState(true);
+    const { setItem, getItem, removeItem } = useSecureStorage();
+    const handleServiceError = useServiceError();
+    const router = useRouter();
 
-    // Rehydrate from localStorage on mount
+    const handleNavigate = useCallback((path: string) => {
+        router.push(path);
+    }, [router]);
+
+    // Rehydrate from secure storage on mount
     useEffect(() => {
-        try {
-            const stored = localStorage.getItem(AUTH_STORAGE_KEY);
-            if (stored) setUser(JSON.parse(stored));
-        } catch {
-            // ignore parse errors
-        } finally {
-            setLoading(false);
-        }
-    }, []);
+        const rehydrate = async () => {
+            try {
+                const stored = await getItem(AUTH_STORAGE_KEY);
+                if (stored) {
+                    const parsedUser = JSON.parse(stored) as AuthUser;
+                    // Ensure isCarer is correctly set even if rehydrating from an old version of the object
+                    if (parsedUser && typeof parsedUser.isCarer === "undefined") {
+                        parsedUser.isCarer = parsedUser.role === "CARER";
+                    }
+                    setUser(parsedUser);
+
+                    // Initialize Push Notifications with navigation callback
+                    import("@/lib/pushNotifications").then(({ PushNotificationService }) => {
+                        PushNotificationService.initialize(parsedUser.userId, handleNavigate);
+                    });
+                }
+            } catch (error) {
+                // ignore parse errors, but catch network/service errors if logic needs it
+                if (error instanceof TypeError && error.message === "Failed to fetch") {
+                   handleServiceError(error);
+                }
+            } finally {
+                setLoading(false);
+            }
+        };
+        rehydrate();
+    }, [getItem]);
 
     const login = async (email: string, password: string) => {
-        const res = await fetch(`${API_URL}/api/auth/login`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ email, password }),
-        });
+        try {
+            const res = await fetch(`${API_BASE_URL}/api/auth/login`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ email, password }),
+            });
 
-        const data = await res.json();
+            const data = await res.json();
 
-        if (!res.ok || !data.success) {
-            throw new Error(data.error || "Login failed");
+            if (!res.ok || !data.success) {
+                throw new Error(data.error || "Login failed");
+            }
+
+            const authUser: AuthUser = {
+                userId: data.userId,
+                profileId: data.profileId,
+                role: data.role,
+                name: data.name,
+                isCarer: data.role === "CARER",
+            };
+
+            await setItem(AUTH_STORAGE_KEY, JSON.stringify(authUser));
+            setUser(authUser);
+            
+            // Initialize Push Notifications with navigation callback
+            const { PushNotificationService } = await import("@/lib/pushNotifications");
+            await PushNotificationService.initialize(authUser.userId, handleNavigate);
+
+            return authUser;
+        } catch (error) {
+            if (error instanceof TypeError && error.message === "Failed to fetch") {
+                handleServiceError(error);
+            }
+            throw error;
         }
-
-        const authUser: AuthUser = {
-            userId: data.userId,
-            profileId: data.profileId,
-            role: data.role,
-            name: data.name,
-        };
-
-        localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(authUser));
-        setUser(authUser);
     };
 
-    const register = async (formData: any) => {
-        const res = await fetch(`${API_URL}/api/auth/register`, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-            },
-            body: JSON.stringify(formData),
-        });
+    const register = async (formData: RegistrationBody) => {
+        try {
+            const res = await fetch(`${API_BASE_URL}/api/auth/register`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify(formData),
+            });
 
-        if (!res.ok) {
-            const errorData = await res.json();
-            throw new Error(errorData.error || "Registration failed");
+            if (!res.ok) {
+                const errorData = await res.json();
+                throw new Error(errorData.error || "Registration failed");
+            }
+        } catch (error) {
+            if (error instanceof TypeError && error.message === "Failed to fetch") {
+                handleServiceError(error);
+            }
+            throw error;
         }
     };
 
-    const logout = () => {
-        localStorage.removeItem(AUTH_STORAGE_KEY);
+    const logout = async () => {
+        await removeItem(AUTH_STORAGE_KEY);
         setUser(null);
     };
 

@@ -1,5 +1,11 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { GoogleGenerativeAI, Part } from "@google/generative-ai";
+import { AppError } from "server/types/logsApi";
 
+/**
+ * API call to Gemini LLM to convert base64 audio to a text format
+ * @param base64Audio 
+ * @returns text from audio
+ */
 export async function transcribeAudioAction(base64Audio: string) {
   const apiKey = (process.env.GEMINI_API_KEY || "").trim();
   if (!apiKey) {
@@ -27,7 +33,7 @@ export async function transcribeAudioAction(base64Audio: string) {
     }
 
     let result;
-    const promptParams = [
+    const promptParams: (string | Part)[] = [
       {
         inlineData: {
           mimeType,
@@ -39,16 +45,17 @@ export async function transcribeAudioAction(base64Audio: string) {
 
     try {
       console.log(`Sending to Gemini for transcription (mime: ${mimeType})...`);
-      result = await model.generateContent(promptParams as any);
-    } catch (apiErr: any) {
-      if (apiErr.status === 503 || apiErr.message?.includes("503")) {
+      result = await model.generateContent(promptParams);
+    } catch (apiErr: unknown) {
+      const err = apiErr as AppError;
+      if (err.status === 503 || err.message?.includes("503")) {
         console.warn(
           "Gemini 2.5 is overloaded (503), falling back to 1.5-flash...",
         );
         const fallbackModel = genAI.getGenerativeModel({
           model: "gemini-1.5-flash",
         });
-        result = await fallbackModel.generateContent(promptParams as any);
+        result = await fallbackModel.generateContent(promptParams);
       } else {
         throw apiErr;
       }
@@ -56,11 +63,12 @@ export async function transcribeAudioAction(base64Audio: string) {
 
     const text = result.response.text().trim();
     return { success: true, text };
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const err = error as AppError;
     console.error("Google Transcription Error:", error);
     if (
-      error.message?.includes("429") ||
-      error.message?.toLowerCase().includes("quota")
+      err.message?.includes("429") ||
+      err.message?.toLowerCase().includes("quota")
     ) {
       return {
         success: false,
@@ -70,8 +78,8 @@ export async function transcribeAudioAction(base64Audio: string) {
     }
     return {
       success: false,
-      error: error.message || "Failed to transcribe audio",
-      details: error.code || "google_api_error",
+      error: err.message || "Failed to transcribe audio",
+      details: err.code || "google_api_error",
     };
   }
 }

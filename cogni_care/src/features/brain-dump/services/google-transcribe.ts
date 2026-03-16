@@ -1,5 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "";
+import { API_BASE_URL } from "@/constants/auth";
 
 export async function transcribeAudio(base64Audio: string) {
   try {
@@ -9,7 +8,7 @@ export async function transcribeAudio(base64Audio: string) {
       body: JSON.stringify({ base64Audio }),
     });
     return await response.json();
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Failed to call transcribe API:", error);
     return { success: false, error: "Failed to connect to transcription service" };
   }

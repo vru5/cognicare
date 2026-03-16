@@ -4,8 +4,44 @@ import Link from "next/link";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
+import { JOIN_CONGNICARE, SIGN_IN } from "@/constants/registerationPage";
+import { COGNICARE, EMPOWERING_SUB_HEADING, HEALTH_COMPANION_TEXT, INSIGHT_SUB_HEADING } from "@/constants/landingPage";
+import { useAuth } from "@/contexts/AuthContext";
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
+import { Loader2 } from "lucide-react";
 
 export default function Home() {
+  const { user, loading } = useAuth();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!loading && user) {
+      // Auto-redirect logged-in users to their home screen
+      if (user.isCarer) {
+        router.replace("/dashboard");
+      } else {
+        router.replace("/brain-dump");
+      }
+    }
+  }, [user, loading, router]);
+
+  // While rehydrating from secure storage, show a blank loader
+  // so the landing page doesn't flash before the redirect
+  if (loading) {
+    return (
+      <div className="w-full min-h-screen flex items-center justify-center bg-[#f8fafc]">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="w-10 h-10 text-primary animate-spin" />
+          <p className="text-slate-600 font-medium">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // If user is logged in, the redirect is in progress — render nothing
+  if (user) return null;
+
   return (
     <div className="relative min-h-screen flex items-center justify-center overflow-hidden">
       {/* Background Image with Heavy Overlay */}
@@ -48,22 +84,22 @@ export default function Home() {
         {/* Text Section */}
         <div className="space-y-4 mb-12">
           <h1 className="text-4xl sm:text-5xl font-black tracking-tight text-foreground">
-            CogniCare
+            {COGNICARE}
           </h1>
           <p className="text-muted-foreground text-lg sm:text-xl font-medium leading-relaxed">
-            Empowering caregivers & patients with <br />
-            <span className="text-primary font-bold italic">intelligent health insights.</span>
+            {EMPOWERING_SUB_HEADING} <br />
+            <span className="text-primary font-bold italic">{INSIGHT_SUB_HEADING}</span>
           </p>
         </div>
 
         {/* Action Buttons */}
         <div className="flex flex-col w-full gap-4">
-          <Link href="/registration" className="w-full">
+          <Link href="/register" className="w-full">
             <Button
               size="lg"
               className="w-full h-16 rounded-full text-lg font-black bg-primary text-foreground shadow-[0_10px_25px_rgba(var(--primary),0.3)] hover:scale-[1.02] transition-all"
             >
-              Join CogniCare
+              {JOIN_CONGNICARE}
             </Button>
           </Link>
 
@@ -73,7 +109,7 @@ export default function Home() {
               size="lg"
               className="w-full h-16 rounded-full text-lg font-black border-2 border-primary/20 text-primary hover:bg-primary/5 transition-all"
             >
-              Sign In
+              {SIGN_IN}
             </Button>
           </Link>
         </div>
@@ -85,7 +121,7 @@ export default function Home() {
           transition={{ delay: 1, duration: 1 }}
           className="mt-12 text-xs font-black uppercase tracking-[0.2em] text-muted-foreground"
         >
-          Your personal health companion
+          {HEALTH_COMPANION_TEXT}
         </motion.p>
       </motion.div>
     </div>

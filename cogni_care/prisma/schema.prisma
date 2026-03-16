@@ -13,6 +13,7 @@ model User {
   phone    String?
   role     String? // "PATIENT" or "CARER"
   password String? // bcrypt hash
+  createdAt DateTime @default(now())
 
   patient ProfilePatient?
   carer   ProfileCarer?
@@ -27,6 +28,9 @@ model ProfilePatient {
   familyMembers  FamilyMember[]
   carers         CarersOnPatients[]
   logs           SymptomLog[]
+  carerNotes     CarerNote[]
+  createdAt      DateTime        @default(now())
+  pushToken      String?
 
   @@map("patient_profiles")
 }
@@ -36,6 +40,9 @@ model ProfileCarer {
   userId   String             @unique
   user     User               @relation(fields: [userId], references: [id])
   patients CarersOnPatients[]
+  notes    CarerNote[]
+  createdAt DateTime           @default(now())
+  pushToken String?
 
   @@map("carer_profiles")
 }
@@ -52,10 +59,11 @@ model FamilyMember {
 }
 
 model CarersOnPatients {
-  carerId   String
-  patientId String
-  carer     ProfileCarer   @relation(fields: [carerId], references: [id])
-  patient   ProfilePatient @relation(fields: [patientId], references: [id])
+  carerId      String
+  patientId    String
+  lastViewedAt DateTime       @default(now())
+  carer        ProfileCarer   @relation(fields: [carerId], references: [id])
+  patient      ProfilePatient @relation(fields: [patientId], references: [id])
 
   @@id([carerId, patientId])
   @@map("carers_on_patients")
@@ -74,6 +82,37 @@ model SymptomLog {
   social    String?
 
   patient   ProfilePatient @relation(fields: [patientId], references: [id])
+  notes     CarerNote[]
 
   @@map("symptom_logs")
+}
+
+model CarerNote {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  text      String
+  
+  // Optional: If present, it's a comment on a specific log
+  logId     String?
+  log       SymptomLog? @relation(fields: [logId], references: [id])
+  
+  carerId   String
+  carer     ProfileCarer @relation(fields: [carerId], references: [id])
+
+  patientId String
+  patient   ProfilePatient @relation(fields: [patientId], references: [id])
+
+  @@map("carer_notes")
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  title     String
+  body      String
+  data      Json?
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@map("notifications")
 }

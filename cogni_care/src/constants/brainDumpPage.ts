@@ -1,0 +1,11 @@
+export const PROCESSING_ENTRY_TEXT = "Processing entry...";
+export const PROCESS_WRITTEN_ENTRY = "Process Written Entry";
+export const TEXTAREA_PLACEHOLDER = "How are you feeling today? e.g., 'Feeling a bit dizzy'...";
+export const TYPE_MANUALLY = "Or type manually";
+export const RECORDING = "Recording...";
+export const VOICE_DUMP_TEXT = "Tap for Voice Dump";
+export const ANALYZING_TEXT = "Analyzing";
+export const MIND_DUMP = "Mind Dump";
+export const MIND_DUMP_SUB_HEADING = "Speak or type your raw thoughts. Let us organize the insights.";
+export const ANALYSIS_PILLAR = "Analysis Pillars";
+export const CLEAR = "Clear";
