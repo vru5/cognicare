@@ -14,9 +14,14 @@ export async function createManualLog(patientId: string, rawText: string, isFrom
     }
 }
 
-export async function getLogs(patientId: string) {
+export async function getLogs(patientId: string, requesterId?: string, isCarer: boolean = false) {
     try {
-        const response = await fetch(`${API_BASE_URL}/api/logs?patientId=${patientId}`);
+        const url = new URL(`${API_BASE_URL}/api/logs`);
+        url.searchParams.append("patientId", patientId);
+        if (requesterId) url.searchParams.append("requesterId", requesterId);
+        if (isCarer) url.searchParams.append("isCarer", "true");
+
+        const response = await fetch(url.toString());
         return await response.json();
     } catch (error: unknown) {
         console.error("Failed to fetch logs:", error);

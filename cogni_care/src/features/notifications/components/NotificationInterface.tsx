@@ -53,28 +53,30 @@ export default function NotificationsInterface() {
 
     return (
         <div className="max-w-2xl mx-auto space-y-6">
-            <div className="flex items-center justify-between pb-2 border-b">
-                <div className="flex items-center gap-3">
-                    <div className="p-2 bg-primary/20 rounded-xl shadow-sm">
-                        <Bell className="w-6 h-6 text-foreground" />
+            <div className="sticky top-0 z-10 -mx-4 -mt-[calc(2rem+env(safe-area-inset-top,0px))] px-4 pt-[calc(2rem+env(safe-area-inset-top,0px))] pb-4 bg-background/80 backdrop-blur-xl border-b border-border/50">
+                <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                        <div className="p-2 bg-primary/20 rounded-xl shadow-sm">
+                            <Bell className="w-6 h-6 text-foreground" />
+                        </div>
+                        <div>
+                            <h1 className="text-2xl font-bold tracking-tight text-foreground">Notifications</h1>
+                            {unreadCount > 0 && (
+                                <p className="text-sm text-primary font-bold">{unreadCount} unread</p>
+                            )}
+                        </div>
                     </div>
-                    <div>
-                        <h1 className="text-2xl font-bold tracking-tight text-foreground">Notifications</h1>
-                        {unreadCount > 0 && (
-                            <p className="text-sm text-primary font-bold">{unreadCount} unread</p>
-                        )}
-                    </div>
+                    {unreadCount > 0 && (
+                        <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            onClick={markAllAsRead}
+                            className="text-foreground hover:text-foreground/80 font-bold"
+                        >
+                            Mark all as read
+                        </Button>
+                    )}
                 </div>
-                {unreadCount > 0 && (
-                    <Button 
-                        variant="ghost" 
-                        size="sm" 
-                        onClick={markAllAsRead}
-                        className="text-foreground hover:text-foreground/80 font-bold"
-                    >
-                        Mark all as read
-                    </Button>
-                )}
             </div>
 
             {notifications.length === 0 ? (

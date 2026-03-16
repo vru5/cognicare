@@ -3,7 +3,13 @@ import { prisma } from "../../lib/prisma.js";
 export async function getCarerPatientsAction(carerProfileId: string) {
     try {
         const relations = await prisma.carersOnPatients.findMany({
-            where: { carerId: carerProfileId },
+            where: { 
+                carerId: carerProfileId,
+                OR: [
+                    { accessSymptomLogs: true },
+                    { accessCareCircle: true }
+                ]
+            },
             include: {
                 patient: {
                     include: {
@@ -31,7 +37,8 @@ export async function getCarerPatientsAction(carerProfileId: string) {
             return {
                 id: rel.patient.id,
                 name: rel.patient.user.name || "Unknown Patient",
-                hasNewLog
+                hasNewLog,
+                accessSymptomLogs: rel.accessSymptomLogs
             };
         });
 

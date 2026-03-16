@@ -16,8 +16,26 @@ type CarerNoteWithUser = Prisma.CarerNoteGetPayload<{
     }
 }>;
 
-export async function getLogsAction(patientId: string) {
+export async function getLogsAction(patientId: string, requesterProfileId?: string, isCarer: boolean = false) {
     try {
+        // 1. Check permissions if requester is a carer
+        if (isCarer && requesterProfileId) {
+            const relation = await prisma.carersOnPatients.findUnique({
+                where: {
+                    carerId_patientId: {
+                        carerId: requesterProfileId,
+                        patientId: patientId,
+                    }
+                },
+                select: { accessSymptomLogs: true }
+            });
+
+            if (!relation?.accessSymptomLogs) {
+                // If access is revoked, return empty logs with a restricted flag
+                return { success: true, logs: [], restricted: true };
+            }
+        }
+
         const [symptomLogs, carerNotes] = await Promise.all([
             prisma.symptomLog.findMany({
                 where: { patientId },

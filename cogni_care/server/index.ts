@@ -8,6 +8,7 @@ import { processBrainDumpAction } from "./actions/brain-dump/processActions.js";
 import { transcribeAudioAction } from "./actions/brain-dump/transcribeActions.js";
 import { registerUser, getProfileAction, loginUser } from "./actions/auth/authActions.js";
 import { getCarerPatientsAction, markPatientAsViewedAction } from "./actions/carer/carerActions.js";
+import { getPatientCarersAction, updateCarerAccessAction, getFullProfileAction } from "./actions/settings/patientSettingActions.js";
 import { AppError } from "./types/logsApi.js";
 
 console.log("Loading environment variables...");
@@ -26,11 +27,15 @@ console.log("Registering routes...");
 
 // GET /api/logs
 app.get("/api/logs", async (req, res) => {
-    const { patientId } = req.query;
+    const { patientId, requesterId, isCarer } = req.query;
     if (!patientId || typeof patientId !== "string") {
         return res.status(400).json({ success: false, error: "Missing patientId" });
     }
-    const result = await getLogsAction(patientId);
+    const result = await getLogsAction(
+        patientId, 
+        requesterId as string, 
+        isCarer === "true"
+    );
     res.json(result);
 });
 
@@ -120,6 +125,36 @@ app.get("/api/auth/profile", async (req, res) => {
         return res.status(400).json({ success: false, error: "Missing userId" });
     }
     const result = await getProfileAction(userId);
+    res.json(result);
+});
+
+// GET /api/settings/profile
+app.get("/api/settings/profile", async (req, res) => {
+    const { userId } = req.query;
+    if (!userId || typeof userId !== "string") {
+        return res.status(400).json({ success: false, error: "Missing userId" });
+    }
+    const result = await getFullProfileAction(userId);
+    res.json(result);
+});
+
+// GET /api/settings/carers
+app.get("/api/settings/carers", async (req, res) => {
+    const { patientProfileId } = req.query;
+    if (!patientProfileId || typeof patientProfileId !== "string") {
+        return res.status(400).json({ success: false, error: "Missing patientProfileId" });
+    }
+    const result = await getPatientCarersAction(patientProfileId);
+    res.json(result);
+});
+
+// PATCH /api/settings/carers
+app.patch("/api/settings/carers", async (req, res) => {
+    const { patientProfileId, carerProfileId, data } = req.body;
+    if (!patientProfileId || !carerProfileId || !data) {
+        return res.status(400).json({ success: false, error: "Missing required fields" });
+    }
+    const result = await updateCarerAccessAction(patientProfileId, carerProfileId, data);
     res.json(result);
 });
 

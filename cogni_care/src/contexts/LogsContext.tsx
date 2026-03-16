@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useState, useCallback, useMemo } from 'react';
 import { LogSumaryCard } from '@/features/logs/types/logSummaryCard';
 import { getLogs as fetchLogsApi } from '@/features/logs/services/logsService';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface LogsContextType {
     logsByPatient: Record<string, LogSumaryCard[]>;
@@ -22,13 +23,15 @@ export function LogsProvider({ children }: { children: React.ReactNode }) {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
+    const { user } = useAuth();
+
     const fetchLogs = useCallback(async (patientId: string, force = false) => {
         if (!force && fetchedPatients.has(patientId)) return;
 
         setLoading(true);
         setError(null);
         try {
-            const result = await fetchLogsApi(patientId);
+            const result = await fetchLogsApi(patientId, user?.profileId || undefined, user?.isCarer);
             if (result.success) {
                 setLogsByPatient(prev => ({
                     ...prev,
