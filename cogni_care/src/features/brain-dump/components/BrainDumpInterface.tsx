@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLogs } from "@/contexts/LogsContext";
 import { useVoiceCapture } from "../hooks/useVoiceCapture";
@@ -11,6 +11,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import SummaryCard from "./SummaryCard";
 import { processBrainDump } from "../services/processText";
 import { transcribeAudio } from "../services/google-transcribe";
+import { getSocket } from "@/lib/socket";
 import { ANALYZING_TEXT, MIND_DUMP, MIND_DUMP_SUB_HEADING, PROCESS_WRITTEN_ENTRY, PROCESSING_ENTRY_TEXT, RECORDING, TEXTAREA_PLACEHOLDER, TYPE_MANUALLY, VOICE_DUMP_TEXT } from "@/constants/brainDumpPage";
 import { AnalysisCard } from "../types/analysisSummaryCard";
 
@@ -34,6 +35,21 @@ export default function BrainDumpInterface() {
     stopRecording,
   } = useVoiceCapture();
   const [isVisuallyRecording, setIsVisuallyRecording] = useState(false);
+  const [processingStatus, setProcessingStatus] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (patientId) {
+      const socket = getSocket(patientId);
+      socket.on("processing_status", (payload: { status: string; message: string }) => {
+        console.log("[BrainDump] Processing status update:", payload);
+        setProcessingStatus(payload.message);
+      });
+
+      return () => {
+        socket.off("processing_status");
+      };
+    }
+  }, [patientId]);
 
   const handleVoiceToggle = async () => {
     if (hookIsRecording || isVisuallyRecording) {
@@ -50,7 +66,7 @@ export default function BrainDumpInterface() {
           throw new Error("No audio data captured.");
         }
 
-        const transcription = await transcribeAudio(base64Data);
+        const transcription = await transcribeAudio(base64Data, patientId || undefined);
 
         if (transcription.success) {
           if (!transcription.text) {
@@ -144,6 +160,7 @@ export default function BrainDumpInterface() {
     setText("");
     setProcessedText("");
     setSummary(null);
+    setProcessingStatus(null);
     setIsFocused(false);
     setIsVisuallyRecording(false);
     setIsVoiceAnalyzing(false);
@@ -226,9 +243,9 @@ export default function BrainDumpInterface() {
                 <Mic
                   className={`h-16 w-16 sm:h-20 sm:w-20 ${isVisuallyRecording ? "animate-pulse text-primary-foreground" : "text-primary"}`}
                 />
-                {isVoiceAnalyzing && !isVisuallyRecording && (
+                {(isVoiceAnalyzing || isTextAnalyzing) && !isVisuallyRecording && (
                   <span className="text-xs sm:text-sm font-black uppercase tracking-widest text-primary flex items-center gap-2 mt-2">
-                    <Loader2 className="h-4 w-4 animate-spin" /> {ANALYZING_TEXT}
+                    <Loader2 className="h-4 w-4 animate-spin" /> {processingStatus || (isVoiceAnalyzing ? ANALYZING_TEXT : PROCESSING_ENTRY_TEXT)}
                   </span>
                 )}
               </div>

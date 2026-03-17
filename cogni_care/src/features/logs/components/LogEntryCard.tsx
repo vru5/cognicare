@@ -48,7 +48,7 @@ export default function LogEntryCard({ log, patientId, onUpdate, onDelete, highl
     }).filter((pillar) => pillar.value && pillar.value !== "N/A" && pillar.value !== "null" && pillar.value.trim() !== "");
 
     const handleSave = async () => {
-        if (newText.trim() === log.rawText.trim()) {
+        if (isSaving || newText.trim() === log.rawText.trim()) {
             setIsEditing(false);
             return;
         }
@@ -65,6 +65,7 @@ export default function LogEntryCard({ log, patientId, onUpdate, onDelete, highl
     };
 
     const handleDelete = async () => {
+        if (isDeleting) return;
         const confirmMsg = log.isFromCarer ? "Delete this carer log?" : "Delete your log?";
         if (!confirm(confirmMsg)) return;
 
@@ -84,7 +85,7 @@ export default function LogEntryCard({ log, patientId, onUpdate, onDelete, highl
     };
 
     const handleSaveComment = async () => {
-        if (!commentText.trim() || !profileId) return;
+        if (isSavingComment || !commentText.trim() || !profileId) return;
         setIsSavingComment(true);
         const result = await addCarerComment(log.id, commentText, profileId);
         if (result.success) {

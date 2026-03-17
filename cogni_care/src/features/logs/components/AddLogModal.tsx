@@ -21,35 +21,21 @@ interface AddLogModalProps {
 
 export default function AddLogModal({ isOpen, onClose, patientId, onSuccess }: AddLogModalProps) {
     const { user } = useAuth();
-    const { clearCache } = useLogs();
+    const { addLogToCache } = useLogs();
     const isCarer = user?.role === "CARER";
 
     const [text, setText] = useState("");
     const [isSaving, setIsSaving] = useState(false);
 
     const handleSubmit = async () => {
-        if (!text.trim()) return;
+        if (isSaving || !text.trim()) return;
 
         setIsSaving(true);
         try {
             const result = await createManualLog(patientId, text, isCarer, user?.profileId || undefined);
             if (result.success) {
-                // Invalidate cache so other views fetch fresh data
-                clearCache(patientId);
-
-                // Realtime "Green Dot" trigger for carers (Free Tier Fallback)
-                if (!isCarer) {
-                    const activityChannel = supabase.channel('patient_activity');
-                    activityChannel.subscribe((status) => {
-                        if (status === 'SUBSCRIBED') {
-                            activityChannel.send({
-                                type: "broadcast",
-                                event: "new_log",
-                                payload: { patientId, timestamp: new Date().toISOString() }
-                            });
-                        }
-                    });
-                }
+                // Update local context cache immediately
+                addLogToCache(patientId, result.log);
 
                 onSuccess(result.log);
                 setText("");

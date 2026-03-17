@@ -1,4 +1,5 @@
 import { prisma } from "../../lib/prisma";
+import { getIO } from "../../lib/socket";
 
 export async function getPatientCarersAction(patientProfileId: string) {
     try {
@@ -51,6 +52,19 @@ export async function updateCarerAccessAction(
                 ...(data.accessCareCircle !== undefined && { accessCareCircle: data.accessCareCircle }),
             }
         });
+
+        // Emit WebSocket event for real-time refresh
+        try {
+            const io = getIO();
+            io.to(carerProfileId).emit("permission_updated", {
+                patientId: patientProfileId,
+                accessSymptomLogs: data.accessSymptomLogs,
+                accessCareCircle: data.accessCareCircle
+            });
+            console.log(`[Socket] Emitted permission_updated to carer: ${carerProfileId}`);
+        } catch (err) {
+            console.warn("[Socket] Failed to emit permission_updated:", err);
+        }
 
         return { success: true };
     } catch (error: unknown) {

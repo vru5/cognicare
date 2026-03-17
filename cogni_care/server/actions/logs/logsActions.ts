@@ -7,6 +7,7 @@ import { Analysis, SymptomRecord, SymptomLogUpdateData } from "../../types/logsA
 import { markPatientAsViewedAction } from "../carer/carerActions";
 import { sendPushNotificationAction } from "../../lib/notificationService";
 import { Prisma } from "@prisma/client";
+import { getIO } from "../../lib/socket";
 
 type CarerNoteWithUser = Prisma.CarerNoteGetPayload<{
     include: {
@@ -132,6 +133,20 @@ export async function createManualLogAction(data: {
             // Trigger push notification for independent log
             await sendPushNotificationAction(log.id);
 
+            // Real-time notification via WebSocket
+            try {
+                const io = getIO();
+                io.to(patientId).emit("new_notification", {
+                    type: "CARER_LOG",
+                    title: "New Note from Carer",
+                    body: `${log.carer.user.name || "A carer"} added a new note.`,
+                    data: { note_id: log.id }
+                });
+                io.to(patientId).emit("new_log", { patientId });
+            } catch (err) {
+                console.warn("[Socket] Failed to emit CARER_LOG notification:", err);
+            }
+
             return {
                 success: true,
                 log: {
@@ -211,6 +226,24 @@ Log: "${safeText}"`;
                 notes: true,
             },
         });
+
+        // Real-time notification for new patient log (to carers)
+        try {
+            const io = getIO();
+            // In a real app, you'd find all carers for this patient.
+            // For now, we broadcast to a patient-specific room where carers might be listening
+            // or we could broadcast to all carers connected.
+            // Let's broadcast to the patient room; carers should join rooms of their patients.
+            io.to(patientId).emit("new_notification", {
+                type: "PATIENT_LOG",
+                title: "New Patient Entry",
+                body: "A new health entry has been recorded.",
+                data: { note_id: log.id }
+            });
+            io.to(patientId).emit("new_log", { patientId });
+        } catch (err) {
+            console.warn("[Socket] Failed to emit PATIENT_LOG notification:", err);
+        }
 
         return {
             success: true,
@@ -415,6 +448,19 @@ export async function addCarerCommentAction(
 
         // Trigger push notification via Supabase Edge Function
         await sendPushNotificationAction(note.id);
+
+        // Real-time notification for comment
+        try {
+            const io = getIO();
+            io.to(patientIdFromLog).emit("new_notification", {
+                type: "CARER_COMMENT",
+                title: "New Comment",
+                body: `${note.carer.user.name || "A carer"} commented on a log.`,
+                data: { logId: logId }
+            });
+        } catch (err) {
+            console.warn("[Socket] Failed to emit CARER_COMMENT notification:", err);
+        }
 
         return {
             success: true,

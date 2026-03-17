@@ -10,13 +10,14 @@ import { registerUser, getProfileAction, loginUser } from "./actions/auth/authAc
 import { getCarerPatientsAction, markPatientAsViewedAction } from "./actions/carer/carerActions.js";
 import { getPatientCarersAction, updateCarerAccessAction, getFullProfileAction } from "./actions/settings/patientSettingActions.js";
 import { AppError } from "./types/logsApi.js";
+import { initSocket } from "./lib/socket.js";
 
 console.log("Loading environment variables...");
 dotenv.config({ path: "../.env" }); // Load from root .env
 
 console.log("Initializing Express app...");
 const app = express();
-const port = process.env.PORT || 4000;
+const port = process.env.SERVER_PORT || 4000;
 
 console.log("Setting up middleware...");
 app.use(cors());
@@ -32,8 +33,8 @@ app.get("/api/logs", async (req, res) => {
         return res.status(400).json({ success: false, error: "Missing patientId" });
     }
     const result = await getLogsAction(
-        patientId, 
-        requesterId as string, 
+        patientId,
+        requesterId as string,
         isCarer === "true"
     );
     res.json(result);
@@ -109,11 +110,11 @@ app.post("/api/brain-dump/process", async (req, res) => {
 
 // POST /api/brain-dump/transcribe
 app.post("/api/brain-dump/transcribe", async (req, res) => {
-    const { base64Audio } = req.body;
+    const { base64Audio, patientId } = req.body;
     if (!base64Audio) {
         return res.status(400).json({ success: false, error: "Missing base64Audio" });
     }
-    const result = await transcribeAudioAction(base64Audio);
+    const result = await transcribeAudioAction(base64Audio, patientId);
     res.json(result);
 });
 
@@ -208,7 +209,7 @@ app.post("/api/auth/push-token", async (req, res) => {
     if (!userId || !pushToken) {
         return res.status(400).json({ success: false, error: "Missing required fields" });
     }
-    
+
     try {
         // Try to update patient profile first
         const patientResult = await prisma.profilePatient.updateMany({
@@ -237,6 +238,9 @@ app.post("/api/auth/push-token", async (req, res) => {
     }
 });
 
-app.listen(port, () => {
+const server = app.listen(port, () => {
     console.log(`Backend Server running on port ${port}`);
 });
+
+// Initialize Socket.io with the server instance
+const io = initSocket(server);

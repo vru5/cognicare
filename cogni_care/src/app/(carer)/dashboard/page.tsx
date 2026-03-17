@@ -7,7 +7,7 @@ import { Loader2, User, ChevronRight } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { EMPTY_LIST_SUBHEADING, EMPTY_PATIENT_LIST, HEADING, PATIENT_ID, SUB_HEADING } from "@/constants/carerLandingPage";
 import { API_BASE_URL } from "@/constants/auth";
-import { supabase } from "@/lib/supabase";
+import { getSocket } from "@/lib/socket";
 
 interface Patient {
     id: string;
@@ -37,52 +37,40 @@ export default function CarerDashboard() {
         if (user?.isCarer && user.profileId) {
             fetchPatients();
 
-            // Realtime listener for new logs (Free Tier Fallback)
-            const channel = supabase.channel("patient_activity")
-                .on(
-                    "broadcast",
-                    { event: "new_log" },
-                    (payload) => {
-                        console.log("[CarerDashboard] Broadcast received:", payload);
-                        const { patientId } = payload.payload;
+            const socket = getSocket(user.profileId);
 
-                        setPatients(prev => {
-                            console.log("[CarerDashboard] Current patients in state:", prev.map(p => p.id));
-                            return prev.map(p => {
-                                if (p.id.trim().toLowerCase() === patientId.trim().toLowerCase()) {
-                                    console.log(`[CarerDashboard] MATCH found for patient ${patientId}. Updating dot.`);
-                                    return { ...p, hasNewLog: true };
-                                }
-                                return p;
-                            });
-                        });
-                    }
-                )
-                .subscribe((status) => {
-                    console.log(`[CarerDashboard] Realtime subscription status: ${status}`);
-                });
+            socket.on("new_log", (payload) => {
+                console.log("[CarerDashboard] Socket new_log received:", payload);
+                const { patientId } = payload;
 
-            // Realtime listener for access changes (Free Tier Fallback)
-            const accessChannel = supabase.channel("access_updates")
-                .on(
-                    "broadcast",
-                    { event: "access_changed" },
-                    (payload) => {
-                        console.log("[CarerDashboard] Access change received:", payload);
-                        const { carerId } = payload.payload;
-                        if (carerId === user.profileId) {
-                            console.log("[CarerDashboard] Access rule changed for me, refetching patients!");
-                            fetchPatients(); // Immediately reload permissions
+                setPatients(prev => {
+                    return prev.map(p => {
+                        if (p.id.trim().toLowerCase() === patientId.trim().toLowerCase()) {
+                            return { ...p, hasNewLog: true };
                         }
-                    }
-                )
-                .subscribe((status) => {
-                    console.log(`[CarerDashboard] Access channel status: ${status}`);
+                        return p;
+                    });
                 });
+            });
+
+            socket.on("permission_updated", (payload) => {
+                console.log("[CarerDashboard] Socket permission_updated received:", payload);
+                console.log("[CarerDashboard] Refreshing patients list...");
+                fetchPatients();
+            });
+
+            socket.on("new_notification", (payload) => {
+                console.log("[CarerDashboard] Socket new_notification received:", payload);
+                // Update dots if it's a log-related notification
+                if (payload.type === "PATIENT_LOG" || payload.type === "CARER_COMMENT") {
+                     fetchPatients(); // Simplest way to ensure dots are correct
+                }
+            });
 
             return () => {
-                supabase.removeChannel(channel);
-                supabase.removeChannel(accessChannel);
+                socket.off("new_log");
+                socket.off("permission_updated");
+                socket.off("new_notification");
             };
         }
     }, [user, user?.isCarer, user?.profileId]);
@@ -166,15 +154,10 @@ export default function CarerDashboard() {
                         <div key={patient.id} className="block group">
                             <Card
                                 onClick={() => {
-                                    if (patient.accessSymptomLogs) {
-                                        handlePatientClick(patient.id);
-                                        router.push(`/logs?patientId=${patient.id}`);
-                                    }
+                                    handlePatientClick(patient.id);
+                                    router.push(`/logs?patientId=${patient.id}`);
                                 }}
-                                className={`transition-all duration-300 border-slate-100 bg-white/80 backdrop-blur-xl ${patient.accessSymptomLogs
-                                        ? "hover:shadow-lg hover:scale-[1.01] active:scale-[0.99] cursor-pointer"
-                                        : "opacity-75 cursor-default"
-                                    }`}
+                                className="transition-all duration-300 border-slate-100 bg-white/80 backdrop-blur-xl hover:shadow-lg hover:scale-[1.01] active:scale-[0.99] cursor-pointer"
                             >
                                 <CardContent className="p-6 flex items-center justify-between">
                                     <div className="flex items-center gap-4">
@@ -187,22 +170,15 @@ export default function CarerDashboard() {
                                             )}
                                         </div>
                                         <div className="space-y-1">
-                                            <h3 className={`font-black text-lg tracking-tight transition-colors ${patient.accessSymptomLogs ? "text-foreground group-hover:text-primary" : "text-slate-500"}`}>
+                                            <h3 className="font-black text-lg tracking-tight transition-colors text-foreground group-hover:text-primary">
                                                 {patient.name}
                                             </h3>
                                             <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
                                                 <span>{PATIENT_ID} : {patient.id}</span>
-                                                {!patient.accessSymptomLogs && (
-                                                    <span className="bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full text-[10px] normal-case tracking-normal">
-                                                        Logs Restricted
-                                                    </span>
-                                                )}
                                             </p>
                                         </div>
                                     </div>
-                                    {patient.accessSymptomLogs && (
-                                        <ChevronRight className="h-5 w-5 text-slate-300 group-hover:text-primary transition-all group-hover:translate-x-1" />
-                                    )}
+                                    <ChevronRight className="h-5 w-5 text-slate-300 group-hover:text-primary transition-all group-hover:translate-x-1" />
                                 </CardContent>
                             </Card>
                         </div>

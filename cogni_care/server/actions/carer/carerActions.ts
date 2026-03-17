@@ -5,10 +5,7 @@ export async function getCarerPatientsAction(carerProfileId: string) {
         const relations = await prisma.carersOnPatients.findMany({
             where: { 
                 carerId: carerProfileId,
-                OR: [
-                    { accessSymptomLogs: true },
-                    { accessCareCircle: true }
-                ]
+                accessSymptomLogs: true
             },
             include: {
                 patient: {

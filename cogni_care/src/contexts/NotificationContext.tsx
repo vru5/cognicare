@@ -4,6 +4,7 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from './AuthContext';
 import { NotificationRecord } from '@/features/notifications/types/notificationType';
+import { getSocket } from '@/lib/socket';
 
 interface NotificationContextType {
     notifications: NotificationRecord[];
@@ -70,28 +71,28 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
 
         fetchNotifications();
 
-        console.log(`[NotificationProvider] Subscribing to notifications for user ${targetId}`);
+        console.log(`[NotificationProvider] Connecting to socket and joining room ${targetId}`);
+        const socket = getSocket(targetId);
 
-        const channel = supabase.channel(`user_notifications:${targetId}`)
-            .on(
-                'broadcast',
-                { event: 'new_notification' },
-                (payload: { payload: NotificationRecord }) => {
-                    console.log('[NotificationProvider] New broadcast notification received:', payload);
-                    const newNotif = payload.payload;
-                    setNotifications(prev => [newNotif, ...prev]);
-                    setUnreadCount(prev => prev + 1);
-                }
-            )
-            .subscribe((status) => {
-                if (status === 'SUBSCRIBED') {
-                    console.log('[NotificationProvider] Successfully subscribed to realtime broadcasts');
-                }
-            });
+        socket.on('new_notification', (payload: any) => {
+            console.log('[NotificationProvider] Socket new_notification received:', payload);
+            
+            // Construct a proper notification record if the backend didn't send a full one
+            // In a more complex app, the backend would save it to DB first and emit the record
+            // For now, if it's just a payload, we might need to refetch or merge
+            
+            // If the payload has the full record (id, title, etc.), use it
+            if (payload.id) {
+                setNotifications(prev => [payload, ...prev]);
+                setUnreadCount(prev => prev + 1);
+            } else {
+                // If it's just a signal, refetch all
+                fetchNotifications();
+            }
+        });
 
         return () => {
-            console.log('[NotificationProvider] Unsubscribing from notifications');
-            supabase.removeChannel(channel);
+             socket.off('new_notification');
         };
     }, [user?.userId, user?.profileId]);
 

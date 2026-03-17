@@ -53,18 +53,6 @@ export default function CarerAccessModal({ isOpen, onClose, carer, onSuccess }: 
             });
 
             if (result.success) {
-                // Realtime broadcast to trigger dashboard refresh
-                const accessChannel = supabase.channel('access_updates');
-                accessChannel.subscribe((status) => {
-                    if (status === 'SUBSCRIBED') {
-                        accessChannel.send({
-                            type: "broadcast",
-                            event: "access_changed",
-                            payload: { carerId: carer.id, patientId: user.profileId }
-                        });
-                    }
-                });
-
                 onSuccess();
                 onClose();
             } else {

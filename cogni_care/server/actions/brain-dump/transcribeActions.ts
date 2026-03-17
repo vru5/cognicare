@@ -1,15 +1,24 @@
 import { GoogleGenerativeAI, Part } from "@google/generative-ai";
 import { AppError } from "server/types/logsApi";
+import { getIO } from "../../lib/socket.js";
 
 /**
  * API call to Gemini LLM to convert base64 audio to a text format
  * @param base64Audio 
+ * @param patientId
  * @returns text from audio
  */
-export async function transcribeAudioAction(base64Audio: string) {
+export async function transcribeAudioAction(base64Audio: string, patientId?: string) {
   const apiKey = (process.env.GEMINI_API_KEY || "").trim();
   if (!apiKey) {
     return { success: false, error: "Gemini API Key is not configured." };
+  }
+
+  // Real-time status update
+  if (patientId) {
+    try {
+      getIO().to(patientId).emit("processing_status", { status: "transcribing", message: "Transcribing audio..." });
+    } catch (e) {}
   }
 
   const genAI = new GoogleGenerativeAI(apiKey);

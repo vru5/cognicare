@@ -3,6 +3,7 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import { mask } from "@yellowsakura/js-pii-mask";
 import { prisma } from "../../lib/prisma.js";
 import { Analysis, AppError } from "server/types/logsApi.js";
+import { getIO } from "../../lib/socket.js";
 
 export async function processBrainDumpAction(
   rawText: string,
@@ -12,6 +13,11 @@ export async function processBrainDumpAction(
 
   const genAI = new GoogleGenerativeAI(apiKey);
   const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+
+  // Real-time status update
+  try {
+    getIO().to(patientId).emit("processing_status", { status: "analyzing", message: "Analyzing your thoughts..." });
+  } catch (e) {}
 
   try {
     const safeText = mask(rawText || "");
@@ -120,6 +126,21 @@ export async function processBrainDumpAction(
         log,
         message: "No specific symptoms detected in this entry.",
       };
+    }
+
+    // Notify associated carers via WebSocket
+    try {
+      const io = getIO();
+      const patientCarers = await prisma.carersOnPatients.findMany({
+        where: { patientId: profile.id },
+        select: { carerId: true },
+      });
+      patientCarers.forEach((pc) => {
+        io.to(pc.carerId).emit("new_log", { patientId: profile.id });
+      });
+      console.log(`[Socket] Notified ${patientCarers.length} carers about new Mind Dump log`);
+    } catch (e) {
+      console.warn("[Socket] Failed to notify carers:", e);
     }
 
     return { success: true, log };
