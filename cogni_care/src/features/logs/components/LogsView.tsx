@@ -10,17 +10,19 @@ import AddLogModal from "@/features/logs/components/AddLogModal";
 import { ChevronLeft, ChevronRight, ArrowLeft, Plus } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
+import { useLogs } from "@/contexts/LogsContext";
 import { useRouter } from "next/navigation";
-import { LogSumaryCard } from "../types/logSummaryCard";
-import { ADD_LOG_TEXT, BACK_BUTTON, EMPTY_DAY_LOG_TEXT, SELECTED_DATE_ENTRIES } from "@/constants/logPage";
+import { LogSummaryCard } from "../types/logTypes";
+import { ADD_LOG_TEXT, BACK_BUTTON, EMPTY_DAY_LOG_TEXT, SELECTED_DATE_ENTRIES } from "../constants/logPage";
 
 type LogViewType = "day" | "week" | "month";
 
-export default function LogsView({ initialLogs, patientId, focusedLogId }: { initialLogs: LogSumaryCard[], patientId: string, focusedLogId?: string }) {
+export default function LogsView({ initialLogs, patientId, focusedLogId }: { initialLogs: LogSummaryCard[], patientId: string, focusedLogId?: string }) {
     const { user } = useAuth();
+    const { updateLogInCache, deleteLogFromCache } = useLogs();
     const router = useRouter();
     const [viewMode, setViewMode] = useState<LogViewType>("day");
-    const [logs, setLogs] = useState<LogSumaryCard[]>([]);
+    const [logs, setLogs] = useState<LogSummaryCard[]>([]);
     const [mounted, setMounted] = useState(false);
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
@@ -79,13 +81,17 @@ export default function LogsView({ initialLogs, patientId, focusedLogId }: { ini
         }
     };
 
-    const handleUpdateLog = (updatedLog: LogSumaryCard) => {
+    const handleUpdateLog = (updatedLog: LogSummaryCard) => {
+        // Update context first
+        updateLogInCache(patientId, updatedLog);
+        
+        // Update local state for immediate feedback
         setLogs(currentLogs =>
             currentLogs.map(log => log.id === updatedLog.id ? updatedLog : log)
         );
     };
 
-    const handleAddLog = (newLog: LogSumaryCard) => {
+    const handleAddLog = (newLog: LogSummaryCard) => {
         setLogs(currentLogs => [newLog, ...currentLogs]);
     };
 
@@ -110,9 +116,16 @@ export default function LogsView({ initialLogs, patientId, focusedLogId }: { ini
         return (logs || []).filter(log => isSameDay(new Date(log.createdAt), selectedDate));
     }, [logs, selectedDate]);
 
+    const isFutureDate = (date: Date) => {
+        const d = new Date(date);
+        d.setHours(0, 0, 0, 0);
+        const t = new Date(today);
+        t.setHours(0, 0, 0, 0);
+        return d > t;
+    };
+
     // Calendar logic
     const navigateDate = (amount: number) => {
-        setDirection(amount > 0 ? 1 : -1);
         const newDate = new Date(currentDate);
         if (viewMode === "month") {
             newDate.setMonth(newDate.getMonth() + amount);
@@ -120,7 +133,32 @@ export default function LogsView({ initialLogs, patientId, focusedLogId }: { ini
             newDate.setDate(newDate.getDate() + (amount * 7));
         } else {
             newDate.setDate(newDate.getDate() + amount);
-            setSelectedDate(newDate); // Sync selected date when in day view
+        }
+
+        // Prevent navigating forward to a time period that is entirely in the future
+        // For 'day' view, it's easy. For 'week'/'month', we might allow viewing the current period
+        if (amount > 0) {
+            const startOfNewPeriod = new Date(newDate);
+            if (viewMode === "month") {
+                startOfNewPeriod.setDate(1);
+            } else if (viewMode === "week") {
+                const day = startOfNewPeriod.getDay();
+                startOfNewPeriod.setDate(startOfNewPeriod.getDate() - (day === 0 ? 6 : day - 1));
+            }
+            startOfNewPeriod.setHours(0, 0, 0, 0);
+            
+            const startOfToday = new Date(today);
+            startOfToday.setHours(0, 0, 0, 0);
+
+            // If the start of the new period is after today, block it (unless it's the current period)
+            if (startOfNewPeriod > startOfToday && viewMode === "day") return;
+            // For week/month, we can be more lenient or strict. Let's block if the whole period starts after today.
+            if (startOfNewPeriod > startOfToday) return;
+        }
+
+        setDirection(amount > 0 ? 1 : -1);
+        if (viewMode === "day") {
+            setSelectedDate(newDate);
         }
         setCurrentDate(newDate);
     };
@@ -269,17 +307,21 @@ export default function LogsView({ initialLogs, patientId, focusedLogId }: { ini
                                     const isSelected = isSameDay(date, selectedDate);
                                     const hasLog = hasLogOnDate(date);
                                     const isToday = isSameDay(date, today);
+                                    const isFuture = isFutureDate(date);
 
                                     return (
                                         <div key={date.toISOString()} className="flex justify-center items-center relative">
                                             <button
-                                                onClick={() => setSelectedDate(date)}
+                                                onClick={() => !isFuture && setSelectedDate(date)}
+                                                disabled={isFuture}
                                                 className={`h-10 w-10 flex items-center justify-center rounded-full text-sm font-semibold transition-all
                                                     ${isSelected
                                                         ? "bg-sky-600 text-white shadow-md shadow-sky-200"
                                                         : hasLog
                                                             ? "bg-sky-400 text-white"
-                                                            : "text-foreground hover:bg-sky-50"
+                                                            : isFuture 
+                                                                ? "text-muted-foreground/30 cursor-not-allowed"
+                                                                : "text-foreground hover:bg-sky-50"
                                                     }
                                                     ${!isSelected && !hasLog && isToday ? "border-2 border-dashed border-sky-400 text-sky-600" : ""}
                                                 `}
@@ -304,7 +346,7 @@ export default function LogsView({ initialLogs, patientId, focusedLogId }: { ini
                             {selectedLogs.length}
                         </span>
                     </h3>
-                    {user?.isCarer && (
+                    {user?.isCarer && !isFutureDate(selectedDate) && (
                         <Button
                             size="sm"
                             onClick={() => setIsAddModalOpen(true)}
@@ -318,12 +360,16 @@ export default function LogsView({ initialLogs, patientId, focusedLogId }: { ini
 
                 <div className="space-y-4 pt-2">
                     {selectedLogs.length > 0 ? (
-                        selectedLogs.map((log: LogSumaryCard) => (
+                        selectedLogs.map((log: LogSummaryCard) => (
                             <LogEntryCard
                                 key={log.id}
                                 log={log}
                                 patientId={patientId}
                                 onUpdate={handleUpdateLog}
+                                onDelete={(id) => {
+                                    deleteLogFromCache(patientId, id);
+                                    setLogs(prev => prev.filter(l => l.id !== id));
+                                }}
                                 highlighted={log.id === focusedLogId}
                             />
                         ))

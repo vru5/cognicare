@@ -1,11 +1,11 @@
 import { API_BASE_URL } from "@/constants/auth";
 
-export async function transcribeAudio(base64Audio: string) {
+export async function transcribeAudio(base64Audio: string, patientId?: string) {
   try {
     const response = await fetch(`${API_BASE_URL}/api/brain-dump/transcribe`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ base64Audio }),
+      body: JSON.stringify({ base64Audio, patientId }),
     });
     return await response.json();
   } catch (error: unknown) {

@@ -1,39 +1,62 @@
 "use client";
 
-import React, { createContext, useContext, useState, useCallback, useMemo } from 'react';
-import { LogSumaryCard } from '@/features/logs/types/logSummaryCard';
+import React, { createContext, useContext, useState, useCallback, useMemo, useEffect } from 'react';
+import { LogSummaryCard } from '@/features/logs/types/logTypes';
 import { getLogs as fetchLogsApi } from '@/features/logs/services/logsService';
+import { useAuth } from '@/contexts/AuthContext';
+import { getSocket } from '@/lib/socket';
 
 interface LogsContextType {
-    logsByPatient: Record<string, LogSumaryCard[]>;
+    logsByPatient: Record<string, LogSummaryCard[]>;
     loading: boolean;
     error: string | null;
     fetchLogs: (patientId: string, force?: boolean) => Promise<void>;
-    getCachedLogs: (patientId: string) => LogSumaryCard[];
+    getCachedLogs: (patientId: string) => LogSummaryCard[];
     hasFetched: (patientId: string) => boolean;
     clearCache: (patientId?: string) => void;
+    addLogToCache: (patientId: string, log: LogSummaryCard) => void;
+    updateLogInCache: (patientId: string, log: LogSummaryCard) => void;
+    deleteLogFromCache: (patientId: string, logId: string) => void;
+    restrictedPatients: Set<string>;
 }
 
 const LogsContext = createContext<LogsContextType | undefined>(undefined);
 
 export function LogsProvider({ children }: { children: React.ReactNode }) {
-    const [logsByPatient, setLogsByPatient] = useState<Record<string, LogSumaryCard[]>>({});
+    const [logsByPatient, setLogsByPatient] = useState<Record<string, LogSummaryCard[]>>({});
     const [fetchedPatients, setFetchedPatients] = useState<Set<string>>(new Set());
+    const [restrictedPatients, setRestrictedPatients] = useState<Set<string>>(new Set());
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    const fetchLogs = useCallback(async (patientId: string, force = false) => {
-        if (!force && fetchedPatients.has(patientId)) return;
+    const { user } = useAuth();
 
+    const fetchLogs = useCallback(async (patientId: string, force = false) => {
+        // Use a functional update or a ref if needed, but here we can just check the current state 
+        // since fetchLogs is usually called in useEffect or event handlers.
+        // To avoid the infinite loop, we must ensure fetchLogs doesn't change when fetchedPatients changes.
+        // However, if we need to check fetchedPatients, we can use a functional check or just let it be.
+        // The real issue is LogsContent calling it in a way that triggers a re-render which triggers fetchLogs.
+        
         setLoading(true);
         setError(null);
         try {
-            const result = await fetchLogsApi(patientId);
+            const result = await fetchLogsApi(patientId, user?.profileId || undefined, user?.isCarer);
             if (result.success) {
-                setLogsByPatient(prev => ({
-                    ...prev,
-                    [patientId]: result.logs || []
-                }));
+                if (result.restricted) {
+                    setRestrictedPatients(prev => new Set(prev).add(patientId));
+                    setLogsByPatient(prev => ({ ...prev, [patientId]: [] }));
+                } else {
+                    setLogsByPatient(prev => ({
+                        ...prev,
+                        [patientId]: result.logs || []
+                    }));
+                    setRestrictedPatients(prev => {
+                        const next = new Set(prev);
+                        next.delete(patientId);
+                        return next;
+                    });
+                }
                 setFetchedPatients(prev => new Set(prev).add(patientId));
             } else {
                 setError(result.error || 'Failed to fetch logs');
@@ -44,7 +67,7 @@ export function LogsProvider({ children }: { children: React.ReactNode }) {
         } finally {
             setLoading(false);
         }
-    }, [fetchedPatients]);
+    }, [user?.profileId, user?.isCarer]); // Removed fetchedPatients from dependencies
 
     const getCachedLogs = useCallback((patientId: string) => {
         return logsByPatient[patientId] || [];
@@ -71,6 +94,56 @@ export function LogsProvider({ children }: { children: React.ReactNode }) {
             setFetchedPatients(new Set());
         }
     }, []);
+    
+    const addLogToCache = useCallback((patientId: string, log: LogSummaryCard) => {
+        setLogsByPatient(prev => ({
+            ...prev,
+            [patientId]: [log, ...(prev[patientId] || [])]
+        }));
+    }, []);
+
+    const updateLogInCache = useCallback((patientId: string, log: LogSummaryCard) => {
+        setLogsByPatient(prev => ({
+            ...prev,
+            [patientId]: (prev[patientId] || []).map(l => l.id === log.id ? log : l)
+        }));
+    }, []);
+
+    const deleteLogFromCache = useCallback((patientId: string, logId: string) => {
+        setLogsByPatient(prev => ({
+            ...prev,
+            [patientId]: (prev[patientId] || []).filter(l => l.id !== logId)
+        }));
+    }, []);
+
+    useEffect(() => {
+        if (!user?.profileId) return;
+
+        console.log(`[LogsContext] Connecting to socket and joining room ${user.profileId}`);
+        const socket = getSocket(user.profileId);
+
+        socket.on('permission_updated', (payload: { patientId: string; accessSymptomLogs: boolean }) => {
+            console.log('[LogsContext] Socket permission_updated received:', payload);
+            const { patientId, accessSymptomLogs } = payload;
+            
+            if (accessSymptomLogs === false) {
+                setRestrictedPatients(prev => new Set([...prev, patientId]));
+                setLogsByPatient(prev => ({ ...prev, [patientId]: [] }));
+            } else if (accessSymptomLogs === true) {
+                setRestrictedPatients(prev => {
+                    const next = new Set(prev);
+                    next.delete(patientId);
+                    return next;
+                });
+                // Optionally refetch logs here if they were previously restricted
+                fetchLogs(patientId, true);
+            }
+        });
+
+        return () => {
+            socket.off('permission_updated');
+        };
+    }, [user?.profileId, fetchLogs]);
 
     const value = useMemo(() => ({
         logsByPatient,
@@ -79,8 +152,12 @@ export function LogsProvider({ children }: { children: React.ReactNode }) {
         fetchLogs,
         getCachedLogs,
         hasFetched,
-        clearCache
-    }), [logsByPatient, loading, error, fetchLogs, getCachedLogs, hasFetched, clearCache]);
+        clearCache,
+        addLogToCache,
+        updateLogInCache,
+        deleteLogFromCache,
+        restrictedPatients
+    }), [logsByPatient, loading, error, fetchLogs, getCachedLogs, hasFetched, clearCache, addLogToCache, updateLogInCache, deleteLogFromCache, restrictedPatients]);
 
     return (
         <LogsContext.Provider value={value}>

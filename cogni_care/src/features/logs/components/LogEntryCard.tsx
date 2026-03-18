@@ -5,9 +5,9 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Edit2, Save, X, Loader2, Activity, Smile, Brain, Moon, Users, LucideIcon, Trash2 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
-import { updateSymptomLog, addCarerComment } from "@/features/logs/services/logsService";
-import { LogSumaryCard, MoodPillarsConfig, SymptomPillar } from "../types/logSummaryCard";
-import { ADD_NOTE, CANCEL, CARER_NOTE, EDIT, EDIT_NOTE, EMPTY_NOTE_TEXT, SAVE_NOTE, SAVING_CHANGE, SAVING_TEXT } from "@/constants/logPage";
+import { updateSymptomLog, addCarerComment } from "../services/logsService";
+import { LogSummaryCard, MoodPillarsConfig, SymptomPillar, CarerNote } from "../types/logTypes";
+import { ADD_NOTE, CANCEL, CARER_NOTE, EDIT, EDIT_NOTE, EMPTY_NOTE_TEXT, SAVE_NOTE, SAVING_CHANGE, SAVING_TEXT } from "../constants/logPage";
 import { MessageSquare, BadgeCheck } from "lucide-react";
 
 const pillarConfig: MoodPillarsConfig = {
@@ -18,7 +18,7 @@ const pillarConfig: MoodPillarsConfig = {
     social: { icon: Users, color: "bg-green-100 text-green-700", label: "Social" },
 };
 
-export default function LogEntryCard({ log, patientId, onUpdate, onDelete, highlighted }: { log: LogSumaryCard, patientId: string, onUpdate: (log: LogSumaryCard) => void, onDelete?: (logId: string) => void, highlighted?: boolean }) {
+export default function LogEntryCard({ log, patientId, onUpdate, onDelete, highlighted }: { log: LogSummaryCard, patientId: string, onUpdate: (log: LogSummaryCard) => void, onDelete?: (logId: string) => void, highlighted?: boolean }) {
     const { user } = useAuth();
     const isCarer = Boolean(user?.isCarer);
     const profileId = user?.profileId;
@@ -48,7 +48,7 @@ export default function LogEntryCard({ log, patientId, onUpdate, onDelete, highl
     }).filter((pillar) => pillar.value && pillar.value !== "N/A" && pillar.value !== "null" && pillar.value.trim() !== "");
 
     const handleSave = async () => {
-        if (newText.trim() === log.rawText.trim()) {
+        if (isSaving || newText.trim() === log.rawText.trim()) {
             setIsEditing(false);
             return;
         }
@@ -65,6 +65,7 @@ export default function LogEntryCard({ log, patientId, onUpdate, onDelete, highl
     };
 
     const handleDelete = async () => {
+        if (isDeleting) return;
         const confirmMsg = log.isFromCarer ? "Delete this carer log?" : "Delete your log?";
         if (!confirm(confirmMsg)) return;
 
@@ -84,7 +85,7 @@ export default function LogEntryCard({ log, patientId, onUpdate, onDelete, highl
     };
 
     const handleSaveComment = async () => {
-        if (!commentText.trim() || !profileId) return;
+        if (isSavingComment || !commentText.trim() || !profileId) return;
         setIsSavingComment(true);
         const result = await addCarerComment(log.id, commentText, profileId);
         if (result.success) {
@@ -219,7 +220,7 @@ export default function LogEntryCard({ log, patientId, onUpdate, onDelete, highl
 
                             {(log.notes && log.notes.length > 0) ? (
                                 <div className="space-y-3">
-                                    {log.notes.map((comment) => (
+                                    {log.notes.map((comment: CarerNote) => (
                                         <div key={comment.id} className="bg-primary/5 p-4 rounded-2xl border border-primary/10 space-y-1 relative group">
                                             <div className="flex justify-between items-center text-[10px] font-bold text-primary/60 uppercase">
                                                 <span>{comment.carerName || "Carer"}</span>
@@ -230,7 +231,7 @@ export default function LogEntryCard({ log, patientId, onUpdate, onDelete, highl
                                                             onClick={async () => {
                                                                 if (!confirm("Delete this note?")) return;
                                                                 const { deleteCarerNote } = await import("@/features/logs/services/logsService");
-                                                                const result = await deleteCarerNote(comment.id, profileId, log.patientId, isCarer);
+                                                                const result = await deleteCarerNote(comment.id, profileId, (log.patientId as string), isCarer);
                                                                 if (result.success) {
                                                                     onUpdate(result.log);
                                                                 } else {

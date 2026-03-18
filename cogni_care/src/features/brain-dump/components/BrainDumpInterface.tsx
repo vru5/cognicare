@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLogs } from "@/contexts/LogsContext";
 import { useVoiceCapture } from "../hooks/useVoiceCapture";
@@ -11,7 +11,18 @@ import { motion, AnimatePresence } from "framer-motion";
 import SummaryCard from "./SummaryCard";
 import { processBrainDump } from "../services/processText";
 import { transcribeAudio } from "../services/google-transcribe";
-import { ANALYZING_TEXT, MIND_DUMP, MIND_DUMP_SUB_HEADING, PROCESS_WRITTEN_ENTRY, PROCESSING_ENTRY_TEXT, RECORDING, TEXTAREA_PLACEHOLDER, TYPE_MANUALLY, VOICE_DUMP_TEXT } from "@/constants/brainDumpPage";
+import { getSocket } from "@/lib/socket";
+import {
+  ANALYZING_TEXT,
+  MIND_DUMP,
+  MIND_DUMP_SUB_HEADING,
+  PROCESS_WRITTEN_ENTRY,
+  PROCESSING_ENTRY_TEXT,
+  RECORDING,
+  TEXTAREA_PLACEHOLDER,
+  TYPE_MANUALLY,
+  VOICE_DUMP_TEXT,
+} from "@/constants/brainDumpPage";
 import { AnalysisCard } from "../types/analysisSummaryCard";
 
 export default function BrainDumpInterface() {
@@ -34,6 +45,24 @@ export default function BrainDumpInterface() {
     stopRecording,
   } = useVoiceCapture();
   const [isVisuallyRecording, setIsVisuallyRecording] = useState(false);
+  const [processingStatus, setProcessingStatus] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (patientId) {
+      const socket = getSocket(patientId);
+      socket.on(
+        "processing_status",
+        (payload: { status: string; message: string }) => {
+          console.log("[BrainDump] Processing status update:", payload);
+          setProcessingStatus(payload.message);
+        },
+      );
+
+      return () => {
+        socket.off("processing_status");
+      };
+    }
+  }, [patientId]);
 
   const handleVoiceToggle = async () => {
     if (hookIsRecording || isVisuallyRecording) {
@@ -50,11 +79,16 @@ export default function BrainDumpInterface() {
           throw new Error("No audio data captured.");
         }
 
-        const transcription = await transcribeAudio(base64Data);
+        const transcription = await transcribeAudio(
+          base64Data,
+          patientId || undefined,
+        );
 
         if (transcription.success) {
           if (!transcription.text) {
-            alert("No speech detected. Please speak more clearly or check your microphone.");
+            alert(
+              "No speech detected. Please speak more clearly or check your microphone.",
+            );
             return;
           }
 
@@ -62,7 +96,7 @@ export default function BrainDumpInterface() {
 
           const response = await processBrainDump(
             transcription.text,
-            patientId || ""
+            patientId || "",
           );
 
           if (response.success && response.log) {
@@ -73,7 +107,9 @@ export default function BrainDumpInterface() {
               cognitive: log.cognitive,
               sleep: log.sleep,
               social: log.social,
-              message: response.message || "Analysis complete! Logged to your timeline.",
+              message:
+                response.message ||
+                "Analysis complete! Logged to your timeline.",
             });
             // Invalidate the logs cache so the Logs page re-fetches fresh data
             if (patientId) clearCache(patientId);
@@ -83,7 +119,9 @@ export default function BrainDumpInterface() {
           }
         } else {
           console.error("Transcription error:", transcription.error);
-          alert("Transcription failed: " + (transcription.error || "Unknown error"));
+          alert(
+            "Transcription failed: " + (transcription.error || "Unknown error"),
+          );
         }
       } catch (err) {
         console.error("Voice pipeline error:", err);
@@ -122,7 +160,8 @@ export default function BrainDumpInterface() {
           cognitive: log.cognitive,
           sleep: log.sleep,
           social: log.social,
-          message: response.message || "Analysis complete! Logged to your timeline.",
+          message:
+            response.message || "Analysis complete! Logged to your timeline.",
         };
         setSummary(newSummary);
         setText("");
@@ -144,6 +183,7 @@ export default function BrainDumpInterface() {
     setText("");
     setProcessedText("");
     setSummary(null);
+    setProcessingStatus(null);
     setIsFocused(false);
     setIsVisuallyRecording(false);
     setIsVoiceAnalyzing(false);
@@ -218,19 +258,36 @@ export default function BrainDumpInterface() {
                 isTextAnalyzing || (isVoiceAnalyzing && !isVisuallyRecording)
               }
               className={`rounded-full w-48 h-48 sm:w-56 sm:h-56 shadow-[0_20px_50px_rgba(0,0,0,0.1)] transition-all duration-500 hover:scale-105 active:scale-95 z-10 relative 
-                ${isVisuallyRecording ? "bg-primary shadow-primary/40" : "bg-card"} 
-                ${isVoiceAnalyzing && !isVisuallyRecording ? "bg-muted text-muted-foreground" : ""}`}
+                ${
+                  isVisuallyRecording
+                    ? "bg-primary shadow-primary/40"
+                    : "bg-card"
+                } 
+                ${
+                  isVoiceAnalyzing && !isVisuallyRecording
+                    ? "bg-muted text-muted-foreground"
+                    : ""
+                }`}
               onClick={handleVoiceToggle}
             >
               <div className="flex flex-col items-center justify-center gap-3">
                 <Mic
-                  className={`h-16 w-16 sm:h-20 sm:w-20 ${isVisuallyRecording ? "animate-pulse text-primary-foreground" : "text-primary"}`}
+                  className={`h-16 w-16 sm:h-20 sm:w-20 ${
+                    isVisuallyRecording
+                      ? "animate-pulse text-primary-foreground"
+                      : "text-primary"
+                  }`}
                 />
-                {isVoiceAnalyzing && !isVisuallyRecording && (
-                  <span className="text-xs sm:text-sm font-black uppercase tracking-widest text-primary flex items-center gap-2 mt-2">
-                    <Loader2 className="h-4 w-4 animate-spin" /> {ANALYZING_TEXT}
-                  </span>
-                )}
+                {(isVoiceAnalyzing || isTextAnalyzing) &&
+                  !isVisuallyRecording && (
+                    <span className="text-xs sm:text-sm font-black uppercase tracking-widest text-primary flex items-center gap-2 mt-2">
+                      <Loader2 className="h-4 w-4 animate-spin" />{" "}
+                      {processingStatus ||
+                        (isVoiceAnalyzing
+                          ? ANALYZING_TEXT
+                          : PROCESSING_ENTRY_TEXT)}
+                    </span>
+                  )}
               </div>
             </Button>
 

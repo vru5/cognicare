@@ -1,9 +1,13 @@
 import { prisma } from "../../lib/prisma.js";
+import { CarerPatientsResponse } from "../../types/carerActions";
 
-export async function getCarerPatientsAction(carerProfileId: string) {
+export async function getCarerPatientsAction(carerProfileId: string): Promise<CarerPatientsResponse> {
     try {
         const relations = await prisma.carersOnPatients.findMany({
-            where: { carerId: carerProfileId },
+            where: { 
+                carerId: carerProfileId,
+                accessSymptomLogs: true
+            },
             include: {
                 patient: {
                     include: {
@@ -31,7 +35,8 @@ export async function getCarerPatientsAction(carerProfileId: string) {
             return {
                 id: rel.patient.id,
                 name: rel.patient.user.name || "Unknown Patient",
-                hasNewLog
+                hasNewLog,
+                accessSymptomLogs: rel.accessSymptomLogs
             };
         });
 
@@ -39,25 +44,5 @@ export async function getCarerPatientsAction(carerProfileId: string) {
     } catch (error: unknown) {
         console.error("Failed to fetch carer patients:", error);
         return { success: false, error: "Failed to fetch patients" };
-    }
-}
-
-export async function markPatientAsViewedAction(carerProfileId: string, patientId: string) {
-    try {
-        await prisma.carersOnPatients.update({
-            where: {
-                carerId_patientId: {
-                    carerId: carerProfileId,
-                    patientId: patientId
-                }
-            },
-            data: {
-                lastViewedAt: new Date()
-            }
-        });
-        return { success: true };
-    } catch (error: unknown) {
-        console.error("Failed to mark patient as viewed:", error);
-        return { success: false, error: "Failed to update viewed status" };
     }
 }

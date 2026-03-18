@@ -127,13 +127,13 @@ export const registerUser = async (body: RegistrationBody) => {
 
 export const getProfileAction = async (userId: string) => {
   try {
-    const patient = await (prisma as any).profilePatient.findUnique({
+    const patient = await prisma.profilePatient.findUnique({
       where: { userId },
     });
     if (patient)
       return { success: true, role: "PATIENT", profileId: patient.id };
 
-    const carer = await (prisma as any).profileCarer.findUnique({
+    const carer = await prisma.profileCarer.findUnique({
       where: { userId },
     });
     if (carer) return { success: true, role: "CARER", profileId: carer.id };
@@ -154,7 +154,7 @@ export const loginUser = async (body: { email: string; password: string }) => {
     throw new Error("Email and password are required");
   }
 
-  const user = await (prisma as any).user.findFirst({
+  const user = await prisma.user.findFirst({
     where: {
       OR: [
         { email: email },
@@ -184,7 +184,7 @@ export const loginUser = async (body: { email: string; password: string }) => {
   }
 
   // Resolve profile ID
-  const patient = await (prisma as any).profilePatient.findUnique({
+  const patient = await prisma.profilePatient.findUnique({
     where: { userId: user.id },
   });
   if (patient) {
@@ -197,7 +197,7 @@ export const loginUser = async (body: { email: string; password: string }) => {
     };
   }
 
-  const carer = await (prisma as any).profileCarer.findUnique({
+  const carer = await prisma.profileCarer.findUnique({
     where: { userId: user.id },
   });
   if (carer) {

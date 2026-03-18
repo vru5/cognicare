@@ -6,6 +6,7 @@ import dotenv from "dotenv";
 import path from "path";
 
 // Ensure environment variables are loaded BEFORE anything else
+dotenv.config({ path: path.join(process.cwd(), ".env") });
 dotenv.config({ path: path.join(process.cwd(), "../.env") });
 
 const prismaClientSingleton = () => {

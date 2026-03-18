@@ -84,6 +84,7 @@ export const PushNotificationService = {
             id: Math.floor(Math.random() * 1000000),
             extra: notification.data,
             channelId: 'default',
+            smallIcon: 'ic_launcher',
           }
         ]
       });

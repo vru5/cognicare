@@ -62,6 +62,10 @@ model CarersOnPatients {
   carerId      String
   patientId    String
   lastViewedAt DateTime       @default(now())
+  
+  accessSymptomLogs Boolean @default(true)
+  accessCareCircle  Boolean @default(true)
+
   carer        ProfileCarer   @relation(fields: [carerId], references: [id])
   patient      ProfilePatient @relation(fields: [patientId], references: [id])
 

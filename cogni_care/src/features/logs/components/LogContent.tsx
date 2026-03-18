@@ -3,11 +3,12 @@
 import LogsView from "./LogsView";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLogs } from "@/contexts/LogsContext";
-import { EMPTY_LOGS, LOADING_LOGS } from "@/constants/logPage";
+import { EMPTY_LOGS, LOADING_LOGS } from "../constants/logPage";
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { supabase } from "@/lib/supabase";
-import { RealtimeChannel } from "@supabase/supabase-js";
+import { getSocket } from "@/lib/socket";
+import { useRouter } from "next/navigation";
+import { Socket } from "socket.io-client";
 
 /**
  * Displays the logs content using useLogs for caching and memoization
@@ -15,7 +16,8 @@ import { RealtimeChannel } from "@supabase/supabase-js";
  */
 export default function LogsContent() {
     const { user, loading: authLoading } = useAuth();
-    const { fetchLogs, getCachedLogs, loading: logsLoading } = useLogs();
+    const { fetchLogs, getCachedLogs, loading: logsLoading, restrictedPatients } = useLogs();
+    const router = useRouter();
     const searchParams = useSearchParams();
     const urlPatientId = searchParams?.get("patientId") ?? null;
     const focusedLogId = searchParams?.get('logId') ?? undefined;
@@ -23,7 +25,7 @@ export default function LogsContent() {
     const [finalPatientId, setFinalPatientId] = useState<string | null>(null);
 
     useEffect(() => {
-        let channel: RealtimeChannel;
+        let socket: Socket | null = null;
 
         async function loadLogs() {
             if (authLoading) return;
@@ -37,29 +39,33 @@ export default function LogsContent() {
             console.log(`[LogsContent] Revalidating logs for: ${targetId}`);
             fetchLogs(targetId, true);
 
-            // Subscribe to notifications for real-time log refresh
-            console.log(`[LogsContent] Subscribing to refresh triggers for: ${targetId}`);
-            channel = supabase.channel(`logs_refresh:${targetId}`)
-                .on(
-                    'broadcast',
-                    { event: 'new_notification' },
-                    () => {
-                        console.log(`[LogsContent] Notification received, refetching logs...`);
-                        fetchLogs(targetId, true);
-                    }
-                )
-                .subscribe();
+            // Subscribe to Socket.io for real-time log refresh
+            console.log(`[LogsContent] Connecting to socket refresh for: ${targetId}`);
+            socket = getSocket(targetId);
+            
+            socket.on('new_notification', (payload: { type: string }) => {
+                console.log(`[LogsContent] Socket notification received, refetching logs...`, payload);
+                fetchLogs(targetId, true);
+            });
         }
         
         loadLogs();
 
         return () => {
-            if (channel) {
-                console.log(`[LogsContent] Cleaning up logs refresh subscription`);
-                supabase.removeChannel(channel);
+            if (socket) {
+                console.log(`[LogsContent] Cleaning up socket refresh listeners`);
+                socket.off('new_notification');
             }
         };
     }, [user?.profileId, authLoading, fetchLogs, urlPatientId]);
+
+    // Redirect if access is restricted
+    useEffect(() => {
+        if (finalPatientId && restrictedPatients.has(finalPatientId)) {
+            console.log(`[LogsContent] Access restricted for ${finalPatientId}, redirecting to dashboard...`);
+            router.push('/dashboard');
+        }
+    }, [finalPatientId, restrictedPatients, router]);
 
     const logs = finalPatientId ? getCachedLogs(finalPatientId) : [];
 
