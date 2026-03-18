@@ -3,7 +3,7 @@
 import LogsView from "./LogsView";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLogs } from "@/contexts/LogsContext";
-import { EMPTY_LOGS, LOADING_LOGS } from "@/constants/logPage";
+import { EMPTY_LOGS, LOADING_LOGS } from "../constants/logPage";
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { getSocket } from "@/lib/socket";
@@ -43,7 +43,7 @@ export default function LogsContent() {
             console.log(`[LogsContent] Connecting to socket refresh for: ${targetId}`);
             socket = getSocket(targetId);
             
-            socket.on('new_notification', (payload: any) => {
+            socket.on('new_notification', (payload: { type: string }) => {
                 console.log(`[LogsContent] Socket notification received, refetching logs...`, payload);
                 fetchLogs(targetId, true);
             });

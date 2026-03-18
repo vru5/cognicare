@@ -10,7 +10,7 @@ import { useRouter } from "next/navigation";
 
 import { NotificationRecord, NotificationData } from "@/features/notifications/types/notificationType";
 
-export default function NotificationsInterface() {
+export default function NotificationsView() {
     const { notifications, unreadCount, markAsRead, markAllAsRead } = useNotifications();
     const router = useRouter();
 
@@ -26,7 +26,7 @@ export default function NotificationsInterface() {
             
             if (typeof notification.data === 'string') {
                 try { 
-                    data = JSON.parse(notification.data); 
+                    data = JSON.parse(notification.data) as NotificationData; 
                 } catch (e) { 
                     data = {}; 
                 }

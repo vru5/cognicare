@@ -1,6 +1,7 @@
 import { API_BASE_URL } from "@/constants/auth";
+import { LogSummaryCard, BaseResponse, LogResponse, LogsResponse } from "../types/logTypes";
 
-export async function createManualLog(patientId: string, rawText: string, isFromCarer: boolean = false, carerId?: string) {
+export async function createManualLog(patientId: string, rawText: string, isFromCarer: boolean = false, carerId?: string): Promise<LogResponse> {
     try {
         const response = await fetch(`${API_BASE_URL}/api/logs`, {
             method: "POST",
@@ -10,11 +11,11 @@ export async function createManualLog(patientId: string, rawText: string, isFrom
         return await response.json();
     } catch (err: unknown) {
         console.error("Failed to create manual log:", err);
-        return { success: false, error: "Failed to create manual log" };
+        return { success: false, error: "Failed to create manual log" } as any;
     }
 }
 
-export async function getLogs(patientId: string, requesterId?: string, isCarer: boolean = false) {
+export async function getLogs(patientId: string, requesterId?: string, isCarer: boolean = false): Promise<LogsResponse> {
     try {
         const url = new URL(`${API_BASE_URL}/api/logs`);
         url.searchParams.append("patientId", patientId);
@@ -25,11 +26,11 @@ export async function getLogs(patientId: string, requesterId?: string, isCarer: 
         return await response.json();
     } catch (error: unknown) {
         console.error("Failed to fetch logs:", error);
-        return { success: false, error: "Failed to fetch logs" };
+        return { success: false, error: "Failed to fetch logs", logs: [] };
     }
 }
 
-export async function updateSymptomLog(logId: string, newText: string, patientId: string, isFromCarer: boolean = false, carerId?: string) {
+export async function updateSymptomLog(logId: string, newText: string, patientId: string, isFromCarer: boolean = false, carerId?: string): Promise<LogResponse> {
     try {
         const response = await fetch(`${API_BASE_URL}/api/logs`, {
             method: "PATCH",
@@ -39,11 +40,11 @@ export async function updateSymptomLog(logId: string, newText: string, patientId
         return await response.json();
     } catch (err: unknown) {
         console.error("Failed to update log:", err);
-        return { success: false, error: "Failed to update log" };
+        return { success: false, error: "Failed to update log" } as any;
     }
 }
 
-export async function addCarerNote(logId: string, text: string, carerId: string) {
+export async function addCarerNote(logId: string, text: string, carerId: string): Promise<LogResponse> {
     try {
         const response = await fetch(`${API_BASE_URL}/api/logs/comment`, {
             method: "POST",
@@ -53,14 +54,14 @@ export async function addCarerNote(logId: string, text: string, carerId: string)
         return await response.json();
     } catch (err: unknown) {
         console.error("Failed to add note:", err);
-        return { success: false, error: "Failed to add note" };
+        return { success: false, error: "Failed to add note" } as any;
     }
 }
 
 // Keep addCarerComment for backward compatibility if needed, but it's now the same as addCarerNote
 export const addCarerComment = addCarerNote;
 
-export async function deleteSymptomLog(logId: string, patientId: string, isFromCarer: boolean) {
+export async function deleteSymptomLog(logId: string, patientId: string, isFromCarer: boolean): Promise<BaseResponse> {
     try {
         const response = await fetch(`${API_BASE_URL}/api/logs`, {
             method: "DELETE",
@@ -74,7 +75,7 @@ export async function deleteSymptomLog(logId: string, patientId: string, isFromC
     }
 }
 
-export async function deleteCarerNote(noteId: string, carerId: string, patientId: string, isFromCarer: boolean = true) {
+export async function deleteCarerNote(noteId: string, carerId: string, patientId: string, isFromCarer: boolean = true): Promise<LogResponse> {
     try {
         const response = await fetch(`${API_BASE_URL}/api/logs/carer-note`, {
             method: "DELETE",
@@ -84,15 +85,15 @@ export async function deleteCarerNote(noteId: string, carerId: string, patientId
         return await response.json();
     } catch (err: unknown) {
         console.error("Failed to delete note:", err);
-        return { success: false, error: "Failed to delete note" };
+        return { success: false, error: "Failed to delete note" } as any;
     }
 }
 
-export async function deleteCarerLog(logId: string, carerId: string, patientId: string, isFromCarer: boolean = true) {
+export async function deleteCarerLog(logId: string, carerId: string, patientId: string, isFromCarer: boolean = true): Promise<LogResponse> {
     return deleteCarerNote(logId, carerId, patientId, isFromCarer);
 }
 
-export async function deleteCarerComment(commentId: string, carerId: string, patientId: string, isFromCarer: boolean = true) {
+export async function deleteCarerComment(commentId: string, carerId: string, patientId: string, isFromCarer: boolean = true): Promise<LogResponse> {
     try {
         const response = await fetch(`${API_BASE_URL}/api/logs/comment`, {
             method: "DELETE",
@@ -102,6 +103,6 @@ export async function deleteCarerComment(commentId: string, carerId: string, pat
         return await response.json();
     } catch (err: unknown) {
         console.error("Failed to delete note:", err);
-        return { success: false, error: "Failed to delete note" };
+        return { success: false, error: "Failed to delete note" } as any;
     }
 }

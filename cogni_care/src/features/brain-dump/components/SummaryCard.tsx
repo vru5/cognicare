@@ -1,19 +1,46 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { ANALYSIS_PILLAR, CLEAR } from "@/constants/brainDumpPage";
-import { Activity, Smile, Brain, Moon, Users } from "lucide-react";
+import { MoodPillarsConfig, SymptomPillar } from "@/features/logs/types/logTypes";
+import { AnalysisCard } from "../types/analysisSummaryCard";
+import { Activity, Smile, Brain, Moon, Users, LucideIcon } from "lucide-react";
 
-export default function SummaryCard({ handleReset, summary }: any) {
-  const pillarConfig: any = {
-    physical: { icon: Activity, color: "bg-red-100 text-red-700 border-red-200", label: "Physical" },
-    mood: { icon: Smile, color: "bg-purple-100 text-purple-700 border-purple-200", label: "Mood" },
-    cognitive: { icon: Brain, color: "bg-blue-100 text-blue-700 border-blue-200", label: "Cognitive" },
-    sleep: { icon: Moon, color: "bg-indigo-100 text-indigo-700 border-indigo-200", label: "Sleep" },
-    social: { icon: Users, color: "bg-green-100 text-green-700 border-green-200", label: "Social" },
+interface SummaryCardProps {
+  handleReset: () => void;
+  summary: AnalysisCard;
+}
+
+
+export default function SummaryCard({ handleReset, summary }: SummaryCardProps) {
+  const pillarConfig: MoodPillarsConfig = {
+    physical: {
+      icon: Activity,
+      color: "bg-red-100 text-red-700 border-red-200",
+      label: "Physical",
+    },
+    mood: {
+      icon: Smile,
+      color: "bg-purple-100 text-purple-700 border-purple-200",
+      label: "Mood",
+    },
+    cognitive: {
+      icon: Brain,
+      color: "bg-blue-100 text-blue-700 border-blue-200",
+      label: "Cognitive",
+    },
+    sleep: {
+      icon: Moon,
+      color: "bg-indigo-100 text-indigo-700 border-indigo-200",
+      label: "Sleep",
+    },
+    social: {
+      icon: Users,
+      color: "bg-green-100 text-green-700 border-green-200",
+      label: "Social",
+    },
   };
 
-  const categories = [
+  const categories: { key: SymptomPillar; label: string }[] = [
     { key: "physical", label: "PHYSICAL" },
     { key: "mood", label: "MOOD" },
     { key: "cognitive", label: "COGNITIVE" },
@@ -21,7 +48,10 @@ export default function SummaryCard({ handleReset, summary }: any) {
     { key: "social", label: "SOCIAL" },
   ];
 
-  const activeCategories = categories.filter(cat => summary[cat.key] && summary[cat.key] !== "N/A");
+
+  const activeCategories = categories.filter(
+    (cat) => summary[cat.key] && summary[cat.key] !== "N/A",
+  );
 
   return (
     <Card className="bg-white border-border shadow-2xl overflow-hidden rounded-[2rem] sm:rounded-[3rem]">
@@ -52,8 +82,9 @@ export default function SummaryCard({ handleReset, summary }: any) {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
           {activeCategories.map((cat) => {
-            const config = pillarConfig[cat.key];
-            const Icon = config.icon;
+            const config = pillarConfig[cat.key as SymptomPillar];
+            if (!config) return null;
+            const Icon = config.icon as LucideIcon;
 
             return (
               <div

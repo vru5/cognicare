@@ -16,20 +16,14 @@ import { useRouter } from "next/navigation";
 import { getPatientCarers } from "@/features/settings/services/settingsService";
 import CarerAccessModal from "./CarerAccessModal";
 
-interface Carer {
-  id: string;
-  name: string;
-  email: string | null;
-  accessSymptomLogs: boolean;
-  accessCareCircle: boolean;
-}
+import { CarerAccess, CarersResponse } from "../types/settingTypes";
 
 export default function ManageAccessContent() {
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
-  const [carers, setCarers] = useState<Carer[]>([]);
+  const [carers, setCarers] = useState<CarerAccess[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedCarer, setSelectedCarer] = useState<Carer | null>(null);
+  const [selectedCarer, setSelectedCarer] = useState<CarerAccess | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   const fetchCarers = useCallback(async () => {
@@ -37,9 +31,9 @@ export default function ManageAccessContent() {
 
     try {
       setLoading(true);
-      const result = await getPatientCarers(user.profileId);
-      if (result.success) {
-        setCarers(result.carers as Carer[]);
+      const result: CarersResponse = await getPatientCarers(user.profileId);
+      if (result.success && result.carers) {
+        setCarers(result.carers);
       }
     } catch (error) {
       console.error("Error fetching carers:", error);
@@ -56,7 +50,7 @@ export default function ManageAccessContent() {
     }
   }, [user, authLoading, router, fetchCarers]);
 
-  const handleCarerClick = (carer: Carer) => {
+  const handleCarerClick = (carer: CarerAccess) => {
     setSelectedCarer(carer);
     setIsModalOpen(true);
   };

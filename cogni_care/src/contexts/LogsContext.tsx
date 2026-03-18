@@ -1,21 +1,21 @@
 "use client";
 
 import React, { createContext, useContext, useState, useCallback, useMemo, useEffect } from 'react';
-import { LogSumaryCard } from '@/features/logs/types/logSummaryCard';
+import { LogSummaryCard } from '@/features/logs/types/logTypes';
 import { getLogs as fetchLogsApi } from '@/features/logs/services/logsService';
 import { useAuth } from '@/contexts/AuthContext';
 import { getSocket } from '@/lib/socket';
 
 interface LogsContextType {
-    logsByPatient: Record<string, LogSumaryCard[]>;
+    logsByPatient: Record<string, LogSummaryCard[]>;
     loading: boolean;
     error: string | null;
     fetchLogs: (patientId: string, force?: boolean) => Promise<void>;
-    getCachedLogs: (patientId: string) => LogSumaryCard[];
+    getCachedLogs: (patientId: string) => LogSummaryCard[];
     hasFetched: (patientId: string) => boolean;
     clearCache: (patientId?: string) => void;
-    addLogToCache: (patientId: string, log: LogSumaryCard) => void;
-    updateLogInCache: (patientId: string, log: LogSumaryCard) => void;
+    addLogToCache: (patientId: string, log: LogSummaryCard) => void;
+    updateLogInCache: (patientId: string, log: LogSummaryCard) => void;
     deleteLogFromCache: (patientId: string, logId: string) => void;
     restrictedPatients: Set<string>;
 }
@@ -23,7 +23,7 @@ interface LogsContextType {
 const LogsContext = createContext<LogsContextType | undefined>(undefined);
 
 export function LogsProvider({ children }: { children: React.ReactNode }) {
-    const [logsByPatient, setLogsByPatient] = useState<Record<string, LogSumaryCard[]>>({});
+    const [logsByPatient, setLogsByPatient] = useState<Record<string, LogSummaryCard[]>>({});
     const [fetchedPatients, setFetchedPatients] = useState<Set<string>>(new Set());
     const [restrictedPatients, setRestrictedPatients] = useState<Set<string>>(new Set());
     const [loading, setLoading] = useState(false);
@@ -95,14 +95,14 @@ export function LogsProvider({ children }: { children: React.ReactNode }) {
         }
     }, []);
     
-    const addLogToCache = useCallback((patientId: string, log: LogSumaryCard) => {
+    const addLogToCache = useCallback((patientId: string, log: LogSummaryCard) => {
         setLogsByPatient(prev => ({
             ...prev,
             [patientId]: [log, ...(prev[patientId] || [])]
         }));
     }, []);
 
-    const updateLogInCache = useCallback((patientId: string, log: LogSumaryCard) => {
+    const updateLogInCache = useCallback((patientId: string, log: LogSummaryCard) => {
         setLogsByPatient(prev => ({
             ...prev,
             [patientId]: (prev[patientId] || []).map(l => l.id === log.id ? log : l)
@@ -122,7 +122,7 @@ export function LogsProvider({ children }: { children: React.ReactNode }) {
         console.log(`[LogsContext] Connecting to socket and joining room ${user.profileId}`);
         const socket = getSocket(user.profileId);
 
-        socket.on('permission_updated', (payload: any) => {
+        socket.on('permission_updated', (payload: { patientId: string; accessSymptomLogs: boolean }) => {
             console.log('[LogsContext] Socket permission_updated received:', payload);
             const { patientId, accessSymptomLogs } = payload;
             

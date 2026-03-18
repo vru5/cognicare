@@ -1,6 +1,7 @@
 import { API_BASE_URL } from "@/constants/auth";
+import { CarersResponse, SettingsResponse, ProfileResponse } from "../types/settingTypes";
 
-export async function getPatientCarers(patientProfileId: string) {
+export async function getPatientCarers(patientProfileId: string): Promise<CarersResponse> {
     try {
         const response = await fetch(`${API_BASE_URL}/api/settings/carers?patientProfileId=${patientProfileId}`);
         return await response.json();
@@ -10,7 +11,7 @@ export async function getPatientCarers(patientProfileId: string) {
     }
 }
 
-export async function updateCarerAccess(patientProfileId: string, carerProfileId: string, data: { accessSymptomLogs?: boolean; accessCareCircle?: boolean }) {
+export async function updateCarerAccess(patientProfileId: string, carerProfileId: string, data: { accessSymptomLogs?: boolean; accessCareCircle?: boolean }): Promise<SettingsResponse> {
     try {
         const response = await fetch(`${API_BASE_URL}/api/settings/carers`, {
             method: "PATCH",
@@ -24,7 +25,7 @@ export async function updateCarerAccess(patientProfileId: string, carerProfileId
     }
 }
 
-export async function getFullProfile(userId: string) {
+export async function getFullProfile(userId: string): Promise<ProfileResponse> {
     try {
         const response = await fetch(`${API_BASE_URL}/api/settings/profile?userId=${userId}`);
         return await response.json();

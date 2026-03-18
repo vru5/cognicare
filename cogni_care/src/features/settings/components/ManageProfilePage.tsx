@@ -6,14 +6,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { getFullProfile } from "@/features/settings/services/settingsService";
 import { ArrowLeft, User, Pencil, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-
-interface Profile {
-  name: string | null;
-  email: string | null;
-  phone: string | null;
-  role: string | null;
-  profileId: string | null;
-}
+import { Profile, ProfileResponse } from "../types/settingTypes";
 
 export default function ManageProfileContent() {
   const { user, loading: authLoading } = useAuth();
@@ -24,9 +17,9 @@ export default function ManageProfileContent() {
   useEffect(() => {
     if (authLoading || !user) return;
         getFullProfile(user.userId)
-            .then((res: any) => {
+            .then((res: ProfileResponse) => {
                 if (res.success && res.profile) {
-                    setProfile(res.profile as Profile);
+                    setProfile(res.profile);
                 }
             }).finally(() => setLoading(false));
   }, [user, authLoading]);

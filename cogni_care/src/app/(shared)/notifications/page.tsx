@@ -1,7 +1,7 @@
 "use client";
 
-import NotificationsInterface from "@/features/notifications/components/NotificationInterface";
+import NotificationsView from "@/features/notifications/components/NotificationView";
 
 export default function NotificationPage() {
-    return <NotificationsInterface />;
+    return <NotificationsView />;
 }

@@ -16,16 +16,12 @@ import { Loader2, Users, FileText } from "lucide-react";
 import { updateCarerAccess } from "@/features/settings/services/settingsService";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/lib/supabase";
+import { CarerAccess, SettingsResponse } from "../types/settingTypes";
 
 interface CarerAccessModalProps {
     isOpen: boolean;
     onClose: () => void;
-    carer: {
-        id: string;
-        name: string;
-        accessSymptomLogs: boolean;
-        accessCareCircle: boolean;
-    } | null;
+    carer: CarerAccess | null;
     onSuccess: () => void;
 }
 
@@ -47,7 +43,7 @@ export default function CarerAccessModal({ isOpen, onClose, carer, onSuccess }: 
 
         setLoading(true);
         try {
-            const result = await updateCarerAccess(user.profileId, carer.id, {
+            const result: SettingsResponse = await updateCarerAccess(user.profileId, carer.id, {
                 accessSymptomLogs,
                 accessCareCircle,
             });

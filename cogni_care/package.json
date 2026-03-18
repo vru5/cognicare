@@ -44,6 +44,7 @@
   },
   "devDependencies": {
     "@capacitor/assets": "^3.0.5",
+    "@playwright/test": "^1.58.2",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/pg": "8.11.11",
@@ -52,6 +53,7 @@
     "babel-plugin-react-compiler": "1.0.0",
     "eslint": "^9",
     "eslint-config-next": "16.1.6",
+    "playwright": "^1.58.2",
     "prisma": "^7.4.1",
     "shadcn": "^3.8.5",
     "tailwindcss": "^4",

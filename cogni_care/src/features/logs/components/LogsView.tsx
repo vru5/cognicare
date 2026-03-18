@@ -12,17 +12,17 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLogs } from "@/contexts/LogsContext";
 import { useRouter } from "next/navigation";
-import { LogSumaryCard } from "../types/logSummaryCard";
-import { ADD_LOG_TEXT, BACK_BUTTON, EMPTY_DAY_LOG_TEXT, SELECTED_DATE_ENTRIES } from "@/constants/logPage";
+import { LogSummaryCard } from "../types/logTypes";
+import { ADD_LOG_TEXT, BACK_BUTTON, EMPTY_DAY_LOG_TEXT, SELECTED_DATE_ENTRIES } from "../constants/logPage";
 
 type LogViewType = "day" | "week" | "month";
 
-export default function LogsView({ initialLogs, patientId, focusedLogId }: { initialLogs: LogSumaryCard[], patientId: string, focusedLogId?: string }) {
+export default function LogsView({ initialLogs, patientId, focusedLogId }: { initialLogs: LogSummaryCard[], patientId: string, focusedLogId?: string }) {
     const { user } = useAuth();
     const { updateLogInCache, deleteLogFromCache } = useLogs();
     const router = useRouter();
     const [viewMode, setViewMode] = useState<LogViewType>("day");
-    const [logs, setLogs] = useState<LogSumaryCard[]>([]);
+    const [logs, setLogs] = useState<LogSummaryCard[]>([]);
     const [mounted, setMounted] = useState(false);
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
@@ -81,7 +81,7 @@ export default function LogsView({ initialLogs, patientId, focusedLogId }: { ini
         }
     };
 
-    const handleUpdateLog = (updatedLog: LogSumaryCard) => {
+    const handleUpdateLog = (updatedLog: LogSummaryCard) => {
         // Update context first
         updateLogInCache(patientId, updatedLog);
         
@@ -91,7 +91,7 @@ export default function LogsView({ initialLogs, patientId, focusedLogId }: { ini
         );
     };
 
-    const handleAddLog = (newLog: LogSumaryCard) => {
+    const handleAddLog = (newLog: LogSummaryCard) => {
         setLogs(currentLogs => [newLog, ...currentLogs]);
     };
 
@@ -360,7 +360,7 @@ export default function LogsView({ initialLogs, patientId, focusedLogId }: { ini
 
                 <div className="space-y-4 pt-2">
                     {selectedLogs.length > 0 ? (
-                        selectedLogs.map((log: LogSumaryCard) => (
+                        selectedLogs.map((log: LogSummaryCard) => (
                             <LogEntryCard
                                 key={log.id}
                                 log={log}
