@@ -59,13 +59,7 @@ export default function LogsContent() {
         };
     }, [user?.profileId, authLoading, fetchLogs, urlPatientId]);
 
-    // Redirect if access is restricted
-    useEffect(() => {
-        if (finalPatientId && restrictedPatients.has(finalPatientId)) {
-            console.log(`[LogsContent] Access restricted for ${finalPatientId}, redirecting to dashboard...`);
-            router.push('/dashboard');
-        }
-    }, [finalPatientId, restrictedPatients, router]);
+
 
     const logs = finalPatientId ? getCachedLogs(finalPatientId) : [];
 

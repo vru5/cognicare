@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Edit2, Save, X, Loader2, Activity, Smile, Brain, Moon, Users, LucideIcon, Trash2 } from "lucide-react";
@@ -22,6 +22,7 @@ export default function LogEntryCard({ log, patientId, onUpdate, onDelete, highl
     const { user } = useAuth();
     const isCarer = Boolean(user?.isCarer);
     const profileId = user?.profileId;
+    const cardRef = useRef<HTMLDivElement>(null);
 
     const [isEditing, setIsEditing] = useState(false);
     const [newText, setNewText] = useState(log.rawText);
@@ -39,13 +40,26 @@ export default function LogEntryCard({ log, patientId, onUpdate, onDelete, highl
         setMounted(true);
     }, []);
 
+    useEffect(() => {
+        if (highlighted && cardRef.current) {
+            // Slight delay ensures the layout has fully rendered before scrolling
+            setTimeout(() => {
+                cardRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+            }, 300);
+        }
+    }, [highlighted]);
+
     // List of symptom pillars to display
     const symptomKeys: SymptomPillar[] = ["physical", "mood", "cognitive", "sleep", "social"];
 
     // Filter out null pillars
     const activePillars = symptomKeys.map((key) => {
-        return { key, value: log[key] };
-    }).filter((pillar) => pillar.value && pillar.value !== "N/A" && pillar.value !== "null" && pillar.value.trim() !== "");
+        return { 
+            key, 
+            value: log[key],
+            severity: log[`${key}Severity` as keyof LogSummaryCard]
+        };
+    }).filter((pillar) => pillar.value && pillar.value !== "N/A" && pillar.value !== "null" && typeof pillar.value === "string" && pillar.value.trim() !== "");
 
     const handleSave = async () => {
         if (isSaving || newText.trim() === log.rawText.trim()) {
@@ -101,7 +115,7 @@ export default function LogEntryCard({ log, patientId, onUpdate, onDelete, highl
     const formattedTime = mounted ? new Date(log.createdAt).toLocaleString() : "";
 
     return (
-        <div className={`bg-card text-card-foreground rounded-[2rem] p-6 sm:p-8 border shadow-sm relative overflow-hidden transition-all ${highlighted ? 'ring-2 ring-sky-500 ring-offset-2' : ''}`}>
+        <div ref={cardRef} className={`bg-card text-card-foreground rounded-[2rem] p-6 sm:p-8 border shadow-sm relative overflow-hidden transition-all duration-700 ${highlighted ? 'ring-2 ring-sky-500 ring-offset-2' : ''}`}>
             {log.isFromCarer && (
                 <div className="absolute top-0 right-0 bg-primary/10 text-primary px-4 py-1.5 rounded-bl-2xl text-[10px] font-black uppercase tracking-widest flex items-center gap-1.5">
                     <BadgeCheck className="w-3 h-3" />
@@ -155,13 +169,21 @@ export default function LogEntryCard({ log, patientId, onUpdate, onDelete, highl
                     {/* Pillars section */}
                     {activePillars.length > 0 && (
                         <div className="flex flex-wrap gap-2 pt-2">
-                            {activePillars.map(({ key, value }) => {
+                            {activePillars.map((pillar) => {
+                                const { key, value, severity } = pillar;
                                 const config = pillarConfig[key as keyof MoodPillarsConfig];
                                 const Icon = config?.icon as LucideIcon;
                                 return (
-                                    <div key={key} className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-tight shadow-sm ${config?.color}`}>
-                                        <Icon className="w-3 h-3 text-current" />
-                                        <span>{config?.label}: {value}</span>
+                                    <div key={key} className={`flex items-center justify-between px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-tight shadow-sm min-w-max ${config?.color}`}>
+                                        <div className="flex items-center gap-1.5">
+                                            <Icon className="w-3 h-3 text-current" />
+                                            <span>{config?.label}: {value as string}</span>
+                                        </div>
+                                        {severity != null && (
+                                            <span className="ml-2 px-1.5 py-0.5 rounded text-[9px] bg-black/10 tabular-nums leading-none">
+                                                {severity as number}/10
+                                            </span>
+                                        )}
                                     </div>
                                 );
                             })}

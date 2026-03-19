@@ -80,10 +80,15 @@ model SymptomLog {
   rawText   String
 
   physical  String?
+  physicalSeverity Int?
   mood      String?
+  moodSeverity     Int?
   cognitive String?
+  cognitiveSeverity Int?
   sleep     String?
+  sleepSeverity    Int?
   social    String?
+  socialSeverity   Int?
 
   patient   ProfilePatient @relation(fields: [patientId], references: [id])
   notes     CarerNote[]

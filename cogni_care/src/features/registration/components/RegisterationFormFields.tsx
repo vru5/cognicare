@@ -1,11 +1,10 @@
 import {
   CARER,
-  FAMILY_CONTACT,
   PATIENT,
 } from "@/constants/registerationPage";
 import { Button } from "@/components/ui/button";
 import { FormControl } from "@/components/shared/FormControl";
-import { getRegisterationFields } from "../constants/registerationFormConfig";
+import { getRegisterationFields, JOIN_COGNICARE, JOINING } from "../constants/registerationFormConfig";
 import { RegisterationFormFieldsProps, RegistrationFieldConfig } from "../types/registerationForm";
 
 export function RegisterationFormFields(props: RegisterationFormFieldsProps) {
@@ -114,7 +113,7 @@ export function RegisterationFormFields(props: RegisterationFormFieldsProps) {
         disabled={loading || !passwordValid || !passwordsMatch || !role}
         className="w-full py-8 rounded-full text-xl font-bold bg-primary hover:bg-primary/90 text-primary-foreground shadow-xl active:scale-[0.98] transition-all disabled:opacity-50"
       >
-        {loading ? "Joining..." : "Join CogniCare"}
+        {loading ? `${JOINING}` : `${JOIN_COGNICARE}`}
       </Button>
     </form>
   );

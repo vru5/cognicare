@@ -102,20 +102,26 @@ export default function BrainDumpInterface() {
           if (response.success && response.log) {
             const log = response.log;
             setSummary({
+              logId: log.id,
               physical: log.physical,
+              physicalSeverity: log.physicalSeverity,
               mood: log.mood,
+              moodSeverity: log.moodSeverity,
               cognitive: log.cognitive,
+              cognitiveSeverity: log.cognitiveSeverity,
               sleep: log.sleep,
+              sleepSeverity: log.sleepSeverity,
               social: log.social,
+              socialSeverity: log.socialSeverity,
               message:
                 response.message ||
-                "Analysis complete! Logged to your timeline.",
+                "The AI has interpreted symptom severity. You can adjust the scores below if they are not correct.",
             });
             // Invalidate the logs cache so the Logs page re-fetches fresh data
             if (patientId) clearCache(patientId);
           } else {
             console.error("API error for voice:", response.error);
-            alert("Failed to process transcribed text.");
+            alert(response.error || "Failed to process transcribed text.");
           }
         } else {
           console.error("Transcription error:", transcription.error);
@@ -155,13 +161,19 @@ export default function BrainDumpInterface() {
 
         const log = response.log;
         const newSummary = {
+          logId: log.id,
           physical: log.physical,
+          physicalSeverity: log.physicalSeverity,
           mood: log.mood,
+          moodSeverity: log.moodSeverity,
           cognitive: log.cognitive,
+          cognitiveSeverity: log.cognitiveSeverity,
           sleep: log.sleep,
+          sleepSeverity: log.sleepSeverity,
           social: log.social,
+          socialSeverity: log.socialSeverity,
           message:
-            response.message || "Analysis complete! Logged to your timeline.",
+            response.message || "The AI has interpreted symptom severity. You can adjust the scores below if they are not correct.",
         };
         setSummary(newSummary);
         setText("");
@@ -169,7 +181,7 @@ export default function BrainDumpInterface() {
         if (patientId) clearCache(patientId);
       } else {
         console.error("API error:", response.error);
-        alert("Failed to process entry.");
+        alert(response.error || "Failed to process entry.");
       }
     } catch (err) {
       console.error("Network error:", err);

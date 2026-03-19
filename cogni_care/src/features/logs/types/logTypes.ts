@@ -23,6 +23,11 @@ export interface CarerNote {
 
 export interface LogSummaryCard extends Record<SymptomPillar, string | null | undefined> {
     id: string;
+    physicalSeverity?: number | null;
+    moodSeverity?: number | null;
+    cognitiveSeverity?: number | null;
+    sleepSeverity?: number | null;
+    socialSeverity?: number | null;
     createdAt: Date | string;
     patientId: string;
     rawText: string;

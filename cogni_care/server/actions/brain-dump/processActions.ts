@@ -1,4 +1,4 @@
-import { SymptomRecord } from './../../types/logsApi';
+import { SymptomRecord } from "./../../types/logsApi";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { mask } from "@yellowsakura/js-pii-mask";
 import { prisma } from "../../lib/prisma.js";
@@ -16,18 +16,32 @@ export async function processBrainDumpAction(
 
   // Real-time status update
   try {
-    getIO().to(patientId).emit("processing_status", { status: "analyzing", message: "Analyzing your thoughts..." });
+    getIO()
+      .to(patientId)
+      .emit("processing_status", {
+        status: "analyzing",
+        message: "Analyzing...",
+      });
   } catch (e) {}
 
   try {
     const safeText = mask(rawText || "");
 
     const prompt = `Analyze the following patient health log.
-    Categorize the content into exactly these fields: physical, mood, cognitive, sleep, social.
-    - For each field, provide a single word or very short phrase describing the symptom or state.
-    - If a category is not mentioned or the input is nonsensical/gibberish, return null for that field.
-    - DO NOT make up information. If the input is just random characters or unrelated to health, return null for ALL fields.
-    - Return output strictly as a JSON object.
+    Extract the symptoms into the following pillars: physical, mood, cognitive, sleep, social.
+    
+    For each pillar, provide TWO fields in the JSON:
+    1. The pillar name (e.g., 'physical'): A single word or very short phrase describing the symptom (e.g., 'Headache', 'Happy').
+    2. The severity field (e.g., 'physicalSeverity'): A number from 1 to 10 evaluating how severe the symptom is based on the language used.
+    
+    If a category is not mentioned or the input is nonsensical/gibberish, return null for the string field and 0 or null for the severity field.
+    DO NOT make up information. If the input is just random characters or unrelated to health, return null for ALL fields.
+    Return output strictly as a JSON object, for example:
+    {
+      "physical": "Headache", "physicalSeverity": 8,
+      "sleep": "Insomnia", "sleepSeverity": 9,
+      "mood": null, "moodSeverity": null
+    }
     
     Log: "${safeText}"`;
 
@@ -68,16 +82,23 @@ export async function processBrainDumpAction(
         "no issues",
         "none",
       ];
-      (
-        ["physical", "mood", "cognitive", "sleep", "social"] as Array<
-          keyof Analysis
-        >
-      ).forEach((key) => {
+
+      const pillars = [
+        "physical",
+        "mood",
+        "cognitive",
+        "sleep",
+        "social",
+      ] as const;
+
+      pillars.forEach((key) => {
+        const val = analysis[key];
         if (
-          analysis[key] &&
-          genericPhrases.includes(analysis[key].toLowerCase())
+          typeof val === "string" &&
+          genericPhrases.includes(val.toLowerCase())
         ) {
           analysis[key] = null;
+          analysis[(key + "Severity") as keyof Analysis] = null;
         }
       });
     } catch (apiErr: unknown) {
@@ -101,18 +122,6 @@ export async function processBrainDumpAction(
       };
     }
 
-    const log : SymptomRecord = await prisma.symptomLog.create({
-      data: {
-        patientId: profile.id,
-        rawText: safeText,
-        physical: analysis.physical,
-        mood: analysis.mood,
-        cognitive: analysis.cognitive,
-        sleep: analysis.sleep,
-        social: analysis.social,
-      },
-    });
-
     // Check if all categories are null
     const allNull =
       !analysis.physical &&
@@ -120,13 +129,31 @@ export async function processBrainDumpAction(
       !analysis.cognitive &&
       !analysis.sleep &&
       !analysis.social;
+
     if (allNull) {
       return {
-        success: true,
-        log,
-        message: "No specific symptoms detected in this entry.",
+        success: false,
+        error:
+          "We couldn't detect any specific health symptoms or updates in this entry. Please try being more specific.",
       };
     }
+
+    const log: SymptomRecord = await prisma.symptomLog.create({
+      data: {
+        patientId: profile.id,
+        rawText: safeText,
+        physical: analysis.physical,
+        physicalSeverity: analysis.physicalSeverity,
+        mood: analysis.mood,
+        moodSeverity: analysis.moodSeverity,
+        cognitive: analysis.cognitive,
+        cognitiveSeverity: analysis.cognitiveSeverity,
+        sleep: analysis.sleep,
+        sleepSeverity: analysis.sleepSeverity,
+        social: analysis.social,
+        socialSeverity: analysis.socialSeverity,
+      },
+    });
 
     // Notify associated carers via WebSocket
     try {
@@ -138,7 +165,9 @@ export async function processBrainDumpAction(
       patientCarers.forEach((pc) => {
         io.to(pc.carerId).emit("new_log", { patientId: profile.id });
       });
-      console.log(`[Socket] Notified ${patientCarers.length} carers about new Mind Dump log`);
+      console.log(
+        `[Socket] Notified ${patientCarers.length} carers about new Mind Dump log`,
+      );
     } catch (e) {
       console.warn("[Socket] Failed to notify carers:", e);
     }

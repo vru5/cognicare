@@ -22,6 +22,7 @@ import {
 import { Eye, EyeOff, CheckCircle2, XCircle } from "lucide-react";
 import { PATIENT_ID } from "@/constants/carerLandingPage";
 import { FormConfigProps, PasswordRulesConfig, RegistrationFieldConfig } from "../types/registerationForm";
+import { HIDE_PASSWORD, SHOW_PASSWORD } from "@/constants/loginPage";
 
 export const getRegisterationFields = ({
   showPassword,
@@ -68,6 +69,7 @@ export const getRegisterationFields = ({
           className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
           onClick={() => setShowPassword((v: boolean) => !v)}
           tabIndex={-1}
+          aria-label={showPassword ? `${HIDE_PASSWORD}` : `${SHOW_PASSWORD}`}
         >
           {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
         </button>
@@ -79,9 +81,8 @@ export const getRegisterationFields = ({
             return (
               <li
                 key={rule.id}
-                className={`flex items-center gap-1.5 text-xs font-medium transition-colors ${
-                  passed ? "text-green-600" : "text-slate-400"
-                }`}
+                className={`flex items-center gap-1.5 text-xs font-medium transition-colors ${passed ? "text-green-600" : "text-slate-400"
+                  }`}
               >
                 {passed ? <CheckCircle2 size={13} /> : <XCircle size={13} />}
                 {rule.label}
@@ -191,3 +192,6 @@ export const getPasswordRules = () => {
 
   return { passwordRules };
 }
+
+export const JOIN_COGNICARE = "Join CogniCare";
+export const JOINING = "Joining...";
