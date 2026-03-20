@@ -63,7 +63,7 @@ export default function MobilePageLayout({
 
         {/* Optional Action (e.g. "Mark all as read") */}
         {actionRight && (
-          <div className={`text-sm font-bold tracking-wide ${textClass} opacity-90`}>
+          <div className={`text-sm font-bold tracking-wide ${textClass}`}>
             {actionRight}
           </div>
         )}

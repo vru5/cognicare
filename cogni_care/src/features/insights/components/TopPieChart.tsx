@@ -10,8 +10,15 @@ import {
   type ChartConfig,
 } from "@/components/ui/chart";
 import InsightsCard from "@/components/shared/InsightsCard";
-import { PieChartData } from "../types/insightsTypes";
-import { PILLAR_COLORS } from "../constants/insightsChartsConfig";
+import { TopPieChartProps } from "../types/insightsTypes";
+import { 
+  PILLAR_COLORS, 
+  WELLNESS_TITLE, 
+  FIVE_PILLARS_SUBTITLE, 
+  NO_WELLNESS_DATA, 
+  LOG_SYMPTOMS_PROMPT, 
+  TAP_SLICE_DETAILS 
+} from "../constants/insightsConstants";
 
 const renderCustomizedLabel = ({
   cx,
@@ -40,7 +47,7 @@ const renderCustomizedLabel = ({
   );
 };
 
-export default function TopPieChart({ data }: { data: PieChartData }) {
+export default function TopPieChart({ data }: TopPieChartProps) {
   const [selected, setSelected] = useState<any>(null);
 
   if (!data || data.length === 0) return null;
@@ -58,8 +65,8 @@ export default function TopPieChart({ data }: { data: PieChartData }) {
 
   return (
     <InsightsCard
-      title="Wellness"
-      subtitle="5 Pillars"
+      title={WELLNESS_TITLE}
+      subtitle={FIVE_PILLARS_SUBTITLE}
       subtitleClassName="text-[#C46747] font-bold"
       headerClassName="md:text-left pt-0" 
     >
@@ -85,10 +92,10 @@ export default function TopPieChart({ data }: { data: PieChartData }) {
             </div>
             <div className="text-center space-y-1">
               <p className="text-sm font-black text-slate-400 uppercase tracking-widest leading-none">
-                No Wellness Data
+                {NO_WELLNESS_DATA}
               </p>
               <p className="text-[10px] font-bold text-slate-300">
-                Log symptoms to see your breakdown
+                {LOG_SYMPTOMS_PROMPT}
               </p>
             </div>
           </div>
@@ -145,7 +152,7 @@ export default function TopPieChart({ data }: { data: PieChartData }) {
           </div>
         ) : (
           <p className="text-center text-[10px] font-black tracking-widest text-slate-300 mt-4 uppercase">
-            Tap a slice to see details
+            {TAP_SLICE_DETAILS}
           </p>
         )}
         </>

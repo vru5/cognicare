@@ -12,12 +12,23 @@ import {
   getAllTimeLogAggregates,
   getDailyAverage,
 } from "../services/insightsService"
-import { PieChartData, DailyAverage } from "../types/insightsTypes"
+import { DailyAverage } from "../types/insightsTypes"
+import { 
+  INSIGHTS_TITLE, 
+  INSIGHTS_LOCKED_TITLE, 
+  INSIGHTS_LOCKED_DESCRIPTION, 
+  PROGRESS_LABEL, 
+  PROGRESS_DAYS_FOOTER,
+  COMPARE_DAYS_TITLE,
+  SYMPTOM_COMPARISON_SUBTITLE,
+  DATE_PRESETS
+} from "../constants/insightsConstants"
 
 import TopPieChart from "./TopPieChart"
 import ComparisonCards from "./ComparisonCards"
 import BreakdownTable from "./BreakdownTable"
 import InsightsCard from "@/components/shared/InsightsCard"
+import ExportMenu from "@/features/export/components/ExportMenu"
 
 export default function InsightsDashboard() {
   const { user } = useAuth()
@@ -96,11 +107,12 @@ export default function InsightsDashboard() {
 
   return (
     <MobilePageLayout 
-      title="Insights" 
+      title={INSIGHTS_TITLE} 
       icon={Activity}
       onBack={urlPatientId ? () => router.push("/insights") : undefined}
       iconContainerClass="bg-gradient-to-br from-primary to-[#0A4B75] shadow-lg shadow-primary/20"
       iconColorClass="text-white"
+      actionRight={<ExportMenu />}
     >
       {loading ? (
         <div className="flex w-full items-center justify-center p-32"><Loader2 className="w-12 h-12 animate-spin text-primary" /></div>
@@ -114,16 +126,16 @@ export default function InsightsDashboard() {
           </div>
 
           <h2 className="text-4xl font-black mb-4 text-slate-800 tracking-tight">
-            Insights<br /><span className="text-primary italic">Locked</span>
+            {INSIGHTS_LOCKED_TITLE.split(" ")[0]}<br /><span className="text-primary italic">{INSIGHTS_LOCKED_TITLE.split(" ")[1]}</span>
           </h2>
           
           <p className="text-slate-500 max-w-[280px] text-base font-bold leading-relaxed mb-12">
-            Log your symptoms for <span className="text-primary">7 distinct days</span> to unlock comparative analytics.
+            {INSIGHTS_LOCKED_DESCRIPTION.split("7 distinct days")[0]}<span className="text-primary">7 distinct days</span>{INSIGHTS_LOCKED_DESCRIPTION.split("7 distinct days")[1]}
           </p>
 
           <div className="w-full max-w-[240px] space-y-3">
              <div className="flex justify-between items-end px-1">
-                <span className="text-[10px] font-black tracking-widest text-slate-400 uppercase">Progress</span>
+                <span className="text-[10px] font-black tracking-widest text-slate-400 uppercase">{PROGRESS_LABEL}</span>
                 <span className="text-sm font-black text-primary">{daysTracked} / 7 days</span>
              </div>
              <div className="h-4 w-full bg-slate-100 rounded-full overflow-hidden p-1 border border-slate-50 shadow-inner">
@@ -133,7 +145,7 @@ export default function InsightsDashboard() {
                 />
              </div>
              <p className="text-[11px] font-black text-slate-300 italic">
-                {7 - daysTracked} more days to go!
+                {PROGRESS_DAYS_FOOTER(7 - daysTracked)}
              </p>
           </div>
         </div>
@@ -144,32 +156,36 @@ export default function InsightsDashboard() {
 
           {/* Comparison + Breakdown unified card */}
           <InsightsCard 
-            title={"Compare\ntwo days"} 
-            subtitle="Symptom Comparison"
+            title={COMPARE_DAYS_TITLE} 
+            subtitle={SYMPTOM_COMPARISON_SUBTITLE}
             subtitleClassName="text-[#C46747] font-bold"
           >
 
             {/* Quick-select buttons */}
             <div className="flex flex-wrap justify-center gap-3">
               {(
-                [
-                  { label: 'Yesterday vs Today', key: '1' as const, onClick: () => { setDateA(subDays(startOfToday(), 1)); setDateB(startOfToday()); setSelectedPreset('1'); } },
-                  { label: '7 days apart',       key: '7' as const, onClick: () => { setDateA(subDays(startOfToday(), 7)); setDateB(startOfToday()); setSelectedPreset('7'); } },
-                  { label: '14 days apart',      key: '14' as const, onClick: () => { setDateA(subDays(startOfToday(), 14)); setDateB(startOfToday()); setSelectedPreset('14'); } },
-                ] as const
-              ).map(({ label, key, onClick }) => (
-                <button
-                  key={key}
-                  onClick={onClick}
-                  className={`px-5 py-2.5 rounded-full text-sm font-bold transition-all shadow-sm ${
-                    selectedPreset === key
-                      ? 'bg-primary text-primary-foreground shadow-md scale-[1.04]'
-                      : 'border-2 border-primary/30 bg-white/60 backdrop-blur-sm text-foreground hover:bg-primary/10 hover:border-primary'
-                  }`}
-                >
-                  {label}
-                </button>
-              ))}
+                DATE_PRESETS.map(({ label, key }) => {
+                  const onClick = () => {
+                   if (key === '1') { setDateA(subDays(startOfToday(), 1)); setDateB(startOfToday()); }
+                   else if (key === '7') { setDateA(subDays(startOfToday(), 7)); setDateB(startOfToday()); }
+                   else if (key === '14') { setDateA(subDays(startOfToday(), 14)); setDateB(startOfToday()); }
+                   setSelectedPreset(key);
+                  };
+                  return (
+                    <button
+                      key={key}
+                      onClick={onClick}
+                      className={`px-5 py-2.5 rounded-full text-sm font-bold transition-all shadow-sm ${
+                        selectedPreset === key
+                          ? 'bg-primary text-primary-foreground shadow-md scale-[1.04]'
+                          : 'border-2 border-primary/30 bg-white/60 backdrop-blur-sm text-foreground hover:bg-primary/10 hover:border-primary'
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  )
+                })
+              )}
             </div>
 
             <ComparisonCards 

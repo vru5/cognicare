@@ -13,6 +13,7 @@ import {
 import { API_BASE_URL } from "@/constants/auth";
 import { Patient } from "@/features/logs/types/logTypes";
 import MobilePageLayout from "@/components/shared/MobilePageLayout";
+import { PATIENT_RECORDS_TITLE } from "../constants/insightsConstants";
 
 export default function CarerInsightsSelector() {
   const { user, loading: authLoading } = useAuth();
@@ -49,7 +50,7 @@ export default function CarerInsightsSelector() {
 
   return (
     <MobilePageLayout 
-      title="Patient Insights" 
+      title={PATIENT_RECORDS_TITLE} 
       icon={Activity}
       iconContainerClass="bg-gradient-to-br from-primary to-[#0A4B75] shadow-lg shadow-primary/20"
       iconColorClass="text-white"

@@ -2,8 +2,8 @@
 
 import { useState } from "react";
 import { format } from "date-fns";
-import { DailyAverage } from "../types/insightsTypes";
-import { SYMPTOM_FULL_NAMES } from "../constants/insightsChartsConfig";
+import { DailyAverage, ComparisonCardsProps } from "../types/insightsTypes";
+import { SYMPTOM_FULL_NAMES, VS_TEXT } from "../constants/insightsConstants";
 import SymptomBarChart from "./SymptomBarChart";
 
 function processRecharts(data: DailyAverage | null) {
@@ -12,17 +12,6 @@ function processRecharts(data: DailyAverage | null) {
     name: SYMPTOM_FULL_NAMES[k.toLowerCase()] || k,
     score: v,
   }));
-}
-
-interface ComparisonCardsProps {
-  dateA: Date;
-  dateB: Date;
-  joinedAt: Date;
-  onChangeDateA: (date: Date) => void;
-  onChangeDateB: (date: Date) => void;
-  dataA: DailyAverage | null;
-  dataB: DailyAverage | null;
-  loading: boolean;
 }
 
 export default function ComparisonCards({
@@ -84,7 +73,7 @@ export default function ComparisonCards({
       {/* VS Badge between the two cards */}
       <div className="flex items-center justify-center z-10 py-2">
         <div className="w-10 h-10 bg-slate-900 text-white rounded-full flex items-center justify-center font-black text-xs border-2 border-white shadow-lg">
-          VS
+          {VS_TEXT}
         </div>
       </div>
 

@@ -8,20 +8,13 @@ import {
   ChartTooltipContent,
   type ChartConfig,
 } from "@/components/ui/chart";
-import { getSymptomEmoji } from "../constants/insightsChartsConfig";
-
-interface SymptomBarChartProps {
-  data: { name: string; score: number }[];
-  gradientId: string;
-  gradientColors: { start: string; end: string };
-  selectedSymptom: any;
-  onSelectSymptom: (data: any) => void;
-  accentColor: string;
-}
-
-const chartConfig = {
-  score: { label: "Score" },
-} satisfies ChartConfig;
+import { 
+  getSymptomEmoji, 
+  TAP_BAR_DETAILS, 
+  NO_DATA_RECORD_DATE, 
+  SYMPTOM_BAR_CHART_CONFIG 
+} from "../constants/insightsConstants";
+import { SymptomBarChartProps } from "../types/insightsTypes";
 
 export default function SymptomBarChart({
   data,
@@ -40,7 +33,7 @@ export default function SymptomBarChart({
           <BarChart2 className="h-6 w-6 text-slate-300" />
         </div>
         <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] text-center">
-          No data recorded for this date
+          {NO_DATA_RECORD_DATE}
         </p>
       </div>
     );
@@ -48,7 +41,7 @@ export default function SymptomBarChart({
 
   return (
     <div className="flex flex-col w-full">
-      <ChartContainer config={chartConfig} className="h-40 w-full aspect-auto">
+      <ChartContainer config={SYMPTOM_BAR_CHART_CONFIG} className="h-40 w-full aspect-auto">
         <BarChart
           data={data}
           margin={{ top: 10, left: -20, right: 0, bottom: 0 }}
@@ -107,7 +100,7 @@ export default function SymptomBarChart({
         </div>
       ) : (
         <p className="text-center text-[10px] font-black tracking-widest text-slate-300 mt-4 uppercase">
-            Tap a bar to see details
+            {TAP_BAR_DETAILS}
         </p>
       )}
     </div>

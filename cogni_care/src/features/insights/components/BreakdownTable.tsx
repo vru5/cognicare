@@ -1,31 +1,17 @@
-"use client"
 import { format } from "date-fns"
-import { DailyAverage } from "../types/insightsTypes"
-
-interface BreakdownTableProps {
-  dateA: Date;
-  dateB: Date;
-  dataA: DailyAverage | null;
-  dataB: DailyAverage | null;
-}
-
+import { BreakdownTableProps } from "../types/insightsTypes"
+import { 
+  BREAKDOWN_TITLE, 
+  getBreakdownEmoji, 
+  getSymptomFullName 
+} from "../constants/insightsConstants"
 import { SymptomPillar } from "@/features/logs/types/logTypes"
 
 export default function BreakdownTable({ dateA, dateB, dataA, dataB }: BreakdownTableProps) {
   const pillars: SymptomPillar[] = ["physical", "mood", "cognitive", "sleep", "social"]
   
-  const getEmoji = (p: string) => {
-    switch(p) {
-      case "physical": return "🤕"
-      case "mood": return "😔"
-      case "cognitive": return "🧠"
-      case "sleep": return "😴"
-      case "social": return "💬"
-      default: return "📌"
-    }
-  }
-  
-  const getLabel = (p: string) => p.charAt(0).toUpperCase() + p.substring(1)
+  const getEmoji = (p: string) => getBreakdownEmoji(p);
+  const getLabel = (p: string) => getSymptomFullName(p);
 
   return (
     <div className="bg-[#eaf2fa] rounded-[2rem] shadow-sm p-6 pb-8 w-full flex flex-col">
@@ -34,7 +20,7 @@ export default function BreakdownTable({ dateA, dateB, dataA, dataB }: Breakdown
       <div className="flex flex-col gap-3 mb-10 w-full">
         {/* Title row */}
         <h2 className="text-4xl font-black text-[#1A202C] tracking-tight">
-          Breakdown<span className="text-[#2A5174]">.</span>
+          {BREAKDOWN_TITLE}<span className="text-[#2A5174]">.</span>
         </h2>
         
         {/* Date legends on the next line */}
