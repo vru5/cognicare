@@ -1,5 +1,5 @@
 import { Eye, EyeOff } from "lucide-react";
-import { EMAIL_OR_PHONE_TEXT, EMAIL_PLACEHOLDER, PASSWORD } from "@/constants/registerationPage";
+import { EMAIL_OR_PHONE_TEXT, EMAIL_PLACEHOLDER, PASSWORD } from "@/constants/registrationPage";
 import { LoginFormConfigProps, LoginFieldConfig } from "../types/loginForm";
 import { HIDE_PASSWORD, LOGIN_PASSWORD_PLACEHOLDER, SHOW_PASSWORD } from "@/constants/loginPage";
 

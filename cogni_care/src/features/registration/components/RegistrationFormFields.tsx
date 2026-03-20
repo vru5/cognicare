@@ -1,13 +1,13 @@
 import {
   CARER,
   PATIENT,
-} from "@/constants/registerationPage";
+} from "@/constants/registrationPage";
 import { Button } from "@/components/ui/button";
 import { FormControl } from "@/components/shared/FormControl";
-import { getRegisterationFields, JOIN_COGNICARE, JOINING } from "../constants/registerationFormConfig";
-import { RegisterationFormFieldsProps, RegistrationFieldConfig } from "../types/registerationForm";
+import { getRegistrationFields, JOIN_COGNICARE, JOINING } from "../constants/registrationFormConfig";
+import { RegistrationFormFieldsProps, RegistrationFieldConfig } from "../types/registrationForm";
 
-export function RegisterationFormFields(props: RegisterationFormFieldsProps) {
+export function RegistrationFormFields(props: RegistrationFormFieldsProps) {
   const {
     handleSubmit,
     handleInputChange,
@@ -17,7 +17,7 @@ export function RegisterationFormFields(props: RegisterationFormFieldsProps) {
     role,
   } = props;
 
-  const { fields, familyFields } = getRegisterationFields(props);
+  const { fields, familyFields } = getRegistrationFields(props);
 
   const inputClass = (field: string) =>
     `w-full p-4 rounded-2xl border bg-white/50 text-foreground placeholder:text-muted-foreground outline-none transition-all duration-300 shadow-sm focus:ring-2 ${props.errorField === field

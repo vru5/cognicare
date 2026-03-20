@@ -9,8 +9,6 @@ export interface LoginFormConfigProps {
     setShowPassword: Dispatch<SetStateAction<boolean>>;
     setError: (v: string | null) => void;
     error: string | null;
-    inputClass: (fieldError: boolean) => string;
-    labelClass: (fieldError: boolean) => string;
 }
 
 export interface LoginFieldConfig {

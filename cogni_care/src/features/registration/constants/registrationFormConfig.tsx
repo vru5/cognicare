@@ -18,13 +18,13 @@ import {
   PATIENT_OR_CARER,
   PHONE,
   PHONE_PLACEHOLDER,
-} from "@/constants/registerationPage";
+} from "@/constants/registrationPage";
 import { Eye, EyeOff, CheckCircle2, XCircle } from "lucide-react";
 import { PATIENT_ID } from "@/constants/carerLandingPage";
-import { FormConfigProps, PasswordRulesConfig, RegistrationFieldConfig } from "../types/registerationForm";
+import { FormConfigProps, PasswordRulesConfig, RegistrationFieldConfig } from "../types/registrationForm";
 import { HIDE_PASSWORD, SHOW_PASSWORD } from "@/constants/loginPage";
 
-export const getRegisterationFields = ({
+export const getRegistrationFields = ({
   showPassword,
   setShowPassword,
   password,
