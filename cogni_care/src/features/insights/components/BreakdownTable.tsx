@@ -10,6 +10,9 @@ import { SymptomPillar } from "@/features/logs/types/logTypes"
 export default function BreakdownTable({ dateA, dateB, dataA, dataB }: BreakdownTableProps) {
   const pillars: SymptomPillar[] = ["physical", "mood", "cognitive", "sleep", "social"]
   
+  // For the delta calculation, we always want (Later Date Value) - (Earlier Date Value)
+  const isBGreater = dateB.getTime() >= dateA.getTime();
+
   const getEmoji = (p: string) => getBreakdownEmoji(p);
   const getLabel = (p: string) => getSymptomFullName(p);
 
@@ -23,9 +26,9 @@ export default function BreakdownTable({ dateA, dateB, dataA, dataB }: Breakdown
           {BREAKDOWN_TITLE}<span className="text-[#2A5174]">.</span>
         </h2>
         
-        {/* Date legends on the next line */}
+        {/* Date legends co-ordinated with Chart Cards */}
         <div className="flex items-center gap-4">
-          {/* Date A */}
+          {/* Card A Color (Blue) */}
           <div className="flex items-center gap-1.5">
             <div className="w-3 h-3 rounded-full bg-[#2A5174]" />
             <span className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">
@@ -33,7 +36,7 @@ export default function BreakdownTable({ dateA, dateB, dataA, dataB }: Breakdown
             </span>
           </div>
 
-          {/* Date B */}
+          {/* Card B Color (Orange/Coral) */}
           <div className="flex items-center gap-1.5">
             <div className="w-3 h-3 rounded-full bg-[#C46747]" />
             <span className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">
@@ -48,7 +51,9 @@ export default function BreakdownTable({ dateA, dateB, dataA, dataB }: Breakdown
         {pillars.map(p => {
           const valA = dataA ? dataA[p] || 0 : 0;
           const valB = dataB ? dataB[p] || 0 : 0;
-          const diff = valB - valA;
+          
+          // Delta is always (Later - Earlier)
+          const diff = isBGreater ? (valB - valA) : (valA - valB);
           
           return (
             <div key={p} className="flex items-center justify-between w-full">
@@ -61,18 +66,18 @@ export default function BreakdownTable({ dateA, dateB, dataA, dataB }: Breakdown
               
               {/* Right: 3 Columns (Val A, Val B, Diff) */}
               <div className="flex items-center gap-8 sm:gap-12 justify-end w-full">
-                {/* Value A (Dark Blue) */}
-                <span className="text-[#2A5174] font-black text-lg w-6 text-center">
+                {/* Value A (Co-ordinated with Blue Card) */}
+                <span className="text-[#2A5174] font-black text-lg w-6 text-center text-clip overflow-hidden">
                   {valA > 0 ? valA : '—'}
                 </span>
                 
-                {/* Value B (Coral) */}
-                <span className="text-[#C46747] font-black text-lg w-6 text-center">
+                {/* Value B (Co-ordinated with Orange Card) */}
+                <span className="text-[#C46747] font-black text-lg w-6 text-center text-clip overflow-hidden">
                   {valB > 0 ? valB : '—'}
                 </span>
                 
-                {/* Difference (Green/Red/Grey) */}
-                <span className={`w-6 text-right font-black text-sm ${diff > 0 ? 'text-[#ef4444]' : diff < 0 ? 'text-[#22c55e]' : 'text-slate-300'}`}>
+                {/* Difference (Positive=Green, Negative=Red) */}
+                <span className={`w-8 text-right font-black text-sm ${diff > 0 ? 'text-[#22c55e]' : diff < 0 ? 'text-[#ef4444]' : 'text-slate-300'}`}>
                   {diff > 0 ? `+${diff}` : diff < 0 ? diff : '—'}
                 </span>
               </div>

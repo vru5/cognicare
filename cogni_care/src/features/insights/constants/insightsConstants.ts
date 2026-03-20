@@ -16,7 +16,7 @@ export const SYMPTOM_FULL_NAMES: Record<string, string> = {
 
 export const SYMPTOM_EMOJIS: Record<string, string> = {
   physical: "🤕 Phy",
-  mood: "😔 Mod",
+  mood: "😊 Mod",
   cognitive: "🧠 Cog",
   sleep: "😴 Slp",
   social: "💬 Soc",
@@ -24,7 +24,7 @@ export const SYMPTOM_EMOJIS: Record<string, string> = {
 
 export const BREAKDOWN_EMOJIS: Record<string, string> = {
   physical: "🤕",
-  mood: "😔",
+  mood: "😊",
   cognitive: "🧠",
   sleep: "😴",
   social: "💬",
