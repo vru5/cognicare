@@ -5,6 +5,7 @@ import { format } from "date-fns";
 import { DailyAverage, ComparisonCardsProps } from "../types/insightsTypes";
 import { SYMPTOM_FULL_NAMES, VS_TEXT } from "../constants/insightsConstants";
 import SymptomBarChart from "./SymptomBarChart";
+import SymptomDatePicker from "./SymptomDatePicker";
 
 function processRecharts(data: DailyAverage | null) {
   if (!data) return [];
@@ -39,24 +40,15 @@ export default function ComparisonCards({
       style={{ opacity: loading ? 0.6 : 1, transition: "opacity 0.3s" }}
     >
       {/* Card A */}
-      <div className="w-full bg-gradient-to-b from-[#2A5174] to-[#163554] rounded-[1.5rem] overflow-hidden shadow-xl flex flex-col">
+      <div className="w-full bg-gradient-to-b from-[#2A5174] to-[#163554] rounded-[1.5rem] shadow-xl flex flex-col relative">
         <div className="p-4 pb-2 text-white">
-          <div className="bg-white/10 rounded-xl overflow-hidden">
-            <input
-              type="date"
-              className="w-full bg-transparent text-white font-bold text-base px-3 py-2 outline-none"
-              style={{ colorScheme: "dark" }}
-              value={format(dateA, "yyyy-MM-dd")}
-              min={minDate}
-              max={maxDate}
-              onChange={(e) => {
-                const val = e.target.value;
-                if (!val) return;
-                const d = new Date(val.replace(/-/g, "/"));
-                if (!isNaN(d.getTime())) onChangeDateA(d);
-              }}
-            />
-          </div>
+          <SymptomDatePicker
+            selectedDate={dateA}
+            onChange={onChangeDateA}
+            minDate={joinedAt}
+            maxDate={new Date()}
+            accentColor="#2A5174"
+          />
         </div>
         <div className="bg-white rounded-t-[1.5rem] p-4 mt-3 flex-1">
           <SymptomBarChart
@@ -78,24 +70,15 @@ export default function ComparisonCards({
       </div>
 
       {/* Card B */}
-      <div className="w-full bg-gradient-to-b from-[#C46747] to-[#A84A2A] rounded-[1.5rem] overflow-hidden shadow-xl flex flex-col">
+      <div className="w-full bg-gradient-to-b from-[#C46747] to-[#A84A2A] rounded-[1.5rem] shadow-xl flex flex-col relative">
         <div className="p-4 pb-2 text-white">
-          <div className="bg-white/10 rounded-xl overflow-hidden">
-            <input
-              type="date"
-              className="w-full bg-transparent text-white font-bold text-base px-3 py-2 outline-none"
-              style={{ colorScheme: "dark" }}
-              value={format(dateB, "yyyy-MM-dd")}
-              min={minDate}
-              max={maxDate}
-              onChange={(e) => {
-                const val = e.target.value;
-                if (!val) return;
-                const d = new Date(val.replace(/-/g, "/"));
-                if (!isNaN(d.getTime())) onChangeDateB(d);
-              }}
-            />
-          </div>
+          <SymptomDatePicker
+            selectedDate={dateB}
+            onChange={onChangeDateB}
+            minDate={joinedAt}
+            maxDate={new Date()}
+            accentColor="#C46747"
+          />
         </div>
         <div className="bg-white rounded-t-[1.5rem] p-4 mt-3 flex-1">
           <SymptomBarChart
