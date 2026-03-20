@@ -6,10 +6,15 @@ export interface AppError {
 
 export interface Analysis {
     physical?: string | null;
+    physicalSeverity?: number | null;
     mood?: string | null;
+    moodSeverity?: number | null;
     cognitive?: string | null;
+    cognitiveSeverity?: number | null;
     sleep?: string | null;
+    sleepSeverity?: number | null;
     social?: string | null;
+    socialSeverity?: number | null;
 } 
 
 export interface SymptomRecord extends Analysis {

@@ -143,6 +143,16 @@ export async function updateCarerNoteAction(noteId: string, carerId: string, tex
             include: { carer: { include: { user: { select: { name: true } } } } }
         });
 
+        try {
+            const io = getIO();
+            io.to(carerNote.patientId).emit("new_notification", {
+                type: "CARER_LOG",
+            });
+            io.to(carerNote.patientId).emit("new_log", { patientId: carerNote.patientId });
+        } catch (err) {
+            console.warn("[Socket] Failed to emit CARER_LOG notification on update:", err);
+        }
+
         return {
             success: true,
             log: {
@@ -180,6 +190,16 @@ export async function deleteCarerNoteAction(noteId: string, carerId: string, pat
         await prisma.carerNote.delete({
             where: { id: noteId }
         });
+
+        try {
+            const io = getIO();
+            io.to(patientId).emit("new_notification", {
+                type: "CARER_LOG",
+            });
+            io.to(patientId).emit("new_log", { patientId });
+        } catch (err) {
+            console.warn("[Socket] Failed to emit CARER_LOG notification on delete:", err);
+        }
 
         if (logId) {
             const updatedLog = await prisma.symptomLog.findUnique({

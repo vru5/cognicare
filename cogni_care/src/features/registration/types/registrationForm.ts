@@ -28,7 +28,7 @@ export interface FormConfigProps {
   error?: string;
 }
 
-export interface RegisterationFormFieldsProps extends FormConfigProps {
+export interface RegistrationFormFieldsProps extends FormConfigProps {
   handleSubmit: (e: React.FormEvent) => Promise<void>;
   handleInputChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   loading: boolean;

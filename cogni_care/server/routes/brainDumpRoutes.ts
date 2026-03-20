@@ -1,6 +1,7 @@
 import express from "express";
 import { processBrainDumpAction } from "../actions/brain-dump/processActions.js";
 import { transcribeAudioAction } from "../actions/brain-dump/transcribeActions.js";
+import { updateLogSeverityAction } from "../actions/brain-dump/updateSeverityActions.js";
 
 const router = express.Router();
 
@@ -21,6 +22,16 @@ router.post("/transcribe", async (req, res) => {
         return res.status(400).json({ success: false, error: "Missing base64Audio" });
     }
     const result = await transcribeAudioAction(base64Audio, patientId);
+    res.json(result);
+});
+
+// PUT /api/brain-dump/severity
+router.put("/severity", async (req, res) => {
+    const { logId, pillar, severity } = req.body;
+    if (!logId || !pillar || typeof severity !== "number") {
+        return res.status(400).json({ success: false, error: "Missing or invalid fields" });
+    }
+    const result = await updateLogSeverityAction(logId, pillar, severity);
     res.json(result);
 });
 

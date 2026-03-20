@@ -1,5 +1,7 @@
 "use client";
 
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "next/navigation";
@@ -8,28 +10,33 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import Link from "next/link";
 import { AppError } from "server/types/logsApi";
-import { SIGN_IN } from "@/constants/registerationPage";
+import { SIGN_IN } from "@/constants/registrationPage";
 import { ACCOUNT_TEXT, REGISTER_HERE, SIGN_IN_SUB_HEADER, SIGNING_IN_TEXT, WELCOME_HEADER } from "@/constants/loginPage";
 import { FormControl } from "@/components/shared/FormControl";
 import { getLoginFields } from "../constants/loginFormConfig";
 import { LoginFieldConfig } from "../types/loginForm";
+import { loginSchema, LoginFormData } from "../schemas/loginSchema";
 
 export default function LoginForm() {
     const router = useRouter();
     const { login } = useAuth();
-    const [emailOrPhone, setEmailOrPhone] = useState("");
-    const [password, setPassword] = useState("");
     const [showPassword, setShowPassword] = useState(false);
-    const [error, setError] = useState<string | null>(null);
-    const [loading, setLoading] = useState(false);
+    const [serverError, setServerError] = useState<string | null>(null);
 
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        setError(null);
-        setLoading(true);
+    const form = useForm<LoginFormData>({
+        resolver: zodResolver(loginSchema),
+        defaultValues: { emailOrPhone: "", password: "" },
+        mode: "onBlur",
+    });
 
+    const { watch, setValue, formState: { errors, isSubmitting } } = form;
+    const emailOrPhone = watch("emailOrPhone");
+    const password = watch("password");
+
+    const onSubmit = async (data: LoginFormData) => {
+        setServerError(null);
         try {
-            const authUser = await login(emailOrPhone, password);
+            const authUser = await login(data.emailOrPhone, data.password);
             if (authUser.isCarer) {
                 router.push("/dashboard");
             } else {
@@ -37,20 +44,18 @@ export default function LoginForm() {
             }
         } catch (error: unknown) {
             const err = error as AppError;
-            setError(err.message || "Something went wrong. Please try again.");
-        } finally {
-            setLoading(false);
+            setServerError(err.message || "Something went wrong. Please try again.");
         }
     };
 
-    const inputClass = (fieldError: boolean) =>
-        `w-full p-4 rounded-2xl border bg-white/50 text-foreground placeholder:text-muted-foreground outline-none transition-all duration-300 shadow-sm focus:ring-2 ${fieldError
+    const inputClass = (hasError: boolean) =>
+        `w-full p-4 rounded-2xl border bg-white/50 text-foreground placeholder:text-muted-foreground outline-none transition-all duration-300 shadow-sm focus:ring-2 ${hasError
             ? "border-destructive focus:ring-destructive/20"
             : "border-slate-200 focus:ring-primary focus:border-primary"
         }`;
 
-    const labelClass = (fieldError: boolean) =>
-        `text-sm font-bold ml-1 transition-colors ${fieldError ? "text-destructive" : "text-foreground/60"}`;
+    const labelClass = (hasError: boolean) =>
+        `text-sm font-bold ml-1 transition-colors ${hasError ? "text-destructive" : "text-foreground/60"}`;
 
     return (
         <Card className="border-none shadow-[0_32px_64px_-16px_rgba(0,0,0,0.1)] bg-white/80 backdrop-blur-2xl ring-1 ring-slate-200/50">
@@ -64,18 +69,16 @@ export default function LoginForm() {
             </CardHeader>
 
             <CardContent>
-                <form onSubmit={handleSubmit} className="space-y-6">
+                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
                     {getLoginFields({
                         emailOrPhone,
-                        setEmailOrPhone,
+                        setEmailOrPhone: (val: string) => { setValue("emailOrPhone", val, { shouldValidate: true }); setServerError(null); },
                         password,
-                        setPassword,
+                        setPassword: (val: string) => { setValue("password", val, { shouldValidate: true }); setServerError(null); },
                         showPassword,
                         setShowPassword,
-                        setError,
-                        error,
-                        inputClass,
-                        labelClass,
+                        setError: setServerError,
+                        error: serverError,
                     }).map((field: LoginFieldConfig) => (
                         <FormControl
                             key={field.id}
@@ -88,26 +91,27 @@ export default function LoginForm() {
                             value={field.value}
                             onChangeHandler={field.onChange}
                             placeholder={field.placeholder}
-                            inputClass={inputClass(!!error)}
-                            labelClass={labelClass(!!error)}
+                            inputClass={inputClass(!!errors[field.name as keyof LoginFormData])}
+                            labelClass={labelClass(!!errors[field.name as keyof LoginFormData])}
                             containerClass="space-y-2"
                             suffix={field.suffix}
+                            error={errors[field.name as keyof LoginFormData]?.message}
                         />
                     ))}
 
-                    {error && (
+                    {serverError && (
                         <p className="text-destructive text-sm font-bold text-center animate-in fade-in slide-in-from-top-2 duration-300">
-                            {error}
+                            {serverError}
                         </p>
                     )}
 
                     <Button
                         type="submit"
-                        disabled={loading}
+                        disabled={isSubmitting}
                         className="w-full py-8 rounded-full text-xl font-bold bg-primary hover:bg-primary/90 text-primary-foreground shadow-xl shadow-primary/20 active:scale-[0.98] transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed tracking-tight"
                     >
-                        {loading && <Loader2 className="w-5 h-5 animate-spin mr-2" />}
-                        {loading ? `${SIGNING_IN_TEXT}` : `${SIGN_IN}`}
+                        {isSubmitting && <Loader2 className="w-5 h-5 animate-spin mr-2" />}
+                        {isSubmitting ? `${SIGNING_IN_TEXT}` : `${SIGN_IN}`}
                     </Button>
                 </form>
             </CardContent>

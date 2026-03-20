@@ -4,6 +4,7 @@ import { Settings, LogOut, User, ShieldCheck } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
+import MobilePageLayout from "@/components/shared/MobilePageLayout";
 
 function MenuItem({
     icon,
@@ -38,46 +39,45 @@ export default function SettingsContent() {
     const { user, logout } = useAuth();
 
     return (
-        <div className="max-w-md mx-auto space-y-4 pb-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
-            {/* Header */}
-            <div className="sticky top-0 z-10 -mx-4 -mt-[calc(2rem+env(safe-area-inset-top,0px))] px-4 pt-[calc(2rem+env(safe-area-inset-top,0px))] pb-4 mb-4 bg-background/80 backdrop-blur-xl border-b border-border/50 flex items-center gap-3">
-                <div className="p-2 bg-primary/10 rounded-xl">
-                    <Settings className="w-6 h-6 text-primary" />
-                </div>
-                <h1 className="text-2xl font-bold tracking-tight">Settings</h1>
-            </div>
-
-            {/* Menu items */}
-            <div className="space-y-3 px-4">
-                <MenuItem
-                    href="/settings/manage-profile"
-                    icon={<User className="w-5 h-5" />}
-                    label="Manage Profile"
-                    description="Edit your name, email and account info"
-                />
-
-                {/* Patient only */}
-                {!user?.isCarer && (
+        <MobilePageLayout
+            title="Settings"
+            icon={Settings}
+            iconContainerClass="bg-gradient-to-br from-primary to-[#0A4B75] shadow-lg shadow-primary/20"
+            iconColorClass="text-white"
+        >
+            <div className="max-w-md mx-auto space-y-4 pb-6">
+                {/* Menu items */}
+                <div className="space-y-3 px-4">
                     <MenuItem
-                        href="/settings/manageCarer"
-                        icon={<ShieldCheck className="w-5 h-5" />}
-                        label="Manage Carer Access"
-                        description="Control who can see your health records"
+                        href="/settings/manage-profile"
+                        icon={<User className="w-5 h-5" />}
+                        label="Manage Profile"
+                        description="Edit your name, email and account info"
                     />
-                )}
-            </div>
 
-            {/* Sign out */}
-            <div className="pt-4 px-4">
-                <Button
-                    variant="destructive"
-                    className="w-full h-12 rounded-xl text-base font-black bg-destructive shadow-lg shadow-destructive/20 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-3"
-                    onClick={logout}
-                >
-                    <LogOut className="w-5 h-5" />
-                    Sign Out
-                </Button>
+                    {/* Patient only */}
+                    {!user?.isCarer && (
+                        <MenuItem
+                            href="/settings/manageCarer"
+                            icon={<ShieldCheck className="w-5 h-5" />}
+                            label="Manage Carer Access"
+                            description="Control who can see your health records"
+                        />
+                    )}
+                </div>
+
+                {/* Sign out */}
+                <div className="pt-4 px-4">
+                    <Button
+                        variant="destructive"
+                        className="w-full h-12 rounded-xl text-base font-black bg-destructive shadow-lg shadow-destructive/20 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-3"
+                        onClick={logout}
+                    >
+                        <LogOut className="w-5 h-5" />
+                        Sign Out
+                    </Button>
+                </div>
             </div>
-        </div>
+        </MobilePageLayout>
     );
 }

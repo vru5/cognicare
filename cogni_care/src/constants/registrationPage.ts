@@ -1,5 +1,5 @@
-export const JOIN_CONGNICARE = "Join CogniCare";
-export const REGISTERATION_CARD_DESCRIPTION = "Empowering caregivers & patients with intelligent health insights.";
+export const JOIN_COGNICARE = "Join CogniCare";
+export const REGISTRATION_CARD_DESCRIPTION = "Empowering caregivers & patients with intelligent health insights.";
 export const FULL_NAME = "Full Name";
 export const NAME_PLACEHOLDER = "John Doe";
 export const EMAIL_OR_PHONE_TEXT = "Email or Phone";

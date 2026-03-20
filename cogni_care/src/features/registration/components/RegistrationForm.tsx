@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import {
   Card,
   CardContent,
@@ -11,120 +13,96 @@ import {
 } from "@/components/ui/card";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-
 import { useAuth } from "@/contexts/AuthContext";
 import { AppError } from "server/types/logsApi";
-
-
-import { RegistrationFormFields } from "../types/registerationForm";
-import { RegisterationFormFields } from "./RegisterationFormFields";
-import { JOIN_CONGNICARE, MEMBERSHIP_ACTIVE, REGISTERATION_CARD_DESCRIPTION, SIGN_IN } from "@/constants/registerationPage";
-import { getPasswordRules } from "../constants/registerationFormConfig";
+import { RegistrationFormFields } from "./RegistrationFormFields";
+import { JOIN_COGNICARE, MEMBERSHIP_ACTIVE, REGISTRATION_CARD_DESCRIPTION, SIGN_IN } from "@/constants/registrationPage";
+import { getPasswordRules } from "../constants/registrationFormConfig";
+import { registrationSchema, RegistrationFormData } from "../schemas/registrationSchema";
 
 const { passwordRules } = getPasswordRules();
 
 export function RegistrationForm() {
-  const [role, setRole] = useState<"PATIENT" | "CARER" | "">("");
-  const [formData, setFormData] = useState<RegistrationFormFields>({
-    name: "",
-    emailOrPhone: "",
-    patientId: "",
-    familyMemberName: "",
-    familyMemberEmail: "",
-    familyMemberPhone: "",
-  });
-  const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
-  const [passwordTouched, setPasswordTouched] = useState(false);
-
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-  const [errorField, setErrorField] = useState("");
+  const [serverError, setServerError] = useState("");
   const router = useRouter();
   const { login, register } = useAuth();
 
-  const passwordValid = passwordRules.every((r) => r.test(password));
-  const passwordsMatch =
-    password === confirmPassword && confirmPassword.length > 0;
+  const form = useForm<RegistrationFormData>({
+    resolver: zodResolver(registrationSchema),
+    defaultValues: {
+      name: "",
+      emailOrPhone: "",
+      password: "",
+      confirmPassword: "",
+      role: undefined,
+      patientId: "",
+      familyMemberName: "",
+      familyMemberEmail: "",
+      familyMemberPhone: "",
+    },
+    mode: "onBlur",
+  });
 
+  const { watch, setValue, formState: { errors, isSubmitting } } = form;
+  const password = watch("password");
+  const confirmPassword = watch("confirmPassword");
+  const role = watch("role") ?? "";
+  const passwordTouched = !!form.formState.touchedFields.password;
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError("");
-    setErrorField("");
+  const passwordValid = passwordRules.every((r) => r.test(password || ""));
+  const passwordsMatch = !!confirmPassword && password === confirmPassword;
 
-    if (!passwordValid) {
-      setError("Password does not meet the requirements.");
-      setErrorField("password");
-      return;
-    }
-    if (!passwordsMatch) {
-      setError("Passwords do not match.");
-      setErrorField("confirmPassword");
-      return;
-    }
-
-    setLoading(true);
+  const handleSubmit = form.handleSubmit(async (data: RegistrationFormData) => {
+    setServerError("");
     try {
-      await register({ role, ...formData, password });
-      await login(formData.emailOrPhone, password);
+      await register({ role: data.role, name: data.name, emailOrPhone: data.emailOrPhone, patientId: data.patientId, familyMemberName: data.familyMemberName, familyMemberEmail: data.familyMemberEmail, familyMemberPhone: data.familyMemberPhone, password: data.password } as any);
+      await login(data.emailOrPhone, data.password);
       router.push("/login");
     } catch (error: unknown) {
       const err = error as AppError;
-      console.error("Registration error:", err);
-      const fullMessage =
-        err.message || "Registration failed. Please try again.";
-      const firstLine = fullMessage.split("\n")[0].split(". ")[0];
-      setError(firstLine);
-
-      const msg = firstLine.toLowerCase();
-      if (msg.includes("already exists")) setErrorField("emailOrPhone");
-      else if (msg.includes("name")) setErrorField("name");
-      else if (msg.includes("email") || msg.includes("phone"))
-        setErrorField("emailOrPhone");
-      else if (msg.includes("patient id")) setErrorField("patientId");
-      else if (msg.includes("family")) setErrorField("familyMemberName");
-    } finally {
-      setLoading(false);
+      const firstLine = (err.message || "Registration failed.").split("\n")[0].split(". ")[0];
+      setServerError(firstLine);
     }
-  };
+  });
 
-
+  // Adapt RHF setValue to match the existing handleInputChange signature
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
-    if (errorField === name) {
-      setErrorField("");
-      setError("");
-    }
+    setValue(name as keyof RegistrationFormData, value as any, { shouldValidate: true, shouldTouch: true });
+    if (serverError) setServerError("");
   };
+
+  // Field-level error lookup for RegisterationFormFields' errorField/error props
+  const fieldNames = ["name", "emailOrPhone", "password", "confirmPassword", "patientId", "familyMemberName", "familyMemberEmail", "familyMemberPhone"] as const;
+  const firstErrorField = fieldNames.find((f) => errors[f]);
+  const firstErrorMessage = firstErrorField ? errors[firstErrorField]?.message ?? "" : "";
 
   return (
     <Card className="border-none shadow-[0_32px_64px_-16px_rgba(0,0,0,0.1)] bg-white/80 backdrop-blur-2xl ring-1 ring-slate-200/50">
       <CardHeader className="space-y-3 pb-8 text-center">
         <CardTitle className="text-4xl font-extrabold tracking-tight text-foreground">
-          {JOIN_CONGNICARE}
+          {JOIN_COGNICARE}
         </CardTitle>
         <CardDescription className="text-primary font-bold italic text-lg tracking-tight">
-          {REGISTERATION_CARD_DESCRIPTION}
+          {REGISTRATION_CARD_DESCRIPTION}
         </CardDescription>
       </CardHeader>
       <CardContent>
-        {error && (
+        {serverError && (
           <p className="mb-6 text-destructive text-sm font-bold text-center animate-in fade-in slide-in-from-top-2 duration-300">
-            {error}
+            {serverError}
           </p>
         )}
-        <RegisterationFormFields
+        <RegistrationFormFields
           handleSubmit={handleSubmit}
           handleInputChange={handleInputChange}
-          loading={loading}
-          password={password}
-          setPassword={setPassword}
-          confirmPassword={confirmPassword}
-          setConfirmPassword={setConfirmPassword}
+          loading={isSubmitting}
+          password={password || ""}
+          setPassword={(val: string) => setValue("password", val, { shouldValidate: true, shouldTouch: true })}
+          confirmPassword={confirmPassword || ""}
+          setConfirmPassword={(val: string) => setValue("confirmPassword", val, { shouldValidate: true })}
           showPassword={showPassword}
           setShowPassword={setShowPassword}
           showConfirm={showConfirm}
@@ -132,23 +110,20 @@ export function RegistrationForm() {
           passwordValid={passwordValid}
           passwordsMatch={passwordsMatch}
           passwordTouched={passwordTouched}
-          setPasswordTouched={setPasswordTouched}
+          setPasswordTouched={() => { /* handled by RHF touchedFields */ }}
           passwordRules={passwordRules}
-          role={role}
-          setRole={setRole}
-          errorField={errorField}
-          setErrorField={setErrorField}
-          setError={setError}
-          error={error}
+          role={role as "PATIENT" | "CARER" | ""}
+          setRole={(r) => setValue("role", r as "PATIENT" | "CARER", { shouldValidate: true })}
+          errorField={firstErrorField ?? ""}
+          setErrorField={() => { /* handled by RHF */ }}
+          setError={setServerError}
+          error={firstErrorMessage}
         />
       </CardContent>
       <CardFooter className="justify-center pb-8 border-t border-slate-100/50 mt-4 pt-6">
         <p className="text-sm font-medium text-foreground/50">
           {MEMBERSHIP_ACTIVE}{" "}
-          <Link
-            href="/login"
-            className="text-primary font-bold hover:underline ml-1"
-          >
+          <Link href="/login" className="text-primary font-bold hover:underline ml-1">
             {SIGN_IN}
           </Link>
         </p>

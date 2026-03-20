@@ -1,4 +1,4 @@
-import { FormControlProps } from "@/features/registration/types/registerationForm";
+import { FormControlProps } from "@/features/registration/types/registrationForm";
 
 
 export function FormControl({

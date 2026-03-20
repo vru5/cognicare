@@ -4,7 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
-import { JOIN_CONGNICARE, SIGN_IN } from "@/constants/registerationPage";
+import { JOIN_COGNICARE, SIGN_IN } from "@/constants/registrationPage";
 import { COGNICARE, EMPOWERING_SUB_HEADING, HEALTH_COMPANION_TEXT, INSIGHT_SUB_HEADING } from "@/constants/landingPage";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "next/navigation";
@@ -99,7 +99,7 @@ export default function Home() {
               size="lg"
               className="w-full h-16 rounded-full text-lg font-black bg-primary text-foreground shadow-[0_10px_25px_rgba(var(--primary),0.3)] hover:scale-[1.02] transition-all"
             >
-              {JOIN_CONGNICARE}
+              {JOIN_COGNICARE}
             </Button>
           </Link>
 

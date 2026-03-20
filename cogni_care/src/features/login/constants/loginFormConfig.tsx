@@ -1,6 +1,7 @@
 import { Eye, EyeOff } from "lucide-react";
-import { EMAIL_OR_PHONE_TEXT, EMAIL_PLACEHOLDER, PASSWORD, PASSWORD_PLACEHOLDER } from "@/constants/registerationPage";
+import { EMAIL_OR_PHONE_TEXT, EMAIL_PLACEHOLDER, PASSWORD } from "@/constants/registrationPage";
 import { LoginFormConfigProps, LoginFieldConfig } from "../types/loginForm";
+import { HIDE_PASSWORD, LOGIN_PASSWORD_PLACEHOLDER, SHOW_PASSWORD } from "@/constants/loginPage";
 
 export const getLoginFields = ({
     emailOrPhone,
@@ -31,7 +32,7 @@ export const getLoginFields = ({
             id: "password",
             name: "password",
             text: PASSWORD,
-            placeholder: PASSWORD_PLACEHOLDER,
+            placeholder: LOGIN_PASSWORD_PLACEHOLDER,
             type: showPassword ? "text" : "password",
             autoComplete: "current-password",
             value: password,
@@ -45,7 +46,7 @@ export const getLoginFields = ({
                     type="button"
                     onClick={() => setShowPassword((prev) => !prev)}
                     className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors p-1"
-                    aria-label={showPassword ? "Hide password" : "Show password"}
+                    aria-label={showPassword ? `${HIDE_PASSWORD}` : `${SHOW_PASSWORD}`}
                 >
                     {showPassword ? (
                         <EyeOff className="w-5 h-5" />

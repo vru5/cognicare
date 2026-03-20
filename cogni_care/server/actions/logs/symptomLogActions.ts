@@ -16,12 +16,21 @@ export async function createSymptomLogAction(patientId: string, rawText: string)
             const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
             const safeText = mask(rawText || "");
             const prompt = `Analyze the following patient health log.
-Categorize the content into exactly these fields: physical, mood, cognitive, sleep, social.
-- For each field, provide a single word or very short phrase (e.g., 'Headache', 'Happy').
-- If a category is not mentioned, return null for that field.
-- Return output strictly as a JSON object.
+                Extract the symptoms into the following pillars: physical, mood, cognitive, sleep, social.
 
-Log: "${safeText}"`;
+                For each pillar, provide TWO fields in the JSON:
+                1. The pillar name (e.g., 'physical'): A single word or very short phrase describing the symptom (e.g., 'Headache', 'Happy').
+                2. The severity field (e.g., 'physicalSeverity'): A number from 1 to 10 evaluating how severe the symptom is based on the language used.
+
+                If a category is not mentioned or the input is nonsensical/gibberish, return null for the string field and 0 or null for the severity field.
+                DO NOT make up information. If the input is just random characters or unrelated to health, return null for ALL fields.
+                Return output strictly as a JSON object, for example:
+                {
+                "physical": "Headache", "physicalSeverity": 8,
+                "sleep": null, "sleepSeverity": null
+                }
+
+                Log: "${safeText}"`;
 
             try {
                 let result;
@@ -45,15 +54,35 @@ Log: "${safeText}"`;
             }
         }
 
+        const hasAnalysis = Boolean(
+            analysis.physical ||
+            analysis.mood ||
+            analysis.cognitive ||
+            analysis.sleep ||
+            analysis.social
+        );
+
+        if (!hasAnalysis) {
+            return {
+                success: false,
+                error: "We couldn't detect any specific health symptoms or updates in this entry. Please try being more specific."
+            };
+        }
+
         const log = await prisma.symptomLog.create({
             data: {
                 patientId,
                 rawText,
                 physical: analysis.physical || null,
+                physicalSeverity: analysis.physicalSeverity || null,
                 mood: analysis.mood || null,
+                moodSeverity: analysis.moodSeverity || null,
                 cognitive: analysis.cognitive || null,
+                cognitiveSeverity: analysis.cognitiveSeverity || null,
                 sleep: analysis.sleep || null,
+                sleepSeverity: analysis.sleepSeverity || null,
                 social: analysis.social || null,
+                socialSeverity: analysis.socialSeverity || null,
             },
             include: { notes: true },
         });
@@ -95,12 +124,21 @@ export async function updateSymptomLogAction(logId: string, patientId: string, n
             const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
             const safeText = mask(newText || "");
             const prompt = `Analyze the following patient health log.
-Categorize the content into exactly these fields: physical, mood, cognitive, sleep, social.
-- For each field, provide a single word or very short phrase (e.g., 'Headache', 'Happy', 'Exhausted').
-- If a category is not mentioned, return null for that field.
-- Return output strictly as a JSON object.
+                Extract the symptoms into the following pillars: physical, mood, cognitive, sleep, social.
 
-Log: "${safeText}"`;
+                For each pillar, provide TWO fields in the JSON:
+                1. The pillar name (e.g., 'physical'): A single word or very short phrase describing the symptom (e.g., 'Headache', 'Happy').
+                2. The severity field (e.g., 'physicalSeverity'): A number from 1 to 10 evaluating how severe the symptom is based on the language used.
+
+                If a category is not mentioned or the input is nonsensical/gibberish, return null for the string field and 0 or null for the severity field.
+                DO NOT make up information. If the input is just random characters or unrelated to health, return null for ALL fields.
+                Return output strictly as a JSON object, for example:
+                {
+                "physical": "Headache", "physicalSeverity": 8,
+                "sleep": null, "sleepSeverity": null
+                }
+
+                Log: "${safeText}"`;
 
             try {
                 let result;
@@ -121,10 +159,15 @@ Log: "${safeText}"`;
                 updateData = {
                     ...updateData,
                     physical: analysis.physical || null,
+                    physicalSeverity: analysis.physicalSeverity || null,
                     mood: analysis.mood || null,
+                    moodSeverity: analysis.moodSeverity || null,
                     cognitive: analysis.cognitive || null,
+                    cognitiveSeverity: analysis.cognitiveSeverity || null,
                     sleep: analysis.sleep || null,
+                    sleepSeverity: analysis.sleepSeverity || null,
                     social: analysis.social || null,
+                    socialSeverity: analysis.socialSeverity || null,
                 };
             } catch (apiErr: unknown) {
                 console.error("Gemini processing failed during update:", apiErr);
@@ -141,6 +184,17 @@ Log: "${safeText}"`;
                 },
             },
         });
+
+        // Real-time notification for update
+        try {
+            const io = getIO();
+            io.to(patientId).emit("new_notification", {
+                type: "PATIENT_LOG",
+            });
+            io.to(patientId).emit("new_log", { patientId });
+        } catch (err) {
+            console.warn("[Socket] Failed to emit PATIENT_LOG notification on update:", err);
+        }
 
         return {
             success: true,
@@ -172,6 +226,17 @@ export async function deleteSymptomLogAction(logId: string, patientId: string): 
 
         await prisma.carerNote.deleteMany({ where: { logId: logId } });
         await prisma.symptomLog.delete({ where: { id: logId } });
+
+        // Real-time notification for delete
+        try {
+            const io = getIO();
+            io.to(patientId).emit("new_notification", {
+                type: "PATIENT_LOG",
+            });
+            io.to(patientId).emit("new_log", { patientId });
+        } catch (err) {
+            console.warn("[Socket] Failed to emit PATIENT_LOG notification on delete:", err);
+        }
 
         return { success: true };
     } catch (error) {

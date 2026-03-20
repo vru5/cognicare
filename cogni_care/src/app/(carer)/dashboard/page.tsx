@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "next/navigation";
-import { Loader2, User, ChevronRight } from "lucide-react";
+import { Loader2, User, ChevronRight, BrainCircuit } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import {
   EMPTY_LIST_SUBHEADING,
@@ -15,6 +15,7 @@ import {
 import { API_BASE_URL } from "@/constants/auth";
 import { getSocket } from "@/lib/socket";
 import { Patient } from "@/features/logs/types/logTypes";
+import MobilePageLayout from "@/components/shared/MobilePageLayout";
 
 export default function CarerDashboard() {
   const { user, loading: authLoading } = useAuth();
@@ -133,13 +134,14 @@ export default function CarerDashboard() {
   }
 
   return (
-    <div className="max-w-2xl mx-auto space-y-6 animate-in fade-in duration-500">
-      <header className="sticky top-0 z-10 -mx-4 -mt-[calc(2rem+env(safe-area-inset-top,0px))] px-4 pt-[calc(2rem+env(safe-area-inset-top,0px))] pb-4 mb-4 bg-background/80 backdrop-blur-xl border-b border-border/50 flex flex-col justify-center space-y-1">
-        <h1 className="text-3xl font-black text-foreground tracking-tight">
-          {HEADING}
-        </h1>
-        <p className="text-muted-foreground font-medium">{SUB_HEADING}</p>
-      </header>
+    <MobilePageLayout 
+      title={HEADING} 
+      subtitle={SUB_HEADING}
+      icon={BrainCircuit}
+      iconContainerClass="bg-gradient-to-br from-primary to-[#0A4B75] shadow-lg shadow-primary/20"
+      iconColorClass="text-white"
+    >
+      <div className="space-y-6">
 
       {error && (
         <div className="p-4 rounded-2xl bg-destructive/10 text-destructive font-bold text-center border border-destructive/20">
@@ -204,5 +206,6 @@ export default function CarerDashboard() {
         })}
       </div>
     </div>
+    </MobilePageLayout>
   );
 }
