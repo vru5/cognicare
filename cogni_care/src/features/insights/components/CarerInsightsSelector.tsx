@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "next/navigation";
-import { Loader2, User, ChevronRight, Activity } from "lucide-react";
+import { User, ChevronRight, Activity } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import {
   EMPTY_LIST_SUBHEADING,
@@ -43,14 +43,14 @@ export default function CarerInsightsSelector() {
           setLoading(false);
         }
       };
-      
+
       fetchPatients();
     }
   }, [user]);
 
   return (
-    <MobilePageLayout 
-      title={PATIENT_RECORDS_TITLE} 
+    <MobilePageLayout
+      title={PATIENT_RECORDS_TITLE}
       icon={Activity}
       iconContainerClass="bg-gradient-to-br from-primary to-[#0A4B75] shadow-lg shadow-primary/20"
       iconColorClass="text-white"
