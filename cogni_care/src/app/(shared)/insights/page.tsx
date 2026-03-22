@@ -4,7 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useSearchParams } from "next/navigation";
 import { Suspense } from "react";
 import InsightsDashboard from "@/features/insights/components/InsightsDashboard";
-import CarerInsightsSelector from "@/features/insights/components/CarerInsightsSelector";
+import CarerDashboard from "@/app/(carer)/dashboard/page";
 import { Loader2 } from "lucide-react";
 
 function InsightsController() {
@@ -16,9 +16,9 @@ function InsightsController() {
         return <div className="flex w-full min-h-screen items-center justify-center"><Loader2 className="w-12 h-12 animate-spin text-primary" /></div>;
     }
 
-    // If Carer and no patient is selected, show the list of patients
+    // If Carer and no patient is selected, show the unified dashboard/selector
     if (user?.isCarer && !patientId) {
-        return <CarerInsightsSelector />;
+        return <CarerDashboard />;
     }
 
     // Otherwise, show the dashboard itself (using the patientId or fallback to ProfilePatient)

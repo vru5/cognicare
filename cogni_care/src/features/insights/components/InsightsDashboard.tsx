@@ -112,7 +112,7 @@ export default function InsightsDashboard() {
       onBack={urlPatientId ? () => router.push("/insights") : undefined}
       iconContainerClass="bg-gradient-to-br from-primary to-[#0A4B75] shadow-lg shadow-primary/20"
       iconColorClass="text-white"
-      actionRight={<ExportMenu />}
+      headerBottom={eligible ? <ExportMenu patientId={patientId as string} dateA={dateA} dateB={dateB} /> : null}
     >
       {loading ? (
         <div className="flex w-full items-center justify-center p-32"><Loader2 className="w-12 h-12 animate-spin text-primary" /></div>

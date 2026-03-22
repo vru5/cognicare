@@ -7,42 +7,41 @@ datasource db {
 }
 
 model User {
-  id       String  @id @default(cuid())
-  name     String?
-  email    String? @unique
-  phone    String?
-  role     String? // "PATIENT" or "CARER"
-  password String? // bcrypt hash
-  createdAt DateTime @default(now())
-
-  patient ProfilePatient?
-  carer   ProfileCarer?
+  id        String          @id @default(cuid())
+  name      String?
+  email     String?         @unique
+  phone     String?
+  role      String?
+  password  String?
+  createdAt DateTime        @default(now())
+  carer     ProfileCarer?
+  patient   ProfilePatient?
 
   @@map("users")
 }
 
 model ProfilePatient {
-  id             String          @id
-  userId         String          @unique
-  user           User            @relation(fields: [userId], references: [id])
-  familyMembers  FamilyMember[]
-  carers         CarersOnPatients[]
-  logs           SymptomLog[]
-  carerNotes     CarerNote[]
-  createdAt      DateTime        @default(now())
-  pushToken      String?
+  id            String             @id
+  userId        String             @unique
+  createdAt     DateTime           @default(now())
+  pushToken     String?
+  carerNotes    CarerNote[]
+  carers        CarersOnPatients[]
+  familyMembers FamilyMember[]
+  user          User               @relation(fields: [userId], references: [id])
+  logs          SymptomLog[]
 
   @@map("patient_profiles")
 }
 
 model ProfileCarer {
-  id       String             @id
-  userId   String             @unique
-  user     User               @relation(fields: [userId], references: [id])
-  patients CarersOnPatients[]
-  notes    CarerNote[]
+  id        String             @id
+  userId    String             @unique
   createdAt DateTime           @default(now())
   pushToken String?
+  notes     CarerNote[]
+  user      User               @relation(fields: [userId], references: [id])
+  patients  CarersOnPatients[]
 
   @@map("carer_profiles")
 }
@@ -59,56 +58,48 @@ model FamilyMember {
 }
 
 model CarersOnPatients {
-  carerId      String
-  patientId    String
-  lastViewedAt DateTime       @default(now())
-  
-  accessSymptomLogs Boolean @default(true)
-  accessCareCircle  Boolean @default(true)
-
-  carer        ProfileCarer   @relation(fields: [carerId], references: [id])
-  patient      ProfilePatient @relation(fields: [patientId], references: [id])
+  carerId           String
+  patientId         String
+  lastViewedAt      DateTime       @default(now())
+  accessCareCircle  Boolean        @default(true)
+  accessSymptomLogs Boolean        @default(true)
+  carer             ProfileCarer   @relation(fields: [carerId], references: [id])
+  patient           ProfilePatient @relation(fields: [patientId], references: [id])
 
   @@id([carerId, patientId])
   @@map("carers_on_patients")
 }
 
 model SymptomLog {
-  id        String   @id @default(cuid())
-  createdAt DateTime @default(now())
-  patientId String
-  rawText   String
-
-  physical  String?
-  physicalSeverity Int?
-  mood      String?
-  moodSeverity     Int?
-  cognitive String?
+  id                String         @id @default(cuid())
+  createdAt         DateTime       @default(now())
+  patientId         String
+  rawText           String
+  physical          String?
+  mood              String?
+  cognitive         String?
+  sleep             String?
+  social            String?
   cognitiveSeverity Int?
-  sleep     String?
-  sleepSeverity    Int?
-  social    String?
-  socialSeverity   Int?
-
-  patient   ProfilePatient @relation(fields: [patientId], references: [id])
-  notes     CarerNote[]
+  moodSeverity      Int?
+  physicalSeverity  Int?
+  sleepSeverity     Int?
+  socialSeverity    Int?
+  notes             CarerNote[]
+  patient           ProfilePatient @relation(fields: [patientId], references: [id])
 
   @@map("symptom_logs")
 }
 
 model CarerNote {
-  id        String   @id @default(cuid())
-  createdAt DateTime @default(now())
+  id        String         @id @default(cuid())
+  createdAt DateTime       @default(now())
   text      String
-  
-  // Optional: If present, it's a comment on a specific log
   logId     String?
-  log       SymptomLog? @relation(fields: [logId], references: [id])
-  
   carerId   String
-  carer     ProfileCarer @relation(fields: [carerId], references: [id])
-
   patientId String
+  carer     ProfileCarer   @relation(fields: [carerId], references: [id])
+  log       SymptomLog?    @relation(fields: [logId], references: [id])
   patient   ProfilePatient @relation(fields: [patientId], references: [id])
 
   @@map("carer_notes")
