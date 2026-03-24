@@ -24,3 +24,34 @@ export async function getProfessionalReportData(
     return null;
   }
 }
+export async function getDoctorFormData(patientId: string) {
+  try {
+    const response = await fetch(
+      `${API_BASE_URL}/api/export/doctor-form?patientId=${patientId}`
+    );
+    const data = await response.json();
+
+    if (data.success) {
+      return data.data;
+    }
+    return null;
+  } catch (error) {
+    console.error("Error fetching doctor form data:", error);
+    return null;
+  }
+}
+
+export async function updateDoctorFormData(patientId: string, data: any) {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/export/doctor-form`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ patientId, data }),
+    });
+    const result = await response.json();
+    return result.success;
+  } catch (error) {
+    console.error("Error updating doctor form data:", error);
+    return false;
+  }
+}

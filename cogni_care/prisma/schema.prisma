@@ -116,3 +116,12 @@ model Notification {
 
   @@map("notifications")
 }
+
+model DoctorFormCache {
+  patientId String   @id
+  hash      String
+  data      Json
+  updatedAt DateTime @updatedAt
+
+  @@map("doctor_form_cache")
+}
