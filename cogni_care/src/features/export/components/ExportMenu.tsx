@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect, useMemo } from "react";
 import { format } from "date-fns";
+import { useRouter } from "next/navigation";
 import { Download, FileText, ChevronDown, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getProfessionalReportData } from "../services/exportService";
@@ -16,6 +17,7 @@ export default function ExportMenu({ patientId, dateA, dateB }: ExportMenuProps)
   const [reportData, setReportData] = useState<ReportData | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const reportRef = useRef<HTMLDivElement>(null);
+  const router = useRouter();
 
   // Close menu when clicking outside
   useEffect(() => {
@@ -52,6 +54,7 @@ export default function ExportMenu({ patientId, dateA, dateB }: ExportMenuProps)
         data = await getProfessionalReportData(patientId, dateA, dateB);
         if (!data) throw new Error(ERROR_FETCH_DATA);
         
+        setReportData(data);
         setCachedKey(cacheKey);
       }
       
@@ -95,8 +98,8 @@ export default function ExportMenu({ patientId, dateA, dateB }: ExportMenuProps)
       label: MENU_ITEM_EXPORT_FORM,
       icon: FileText,
       onClick: () => {
-        console.log("Exporting doc form...");
         setIsOpen(false);
+        router.push(`/insights/doc-form?patientId=${patientId}`);
       },
     },
   ];

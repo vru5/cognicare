@@ -12,6 +12,10 @@ const BottomNavbar = () => {
     const { user } = useAuth();
     const { unreadCount } = useNotifications();
 
+    if (pathname.includes("/doc-form")) {
+        return null;
+    }
+
     const navItems = [
         {
             label: "Dashboard",

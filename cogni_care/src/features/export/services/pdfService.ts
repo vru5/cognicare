@@ -111,14 +111,15 @@ export async function generatePdfFromElement(
 
     onProgress?.("Downloading PDF...");
     
+    // Check if we are on a mobile device (even if in a browser)
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
     if (Capacitor.isNativePlatform()) {
       onProgress?.("Preparing for mobile viewing...");
       try {
-        // Get PDF as base64
         const pdfBase64 = pdf.output('datauristring').split(',')[1];
         const fileName = filename.endsWith('.pdf') ? filename : `${filename}.pdf`;
         
-        // Save to Documents for persistent access
         const savedFile = await Filesystem.writeFile({
           path: fileName,
           data: pdfBase64,
@@ -126,8 +127,7 @@ export async function generatePdfFromElement(
           recursive: true
         });
         
-        onProgress?.("Opening PDF directly...");
-        // Ensure write is finished before opening
+        onProgress?.("Opening PDF...");
         await new Promise(r => setTimeout(r, 200));
         
         await FileOpener.open({
@@ -136,7 +136,6 @@ export async function generatePdfFromElement(
         });
       } catch (err) {
         console.error("Native Open Error:", err);
-        // Fallback to share if direct open fails
         const pdfBase64 = pdf.output('datauristring').split(',')[1];
         const fileName = filename.endsWith('.pdf') ? filename : `${filename}.pdf`;
         const savedFile = await Filesystem.writeFile({
@@ -153,8 +152,34 @@ export async function generatePdfFromElement(
           dialogTitle: 'Share Report'
         });
       }
+    } else if (isMobile && navigator.share) {
+      // For mobile browsers, use the Web Share API if available
+      onProgress?.("Opening share options...");
+      try {
+        const blob = pdf.output('blob');
+        const file = new File([blob], filename, { type: 'application/pdf' });
+        
+        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+          await navigator.share({
+            files: [file],
+            title: 'Symptom Report',
+            text: 'Your clinical symptom report is ready.'
+          });
+        } else {
+          // Fallback to opening in a new tab if sharing files isn't supported
+          const blobUrl = URL.createObjectURL(blob);
+          window.open(blobUrl, '_blank');
+        }
+      } catch (err) {
+        console.error("Web Share Error:", err);
+        pdf.save(filename);
+      }
     } else {
+      // Desktop or fallback
       pdf.save(filename);
+      // Also open in new tab for immediate viewing if requested
+      const blobUrl = URL.createObjectURL(pdf.output('blob'));
+      window.open(blobUrl, '_blank');
     }
     return true;
   } catch (error) {
