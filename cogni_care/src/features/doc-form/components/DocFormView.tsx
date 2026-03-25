@@ -81,13 +81,19 @@ export default function DocFormView() {
         const checks: Record<string, SymptomCheck> = {};
         Object.entries(data.symptomChecks || {}).forEach(([sym, val]: [string, any]) => {
           if (val && val.present) {
+            // Robust check: use string fields if they exist, otherwise fallback to boolean flags
+            const duration = val.duration || (val.recent ? "recent" : val.sixMonths ? "6months+" : "");
+            const trend = val.trend || (val.improving ? "improving" : val.same ? "staying_same" : val.worse ? "getting_worse" : "");
+
             checks[sym] = {
               present: true,
-              recent: val.duration === "recent",
-              sixMonths: val.duration === "6months+",
-              improving: val.trend === "improving",
-              same: val.trend === "staying_same",
-              worse: val.trend === "getting_worse"
+              duration,
+              trend,
+              recent: duration === "recent",
+              sixMonths: duration === "6months+",
+              improving: trend === "improving",
+              same: trend === "staying_same",
+              worse: trend === "getting_worse"
             };
             filled.add(`symptom_${sym}`);
           }
@@ -147,7 +153,11 @@ export default function DocFormView() {
     setIsExporting(true);
     try {
       await updateDoctorFormData(patientId, { tes, symptomChecks, patientDetails: patientData as PatientDetails });
-      await generatePdfFromElement(pdfRef.current, `CTE-Doctor-Form-${patientData?.name || "Patient"}-${Date.now()}.pdf`, () => { });
+      const success = await generatePdfFromElement(pdfRef.current, `CTE-Doctor-Form-${patientData?.name || "Patient"}-${Date.now()}.pdf`, () => { });
+      if (success) {
+        // No explicit alert as generatePdfFromElement now handles "opening" the file
+        // but we can set a short success state if needed.
+      }
     } catch (e) {
       console.error("PDF export failed", e);
       alert("Failed to export PDF.");

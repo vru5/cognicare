@@ -135,13 +135,13 @@ export const SymptomsSection: React.FC<SymptomsSectionProps> = ({
                                 label="Recent (<6 mo)" 
                                 active={!!symptomChecks[s.key]?.recent} 
                                 activeColor={meta.color}
-                                onClick={() => setSymptomChecks(p => ({ ...p, [s.key]: { ...p[s.key], recent: true, sixMonths: false } }))} 
+                                onClick={() => setSymptomChecks(p => ({ ...p, [s.key]: { ...p[s.key], recent: true, sixMonths: false, duration: "recent" } }))} 
                               />
                               <Pill 
                                 label="6 Months+" 
                                 active={!!symptomChecks[s.key]?.sixMonths} 
                                 activeColor={meta.color}
-                                onClick={() => setSymptomChecks(p => ({ ...p, [s.key]: { ...p[s.key], recent: false, sixMonths: true } }))} 
+                                onClick={() => setSymptomChecks(p => ({ ...p, [s.key]: { ...p[s.key], recent: false, sixMonths: true, duration: "6months+" } }))} 
                               />
                             </div>
                           </div>
@@ -153,19 +153,19 @@ export const SymptomsSection: React.FC<SymptomsSectionProps> = ({
                                 label="Improving" 
                                 active={!!symptomChecks[s.key]?.improving} 
                                 activeColor={meta.color}
-                                onClick={() => setSymptomChecks(p => ({ ...p, [s.key]: { ...p[s.key], improving: true, same: false, worse: false } }))} 
+                                onClick={() => setSymptomChecks(p => ({ ...p, [s.key]: { ...p[s.key], improving: true, same: false, worse: false, trend: "improving" } }))} 
                               />
                               <Pill 
                                 label="Same" 
                                 active={!!symptomChecks[s.key]?.same} 
                                 activeColor={meta.color}
-                                onClick={() => setSymptomChecks(p => ({ ...p, [s.key]: { ...p[s.key], improving: false, same: true, worse: false } }))} 
+                                onClick={() => setSymptomChecks(p => ({ ...p, [s.key]: { ...p[s.key], improving: false, same: true, worse: false, trend: "staying_same" } }))} 
                               />
                               <Pill 
                                 label="Worsening" 
                                 active={!!symptomChecks[s.key]?.worse} 
                                 activeColor={meta.color}
-                                onClick={() => setSymptomChecks(p => ({ ...p, [s.key]: { ...p[s.key], improving: false, same: false, worse: true } }))} 
+                                onClick={() => setSymptomChecks(p => ({ ...p, [s.key]: { ...p[s.key], improving: false, same: false, worse: true, trend: "getting_worse" } }))} 
                               />
                             </div>
                           </div>

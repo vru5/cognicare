@@ -54,6 +54,7 @@ export default function ExportMenu({ patientId, dateA, dateB }: ExportMenuProps)
         data = await getProfessionalReportData(patientId, dateA, dateB);
         if (!data) throw new Error(ERROR_FETCH_DATA);
         
+        setReportData(data);
         setCachedKey(cacheKey);
       }
       
