@@ -7,11 +7,11 @@ const router = express.Router();
 
 // POST /api/brain-dump/process
 router.post("/process", async (req, res) => {
-    const { rawText, patientId } = req.body;
+    const { rawText, patientId, isFromCarer, carerId } = req.body;
     if (!rawText || !patientId) {
         return res.status(400).json({ success: false, error: "Missing required fields" });
     }
-    const result = await processBrainDumpAction(rawText, patientId);
+    const result = await processBrainDumpAction(rawText, patientId, isFromCarer, carerId);
     res.json(result);
 });
 

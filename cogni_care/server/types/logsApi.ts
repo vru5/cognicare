@@ -22,12 +22,16 @@ export interface SymptomRecord extends Analysis {
     createdAt: Date | string;
     patientId: string;
     rawText: string;
+    isFromCarer?: boolean;
+    carerId?: string | null;
     notes?: CarerNoteRecord[];
     comments?: CarerNoteRecord[];
 }
 
 export interface SymptomLogUpdateData extends Analysis {
     rawText?: string;
+    isFromCarer?: boolean;
+    carerId?: string | null;
 }
 
 export interface CarerNoteRecord {

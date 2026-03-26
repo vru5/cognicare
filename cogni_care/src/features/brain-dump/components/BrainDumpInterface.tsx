@@ -23,7 +23,7 @@ import {
   TYPE_MANUALLY,
   VOICE_DUMP_TEXT,
 } from "@/constants/brainDumpPage";
-import { AnalysisCard } from "../types/analysisSummaryCard";
+import { LogSummaryCard } from "@/features/logs/types/logTypes";
 
 export default function BrainDumpInterface() {
   const { user } = useAuth();
@@ -33,7 +33,7 @@ export default function BrainDumpInterface() {
 
   const [text, setText] = useState("");
   const [processedText, setProcessedText] = useState("");
-  const [summary, setSummary] = useState<AnalysisCard | null>(null);
+  const [summary, setSummary] = useState<LogSummaryCard | null>(null);
   const [isFocused, setIsFocused] = useState(false);
 
   const [isVoiceAnalyzing, setIsVoiceAnalyzing] = useState(false);
@@ -97,22 +97,13 @@ export default function BrainDumpInterface() {
           const response = await processBrainDump(
             transcription.text,
             patientId || "",
+            Boolean(user?.isCarer),
+            user?.profileId || undefined
           );
 
           if (response.success && response.log) {
-            const log = response.log;
             setSummary({
-              logId: log.id,
-              physical: log.physical,
-              physicalSeverity: log.physicalSeverity,
-              mood: log.mood,
-              moodSeverity: log.moodSeverity,
-              cognitive: log.cognitive,
-              cognitiveSeverity: log.cognitiveSeverity,
-              sleep: log.sleep,
-              sleepSeverity: log.sleepSeverity,
-              social: log.social,
-              socialSeverity: log.socialSeverity,
+              ...response.log,
               message:
                 response.message ||
                 "The AI has interpreted symptom severity. You can adjust the scores below if they are not correct.",
@@ -154,28 +145,15 @@ export default function BrainDumpInterface() {
     setProcessedText("");
 
     try {
-      const response = await processBrainDump(text, patientId || "");
+      const response = await processBrainDump(text, patientId || "", Boolean(user?.isCarer), user?.profileId || undefined);
 
       if (response.success && response.log) {
         setProcessedText(text);
-
-        const log = response.log;
-        const newSummary = {
-          logId: log.id,
-          physical: log.physical,
-          physicalSeverity: log.physicalSeverity,
-          mood: log.mood,
-          moodSeverity: log.moodSeverity,
-          cognitive: log.cognitive,
-          cognitiveSeverity: log.cognitiveSeverity,
-          sleep: log.sleep,
-          sleepSeverity: log.sleepSeverity,
-          social: log.social,
-          socialSeverity: log.socialSeverity,
+        setSummary({
+          ...response.log,
           message:
             response.message || "The AI has interpreted symptom severity. You can adjust the scores below if they are not correct.",
-        };
-        setSummary(newSummary);
+        });
         setText("");
         // Invalidate the logs cache so the Logs page re-fetches fresh data
         if (patientId) clearCache(patientId);

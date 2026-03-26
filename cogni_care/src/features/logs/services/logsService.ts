@@ -61,12 +61,12 @@ export async function addCarerNote(logId: string, text: string, carerId: string)
 // Keep addCarerComment for backward compatibility if needed, but it's now the same as addCarerNote
 export const addCarerComment = addCarerNote;
 
-export async function deleteSymptomLog(logId: string, patientId: string, isFromCarer: boolean): Promise<BaseResponse> {
+export async function deleteSymptomLog(logId: string, patientId: string, isFromCarer: boolean, carerId?: string): Promise<BaseResponse> {
     try {
         const response = await fetch(`${API_BASE_URL}/api/logs`, {
             method: "DELETE",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ logId, patientId, isFromCarer }),
+            body: JSON.stringify({ logId, patientId, isFromCarer, carerId }),
         });
         return await response.json();
     } catch (err: unknown) {

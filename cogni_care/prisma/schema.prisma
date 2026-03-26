@@ -40,6 +40,7 @@ model ProfileCarer {
   createdAt DateTime           @default(now())
   pushToken String?
   notes     CarerNote[]
+  symptomLogs SymptomLog[]
   user      User               @relation(fields: [userId], references: [id])
   patients  CarersOnPatients[]
 
@@ -75,6 +76,9 @@ model SymptomLog {
   createdAt         DateTime       @default(now())
   patientId         String
   rawText           String
+  isFromCarer       Boolean        @default(false)
+  carerId           String?
+  carer             ProfileCarer?  @relation(fields: [carerId], references: [id])
   physical          String?
   mood              String?
   cognitive         String?

@@ -10,13 +10,9 @@ import { LogSummaryCard, MoodPillarsConfig, SymptomPillar, CarerNote } from "../
 import { ADD_NOTE, CANCEL, CARER_NOTE, EDIT, EDIT_NOTE, EMPTY_NOTE_TEXT, SAVE_NOTE, SAVING_CHANGE, SAVING_TEXT } from "../constants/logPage";
 import { MessageSquare, BadgeCheck } from "lucide-react";
 
-const pillarConfig: MoodPillarsConfig = {
-    physical: { icon: Activity, color: "bg-red-100 text-red-700", label: "Physical" },
-    mood: { icon: Smile, color: "bg-purple-100 text-purple-700", label: "Mood" },
-    cognitive: { icon: Brain, color: "bg-blue-100 text-blue-700", label: "Cognitive" },
-    sleep: { icon: Moon, color: "bg-indigo-100 text-indigo-700", label: "Sleep" },
-    social: { icon: Users, color: "bg-green-100 text-green-700", label: "Social" },
-};
+import { PILLAR_CONFIG } from "../constants/pillarConfig";
+import SymptomSeveritySliders from "./SymptomSeveritySliders";
+import { updateBrainDumpSeverity } from "@/features/brain-dump/services/updateSeverity";
 
 export default function LogEntryCard({ log, patientId, onUpdate, onDelete, highlighted }: { log: LogSummaryCard, patientId: string, onUpdate: (log: LogSummaryCard) => void, onDelete?: (logId: string) => void, highlighted?: boolean }) {
     const { user } = useAuth();
@@ -32,13 +28,23 @@ export default function LogEntryCard({ log, patientId, onUpdate, onDelete, highl
     const [isCommenting, setIsCommenting] = useState(false);
     const [commentText, setCommentText] = useState("");
     const [isSavingComment, setIsSavingComment] = useState(false);
+    const [localSeverities, setLocalSeverities] = useState<Record<string, number | null>>({});
 
     const [mounted, setMounted] = useState(false);
 
     useEffect(() => {
-        // eslint-disable-next-line react-hooks/set-state-in-effect
         setMounted(true);
     }, []);
+
+    useEffect(() => {
+        if (isEditing) {
+            const newSeverities: Record<string, number | null> = {};
+            symptomKeys.forEach(p => {
+                newSeverities[p] = log[`${p}Severity` as keyof LogSummaryCard] as number | null ?? null;
+            });
+            setLocalSeverities(newSeverities);
+        }
+    }, [isEditing, log]);
 
     useEffect(() => {
         if (highlighted && cardRef.current) {
@@ -88,7 +94,7 @@ export default function LogEntryCard({ log, patientId, onUpdate, onDelete, highl
         
         const result = log.type === "carer" 
             ? await deleteCarerLog(log.id, profileId || "", log.patientId, isCarer)
-            : await deleteSymptomLog(log.id, log.patientId, isCarer);
+            : await deleteSymptomLog(log.id, log.patientId, isCarer, profileId || undefined);
 
         if (result.success) {
             onDelete?.(log.id);
@@ -112,12 +118,23 @@ export default function LogEntryCard({ log, patientId, onUpdate, onDelete, highl
         setIsSavingComment(false);
     };
 
+    const handleSliderChange = (pillar: SymptomPillar, value: number) => {
+        setLocalSeverities(prev => ({ ...prev, [pillar]: value }));
+    };
+
+    const handleSliderCommit = async (pillar: SymptomPillar, value: number) => {
+        await updateBrainDumpSeverity(log.id, pillar, value);
+        // We don't necessarily need to trigger a full re-fetch here if we trust the local state
+        // but updating the parent with the new severity is good practice if possible.
+        // For now, it will be updated when the user clicks 'Save' or re-renders.
+    };
+
     const formattedTime = mounted ? new Date(log.createdAt).toLocaleString() : "";
 
     return (
-        <div ref={cardRef} className={`bg-card text-card-foreground rounded-[2rem] p-6 sm:p-8 border shadow-sm relative overflow-hidden transition-all duration-700 ${highlighted ? 'ring-2 ring-sky-500 ring-offset-2' : ''}`}>
+        <div ref={cardRef} className={`bg-card text-card-foreground rounded-3xl p-6 sm:p-8 border shadow-sm relative overflow-hidden transition-all duration-700 ${highlighted ? 'ring-2 ring-sky-500 ring-offset-2' : ''}`}>
             {log.isFromCarer && (
-                <div className="absolute top-0 right-0 bg-primary/10 text-primary px-4 py-1.5 rounded-bl-2xl text-[10px] font-black uppercase tracking-widest flex items-center gap-1.5">
+                <div className="absolute top-0 right-0 bg-primary/10 text-primary px-4 py-1.5 rounded-bl-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-1.5">
                     <BadgeCheck className="w-3 h-3" />
                     Added by {log.carerName || "Carer"}
                 </div>
@@ -127,16 +144,16 @@ export default function LogEntryCard({ log, patientId, onUpdate, onDelete, highl
                 <div className="text-sm text-foreground font-bold opacity-60">{formattedTime}</div>
                 {!isEditing && (
                     <div className="flex gap-2">
-                        {/* Edit permissions: Carers edit carer logs, Patients edit patient logs */}
-                        {((isCarer && log.isFromCarer) || (!isCarer && !log.isFromCarer)) && (
-                            <Button variant="ghost" size="sm" onClick={() => setIsEditing(true)} className="rounded-full hover:bg-slate-100" disabled={isDeleting}>
+                        {/* Edit permissions: Carers edit THEIR OWN carer logs, Patients edit patient logs */}
+                        {((isCarer && log.isFromCarer && log.carerId === profileId) || (!isCarer && !log.isFromCarer)) && (
+                            <Button variant="ghost" size="sm" onClick={() => setIsEditing(true)} className="rounded-xl hover:bg-slate-100" disabled={isDeleting}>
                                 <Edit2 className="w-4 h-4 mr-1 text-foreground" />
                                 <span className="sr-only">{EDIT}</span>
                             </Button>
                         )}
                         {/* Delete permissions: Carers delete their own logs, Patients delete their own logs */}
                         {((isCarer && log.isFromCarer && log.carerId === profileId) || (!isCarer && !log.isFromCarer)) && (
-                            <Button variant="ghost" size="sm" onClick={handleDelete} disabled={isDeleting} className="rounded-full hover:bg-red-50 hover:text-red-500">
+                            <Button variant="ghost" size="sm" onClick={handleDelete} disabled={isDeleting} className="rounded-xl hover:bg-red-50 hover:text-red-500">
                                 {isDeleting ? <Loader2 className="w-4 h-4 mr-1 animate-spin text-red-500" /> : <Trash2 className="w-4 h-4 mr-1 text-foreground" />}
                                 <span className="sr-only">Delete</span>
                             </Button>
@@ -146,17 +163,32 @@ export default function LogEntryCard({ log, patientId, onUpdate, onDelete, highl
             </div>
 
             {isEditing ? (
-                <div className="space-y-3">
+                <div className="space-y-4">
                     <Textarea
                         value={newText}
                         onChange={(e) => setNewText(e.target.value)}
-                        className="w-full text-lg min-h-[120px] rounded-2xl border-primary/20 focus:border-primary transition-all"
+                        className="w-full text-lg min-h-[120px] rounded-xl border-primary/20 focus:border-primary transition-all"
                     />
-                    <div className="flex justify-end gap-2">
-                        <Button variant="outline" size="sm" onClick={() => { setIsEditing(false); setNewText(log.rawText); }} disabled={isSaving} className="rounded-full">
+                    
+                    {/* Sliders for symptom logs in edit mode */}
+                    {activePillars.length > 0 && (
+                        <div className="pt-2">
+                            <h4 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-4 ml-1">Refine Symptom Severity</h4>
+                            <SymptomSeveritySliders
+                                severities={localSeverities}
+                                onSeverityChange={handleSliderChange}
+                                onSeverityCommit={handleSliderCommit}
+                                activePillars={activePillars.map(p => p.key)}
+                                labels={log}
+                            />
+                        </div>
+                    )}
+
+                    <div className="flex justify-end gap-2 pt-2">
+                        <Button variant="outline" size="sm" onClick={() => { setIsEditing(false); setNewText(log.rawText); }} disabled={isSaving} className="rounded-xl">
                             <X className="w-4 h-4 mr-1" /> {CANCEL}
                         </Button>
-                        <Button size="sm" onClick={handleSave} disabled={isSaving} className="rounded-full px-6">
+                        <Button size="sm" onClick={handleSave} disabled={isSaving} className="rounded-xl px-6">
                             {isSaving ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Save className="w-4 h-4 mr-1" />}
                             {isSaving ? `${SAVING_TEXT}` : `${SAVING_CHANGE}`}
                         </Button>
@@ -171,10 +203,10 @@ export default function LogEntryCard({ log, patientId, onUpdate, onDelete, highl
                         <div className="flex flex-wrap gap-2 pt-2">
                             {activePillars.map((pillar) => {
                                 const { key, value, severity } = pillar;
-                                const config = pillarConfig[key as keyof MoodPillarsConfig];
+                                const config = PILLAR_CONFIG[key as keyof MoodPillarsConfig];
                                 const Icon = config?.icon as LucideIcon;
                                 return (
-                                    <div key={key} className={`flex items-center justify-between px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-tight shadow-sm min-w-max ${config?.color}`}>
+                                    <div key={key} className={`flex items-center justify-between px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-tight shadow-sm min-w-max ${config?.color}`}>
                                         <div className="flex items-center gap-1.5">
                                             <Icon className="w-3 h-3 text-current" />
                                             <span>{config?.label}: {value as string}</span>
@@ -213,7 +245,7 @@ export default function LogEntryCard({ log, patientId, onUpdate, onDelete, highl
                                         variant="ghost"
                                         size="sm"
                                         onClick={() => setIsCommenting(true)}
-                                        className="text-primary hover:bg-primary/5 rounded-full"
+                                        className="text-primary hover:bg-primary/5 rounded-xl"
                                     >
                                         {ADD_NOTE}
                                     </Button>
@@ -226,13 +258,13 @@ export default function LogEntryCard({ log, patientId, onUpdate, onDelete, highl
                                         value={commentText}
                                         onChange={(e) => setCommentText(e.target.value)}
                                         placeholder="Write your observation or note here..."
-                                        className="w-full min-h-[80px] rounded-2xl border-primary/20"
+                                        className="w-full min-h-[80px] rounded-xl border-primary/20"
                                     />
                                     <div className="flex justify-end gap-2">
-                                        <Button variant="ghost" size="sm" onClick={() => setIsCommenting(false)} disabled={isSavingComment} className="rounded-full">
+                                        <Button variant="ghost" size="sm" onClick={() => setIsCommenting(false)} disabled={isSavingComment} className="rounded-xl">
                                             {CANCEL}
                                         </Button>
-                                        <Button size="sm" onClick={handleSaveComment} disabled={isSavingComment} className="rounded-full px-6 bg-primary text-white">
+                                        <Button size="sm" onClick={handleSaveComment} disabled={isSavingComment} className="rounded-xl px-6 bg-primary text-white">
                                             {isSavingComment ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4 mr-1" />}
                                             {SAVE_NOTE}
                                         </Button>
@@ -243,7 +275,7 @@ export default function LogEntryCard({ log, patientId, onUpdate, onDelete, highl
                             {(log.notes && log.notes.length > 0) ? (
                                 <div className="space-y-3">
                                     {log.notes.map((comment: CarerNote) => (
-                                        <div key={comment.id} className="bg-primary/5 p-4 rounded-2xl border border-primary/10 space-y-1 relative group">
+                                        <div key={comment.id} className="bg-primary/5 p-4 rounded-xl border border-primary/10 space-y-1 relative group">
                                             <div className="flex justify-between items-center text-[10px] font-bold text-primary/60 uppercase">
                                                 <span>{comment.carerName || "Carer"}</span>
                                                 <div className="flex items-center gap-2">

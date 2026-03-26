@@ -18,7 +18,8 @@ export async function getInsightsEligibilityQuery(patientId: string) {
   });
   
   return { 
-    eligible: daysCount >= 7, 
+    eligible: daysCount >= 7,
+    hasOneMonthData: daysCount >= 30,
     days: daysCount,
     joinedAt: patient?.createdAt || new Date()
   };

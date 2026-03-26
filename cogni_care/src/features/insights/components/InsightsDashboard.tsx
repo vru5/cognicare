@@ -41,6 +41,7 @@ export default function InsightsDashboard() {
 
   const [loading, setLoading] = useState(true)
   const [eligible, setEligible] = useState<boolean>(true)
+  const [hasOneMonthData, setHasOneMonthData] = useState<boolean>(false)
   const [daysTracked, setDaysTracked] = useState(0)
   const [joinedAt, setJoinedAt] = useState<Date>(new Date())
   
@@ -60,8 +61,9 @@ export default function InsightsDashboard() {
 
     async function init() {
       try {
-        const { eligible: isEligible, days, joinedAt: joined } = await getInsightsEligibility(patientId as string)
+        const { eligible: isEligible, hasOneMonthData: hasMonth, days, joinedAt: joined } = await getInsightsEligibility(patientId as string)
         setEligible(isEligible)
+        setHasOneMonthData(hasMonth)
         setDaysTracked(days)
         if (joined) {
           const joinedDate = new Date(joined)
@@ -112,7 +114,7 @@ export default function InsightsDashboard() {
       onBack={urlPatientId ? () => router.push("/insights") : undefined}
       iconContainerClass="bg-gradient-to-br from-primary to-[#0A4B75] shadow-lg shadow-primary/20"
       iconColorClass="text-white"
-      headerBottom={eligible ? <ExportMenu patientId={patientId as string} dateA={dateA} dateB={dateB} /> : null}
+      headerBottom={eligible ? <ExportMenu patientId={patientId as string} dateA={dateA} dateB={dateB} hasOneMonthData={hasOneMonthData} /> : null}
     >
       {loading ? (
         <div className="flex w-full items-center justify-center p-32"><Loader2 className="w-12 h-12 animate-spin text-primary" /></div>

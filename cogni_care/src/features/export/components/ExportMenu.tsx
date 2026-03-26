@@ -10,7 +10,7 @@ import { ReportData } from "../types/report";
 import { ExportMenuProps } from "../types/props";
 import { MENU_LABEL_EXPORT, MENU_STATUS_EXPORTING, MENU_STATUS_ANALYZING, MENU_STATUS_CACHED, MENU_STATUS_CREATING_PDF, MENU_STATUS_COMPLETE, MENU_ITEM_DOWNLOAD_AI, MENU_ITEM_EXPORT_FORM, ERROR_FETCH_DATA, ERROR_PDF_CAPTURE, ERROR_GENERATE_REPORT } from "../constants/menu";
 
-export default function ExportMenu({ patientId, dateA, dateB }: ExportMenuProps) {
+export default function ExportMenu({ patientId, dateA, dateB, hasOneMonthData }: ExportMenuProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatingStatus, setGeneratingStatus] = useState("");
@@ -97,6 +97,8 @@ export default function ExportMenu({ patientId, dateA, dateB }: ExportMenuProps)
     {
       label: MENU_ITEM_EXPORT_FORM,
       icon: FileText,
+      disabled: !hasOneMonthData,
+      tooltip: !hasOneMonthData ? "Requires 1 month of logs" : undefined,
       onClick: () => {
         setIsOpen(false);
         router.push(`/insights/doc-form?patientId=${patientId}`);
@@ -134,11 +136,24 @@ export default function ExportMenu({ patientId, dateA, dateB }: ExportMenuProps)
             {menuItems.map((item, index) => (
               <button
                 key={index}
-                onClick={item.onClick}
-                className="w-full flex items-center gap-3 px-4 py-3 text-sm text-slate-700 hover:bg-primary/5 hover:text-primary transition-colors text-left"
+                onClick={item.disabled ? undefined : item.onClick}
+                disabled={item.disabled}
+                className={cn(
+                  "w-full flex items-center justify-between px-4 py-3 text-sm transition-colors text-left group",
+                  item.disabled 
+                    ? "opacity-50 cursor-not-allowed bg-slate-50" 
+                    : "text-slate-700 hover:bg-primary/5 hover:text-primary"
+                )}
               >
-                <item.icon className="w-5 h-5 opacity-60" />
-                <span className="font-semibold">{item.label}</span>
+                <div className="flex items-center gap-3">
+                  <item.icon className={cn("w-5 h-5", !item.disabled && "opacity-60 group-hover:opacity-100")} />
+                  <span className="font-semibold">{item.label}</span>
+                </div>
+                {item.disabled && item.tooltip && (
+                  <span className="text-[9px] font-black uppercase tracking-tighter bg-slate-200 text-slate-500 px-1.5 py-0.5 rounded leading-none whitespace-nowrap">
+                    {item.tooltip}
+                  </span>
+                )}
               </button>
             ))}
           </div>

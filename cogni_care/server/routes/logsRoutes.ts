@@ -51,15 +51,12 @@ router.patch("/", async (req, res) => {
 
 // DELETE /api/logs
 router.delete("/", async (req, res) => {
-    const { logId, patientId, isFromCarer } = req.body;
+    const { logId, patientId, isFromCarer, carerId } = req.body;
     if (!logId || !patientId) {
         return res.status(400).json({ success: false, error: "Missing required fields" });
     }
     const isCarerBool = isFromCarer === true || isFromCarer === "true";
-    if (isCarerBool) {
-        return res.status(403).json({ success: false, error: "Carers cannot delete patient logs" });
-    }
-    const result = await deleteSymptomLogAction(logId, patientId);
+    const result = await deleteSymptomLogAction(logId, patientId, carerId, isCarerBool);
     res.json(result);
 });
 

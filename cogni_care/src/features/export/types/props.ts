@@ -60,4 +60,5 @@ export interface ExportMenuProps {
   patientId: string;
   dateA: Date;
   dateB: Date;
+  hasOneMonthData: boolean;
 }
