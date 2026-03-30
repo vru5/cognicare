@@ -92,7 +92,13 @@ export default function LogsView({ initialLogs, patientId, focusedLogId }: { ini
     };
 
     const handleAddLog = (newLog: LogSummaryCard) => {
-        setLogs(currentLogs => [newLog, ...currentLogs]);
+        setLogs(currentLogs => {
+            const exists = currentLogs.some(l => l.id === newLog.id);
+            if (exists) {
+                return currentLogs.map(l => l.id === newLog.id ? newLog : l);
+            }
+            return [newLog, ...currentLogs];
+        });
     };
 
     // Helper to check if two dates are the same day

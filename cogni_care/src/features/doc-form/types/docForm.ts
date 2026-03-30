@@ -74,8 +74,8 @@ export interface DoctorFormData {
 
 export interface SymptomsSectionProps {
   tes: TesData;
-  updateTes: (k: string, v: any) => void;
-  aiFilledKeys: Set<any>;
+  updateTes: (k: string, v: string | boolean) => void;
+  aiFilledKeys: Set<string>;
   symptomChecks: Record<string, SymptomCheck>;
   toggleSymptomPresent: (sym: string) => void;
   setSymptomChecks: React.Dispatch<React.SetStateAction<Record<string, SymptomCheck>>>;
@@ -92,8 +92,8 @@ export interface HistorySectionProps {
 
 export interface TesSectionProps {
   tes: TesData;
-  updateTes: (k: string, v: any) => void;
-  aiFilledKeys: Set<any>;
+  updateTes: (k: string, v: string | boolean) => void;
+  aiFilledKeys: Set<string>;
   showErrors?: boolean;
 }
 
@@ -107,28 +107,22 @@ export interface SeverityMeterProps {
   tes: TesData;
   symptomChecks: Record<string, SymptomCheck>;
   history: HistoryData;
+  aiHistoryGrade?: number | null;
 }
 
-export interface DocFormHeaderProps {
-  title: string;
-  patient: any;
+// ── Scoring Utility Interfaces ──
+
+export interface SeverityScores {
+  total: number;
+  symptomScore: number;
+  historyScore: number;
+  tesScore: number;
+  presentCount: number;
+  worseCount: number;
+  improvingCount: number;
+  rhiMet: number;
+  coreMet: number;
+  supMet: number;
 }
 
-export interface PdfPageShellProps {
-  children: any; // Using any for ReactNode to avoid react import in types file
-  pageNum: number;
-  totalPages: number;
-  patient: any;
-}
 
-export interface PdfCheckMarkProps {
-  checked: boolean;
-}
-
-export interface PdfTrendBadgeProps {
-  trend: string;
-}
-
-export interface PdfDurationBadgeProps {
-  duration: "recent" | "6months+";
-}

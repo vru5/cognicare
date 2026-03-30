@@ -25,6 +25,9 @@ export async function getLogsAction(patientId: string, requesterProfileId?: stri
             prisma.symptomLog.findMany({
                 where: { patientId },
                 include: {
+                    carer: {
+                        include: { user: { select: { name: true } } },
+                    },
                     notes: {
                         include: {
                             carer: {
@@ -50,6 +53,7 @@ export async function getLogsAction(patientId: string, requesterProfileId?: stri
         const formattedSymptomLogs = symptomLogs.map((log) => ({
             ...log,
             type: "patient" as const,
+            carerName: (log as any).carer?.user?.name ?? undefined,
             notes: log.notes.map((c) => ({
                 id: c.id,
                 createdAt: c.createdAt,

@@ -2,13 +2,16 @@ import { SymptomRecord } from "./../../types/logsApi";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { mask } from "@yellowsakura/js-pii-mask";
 import { prisma } from "../../lib/prisma.js";
-import { Analysis, AppError } from "server/types/logsApi.js";
+import { Analysis, AppError } from "../../types/logsApi.js";
 import { getIO } from "../../lib/socket.js";
+import { LogActionResponse } from "../../types/logActions.js";
 
 export async function processBrainDumpAction(
   rawText: string,
   patientId: string,
-) {
+  isFromCarer: boolean = false,
+  carerId?: string
+): Promise<LogActionResponse> {
   const apiKey = (process.env.GEMINI_API_KEY || "").trim();
 
   const genAI = new GoogleGenerativeAI(apiKey);
@@ -98,7 +101,7 @@ export async function processBrainDumpAction(
           genericPhrases.includes(val.toLowerCase())
         ) {
           analysis[key] = null;
-          analysis[(key + "Severity") as keyof Analysis] = null;
+          analysis[(key + "Severity") as keyof Analysis] = undefined;
         }
       });
     } catch (apiErr: unknown) {
@@ -109,8 +112,7 @@ export async function processBrainDumpAction(
     }
 
     // We must check the Profile table because PAT- IDs are NOT in the User table
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const profile = await (prisma as any).profilePatient.findUnique({
+    const profile = await prisma.profilePatient.findUnique({
       where: { id: patientId },
     });
 
@@ -142,6 +144,8 @@ export async function processBrainDumpAction(
       data: {
         patientId: profile.id,
         rawText: safeText,
+        isFromCarer,
+        carerId,
         physical: analysis.physical,
         physicalSeverity: analysis.physicalSeverity,
         mood: analysis.mood,
@@ -158,6 +162,17 @@ export async function processBrainDumpAction(
     // Notify associated carers via WebSocket
     try {
       const io = getIO();
+      const patientId = profile.id;
+
+      // 1. Notify the patient room (for real-time page updates)
+      io.to(patientId).emit("new_notification", {
+        type: "PATIENT_LOG",
+        title: "New Symptom Log",
+        body: isFromCarer ? "Your carer added a new log." : "A new symptom log has been recorded.",
+      });
+      io.to(patientId).emit("new_log", { patientId });
+
+      // 2. Notify carers individually (for dashboard green dots)
       const patientCarers = await prisma.carersOnPatients.findMany({
         where: { patientId: profile.id },
         select: { carerId: true },
@@ -172,7 +187,7 @@ export async function processBrainDumpAction(
       console.warn("[Socket] Failed to notify carers:", e);
     }
 
-    return { success: true, log };
+    return { success: true, log: { ...log, type: "patient" as const } };
   } catch (error: unknown) {
     const err = error as AppError;
     return { success: false, error: err.message || "Processing failed" };

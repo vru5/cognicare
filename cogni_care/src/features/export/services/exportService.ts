@@ -1,5 +1,6 @@
 import { API_BASE_URL } from "@/constants/auth";
 import { ReportData } from "../types/report";
+import { DoctorFormData, HistoryData } from "../../doc-form/types/docForm";
 
 export async function getProfessionalReportData(
   patientId: string,
@@ -41,7 +42,7 @@ export async function getDoctorFormData(patientId: string) {
   }
 }
 
-export async function updateDoctorFormData(patientId: string, data: any) {
+export async function updateDoctorFormData(patientId: string, data: Partial<DoctorFormData>) {
   try {
     const response = await fetch(`${API_BASE_URL}/api/export/doctor-form`, {
       method: "POST",
@@ -53,5 +54,20 @@ export async function updateDoctorFormData(patientId: string, data: any) {
   } catch (error) {
     console.error("Error updating doctor form data:", error);
     return false;
+  }
+}
+
+export async function gradeHistoryRisk(history: HistoryData) {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/export/grade-history`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ history }),
+    });
+    const result = await response.json();
+    return result.success ? result : null;
+  } catch (error) {
+    console.error("Error grading history:", error);
+    return null;
   }
 }

@@ -4,11 +4,12 @@ import {
   PdfCheckMarkProps, 
   PdfTrendBadgeProps, 
   PdfDurationBadgeProps 
-} from "../types/docForm";
+} from "../types/docPdf";
+import { DOC_FORM_STRINGS } from "../constants/docStrings";
 
 export const PageShell: React.FC<PdfPageShellProps> = ({ children, pageNum, totalPages, patient }) => (
   <div style={{
-    width: 794, minHeight: 1123, background: "#fff",
+    width: 950, minHeight: 1344, background: "#fff",
     fontFamily: "'Lora','Georgia',serif",
     position: "relative", marginBottom: 32,
     boxSizing: "border-box",
@@ -21,9 +22,9 @@ export const PageShell: React.FC<PdfPageShellProps> = ({ children, pageNum, tota
       display: "flex", justifyContent: "space-between",
       fontSize: 10, color: "#bbb", letterSpacing: 0.4,
     }}>
-      <span>CTE Health Monitor · Doctor Navigation Form · Confidential</span>
+      <span>{DOC_FORM_STRINGS.GENERAL.APP_NAME} · {DOC_FORM_STRINGS.GENERAL.DOC_FORM_TITLE} · {DOC_FORM_STRINGS.GENERAL.CONFIDENTIAL}</span>
       <span>{patient?.name || "Patient"} · {patient?.id || "N/A"}</span>
-      <span>Page {pageNum} of {totalPages}</span>
+      <span>{DOC_FORM_STRINGS.GENERAL.PAGE} {pageNum} {DOC_FORM_STRINGS.GENERAL.OF} {totalPages}</span>
     </div>
   </div>
 );
@@ -63,9 +64,9 @@ export const CheckMark: React.FC<PdfCheckMarkProps> = ({ checked }) => (
 
 export const TrendBadge: React.FC<PdfTrendBadgeProps> = ({ trend }) => {
   const map: Record<string, [string, string, string]> = {
-    "worse": ["Getting Worse", "#c0674a", "#fdf1ed"],
-    "same": ["Staying Same", "#888", "#f5f5f5"],
-    "improving": ["Improving", "#2e8b6e", "#edf7f4"]
+    "worse": [DOC_FORM_STRINGS.SYMPTOMS.GETTING_WORSE, "#c0674a", "#fdf1ed"],
+    "same": [DOC_FORM_STRINGS.SYMPTOMS.STAYING_SAME, "#888", "#f5f5f5"],
+    "improving": [DOC_FORM_STRINGS.SYMPTOMS.IMPROVING, "#2e8b6e", "#edf7f4"]
   };
   const [label, col, bg] = map[trend] || ["—", "#ccc", "#fff"];
   return (
@@ -95,7 +96,7 @@ export const DurationBadge: React.FC<PdfDurationBadgeProps> = ({ duration }) => 
       paddingTop: 0, paddingBottom: 3, boxSizing: "border-box",
       verticalAlign: "middle"
     }}>
-      {isLong ? "6 MONTHS+" : "RECENT"}
+      {isLong ? DOC_FORM_STRINGS.SYMPTOMS.SIX_MONTHS_PLUS : DOC_FORM_STRINGS.SYMPTOMS.RECENT}
     </span>
   );
 };

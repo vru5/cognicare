@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { RegistrationBody } from "server/types/authApi.js";
 import { prisma } from "../../lib/prisma.js";
 import bcrypt from "bcryptjs";
@@ -28,15 +27,14 @@ export const registerUser = async (body: RegistrationBody) => {
   const phone = !isEmail ? emailOrPhone : null;
 
   // Use transaction to ensure atomic creation
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return await (prisma as any).$transaction(async (tx: any) => {
+  return await prisma.$transaction(async (tx) => {
     // 1. Check if user already exists
     const existingUser = await tx.user.findFirst({
       where: {
         OR: [
-          email ? { email } : undefined,
-          phone ? { phone } : undefined,
-        ].filter(Boolean),
+          ...(email ? [{ email }] : []),
+          ...(phone ? [{ phone }] : []),
+        ],
       },
     });
 

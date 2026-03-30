@@ -2,7 +2,8 @@ import express from "express";
 import { generateProfessionalReportAction } from "../actions/export/exportActions.js";
 import { 
   generateDoctorFormDataAction,
-  updateDoctorFormCacheAction 
+  updateDoctorFormCacheAction,
+  gradeHistoryRiskAction
 } from "../actions/export/doctorFormActions.js";
 import { AppError } from "server/types/logsApi.js";
 
@@ -53,6 +54,20 @@ router.post("/doctor-form", async (req: express.Request, res: express.Response) 
 
   try {
     const result = await updateDoctorFormCacheAction(patientId as string, data);
+    res.json(result);
+  } catch (err: unknown) {
+    const error = err as AppError;
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+router.post("/grade-history", async (req: express.Request, res: express.Response) => {
+  const { history } = req.body;
+  if (!history) {
+    return res.status(400).json({ success: false, error: "Missing required history data" });
+  }
+  try {
+    const result = await gradeHistoryRiskAction(history);
     res.json(result);
   } catch (err: unknown) {
     const error = err as AppError;

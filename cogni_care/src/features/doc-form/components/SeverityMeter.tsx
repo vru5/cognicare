@@ -1,46 +1,27 @@
 import React from "react";
-import { TesData, SymptomCheck, HistoryData, SeverityMeterProps } from "../types/docForm";
+import { SeverityMeterProps } from "../types/docForm";
 import { SeverityGauge } from "./SeverityGauge";
+import { calculateSeverityScore } from "../utils/scoring";
+import { SEVERITY_LEVELS } from "../constants/docFormConfig";
 
-export const SeverityMeter: React.FC<SeverityMeterProps> = ({ tes, symptomChecks, history }) => {
-  const presentCount = Object.values(symptomChecks).filter((s) => s.present).length;
-  const worseCount = Object.values(symptomChecks).filter((s) => s.worse).length;
-  const improvingCount = Object.values(symptomChecks).filter((s) => s.improving).length;
-  const symptomScore = Math.min(Math.round(presentCount * 0.9 + worseCount * 2 - improvingCount * 0.5), 30);
+export const SeverityMeter: React.FC<SeverityMeterProps> = ({ tes, symptomChecks, history, aiHistoryGrade }) => {
+  const scores = calculateSeverityScore(symptomChecks, history, tes, aiHistoryGrade);
+  const { total: totalScore, symptomScore, historyScore: historyFinalScore, tesScore } = scores;
+  const { presentCount, worseCount, rhiMet, coreMet, supMet } = scores;
 
-  let historyScore = 0;
-  const filledHistory = Object.values(history || {}).filter((v) => typeof v === 'string' && v.trim().length > 0).length;
-  historyScore += Math.min(filledHistory * 2, 8);
-  if (history?.drinking?.trim().length > 2) historyScore += 3;
-  if (history?.nonPrescription?.trim().length > 2) historyScore += 2;
-  if (history?.stoppedChores?.trim().length > 2) historyScore += 2;
-  historyScore = Math.min(Math.round(historyScore), 15);
-
-  const rhiMet = [tes.rhi_concussions4, tes.rhi_moderate2, tes.rhi_sports6, tes.rhi_military, tes.rhi_other].filter(Boolean).length;
-  const coreMet = [tes.core_cognitive, tes.core_behavioral, tes.core_mood].filter(Boolean).length;
-  const supMet = [tes.sup_decline, tes.sup_delayed, tes.sup_impulsivity, tes.sup_anxiety, tes.sup_apathy, tes.sup_paranoia, tes.sup_suicidality, tes.sup_headache, tes.sup_motor].filter(Boolean).length;
-  const tesScore = Math.min(Math.round(rhiMet * 5 + coreMet * 9 + Math.min(supMet * 4, 20) + (tes.symptoms_12months ? 8 : 0)), 55);
-
-  const totalScore = Math.min(symptomScore + historyScore + tesScore, 100);
-
-  let level, levelCol, urgency;
-  if (totalScore >= 75) {
-    level = "High"; levelCol = "text-[#c96d54]";
-    urgency = "Requires urgent clinical attention. Multiple TES criteria confirmed.";
-  } else if (totalScore >= 50) {
-    level = "Moderate"; levelCol = "text-[#e5b05c]";
-    urgency = "Significant burden across symptoms and TES. Specialist referral recommended.";
-  } else if (totalScore >= 25) {
-    level = "Mild"; levelCol = "text-[#4a6b82]";
-    urgency = "Some criteria met. Complete all sections for accuracy.";
-  } else {
-    level = "Low"; levelCol = "text-[#51947b]";
-    urgency = "Low severity indicated. Continue monitoring symptoms.";
-  }
+  // Determine current severity level based on score
+  const currentLevel = [...SEVERITY_LEVELS].reverse().find(l => totalScore >= l.minScore) || SEVERITY_LEVELS[0];
+  const { label: level, textColorClass: levelCol, urgency } = currentLevel;
 
   const sources = [
     { label: "Symptoms", score: symptomScore, max: 30, color: "#4a6b82", desc: `${presentCount} present, ${worseCount} worsening` },
-    { label: "History", score: historyScore, max: 15, color: "#e5b05c", desc: `${filledHistory}/7 fields` },
+    { 
+      label: "History", 
+      score: historyFinalScore, 
+      max: 15, 
+      color: "#e5b05c", 
+      desc: aiHistoryGrade !== null && aiHistoryGrade !== undefined ? "✦ AI Evaluated Content" : "Manual Assessment" 
+    },
     { label: "TES", score: tesScore, max: 55, color: "#c96d54", desc: `RHI:${rhiMet} Core:${coreMet} Sup:${supMet}` },
   ];
 
@@ -86,18 +67,11 @@ export const SeverityMeter: React.FC<SeverityMeterProps> = ({ tes, symptomChecks
 
       {/* Legend */}
       <div className="flex flex-wrap items-center gap-4 md:gap-6 mt-10 pt-4 px-2">
-        <div className="flex items-center gap-2 text-[13px] font-sans font-medium text-slate-500">
-          <span className="w-3.5 h-3.5 rounded-sm bg-[#51947b]"></span> Low
-        </div>
-        <div className="flex items-center gap-2 text-[13px] font-sans font-medium text-slate-500">
-          <span className="w-3.5 h-3.5 rounded-sm bg-[#4a6b82]"></span> Mild
-        </div>
-        <div className="flex items-center gap-2 text-[13px] font-sans font-medium text-slate-500">
-          <span className="w-3.5 h-3.5 rounded-sm bg-[#e5b05c]"></span> Moderate
-        </div>
-        <div className="flex items-center gap-2 text-[13px] font-sans font-medium text-slate-500">
-          <span className="w-3.5 h-3.5 rounded-sm bg-[#c96d54]"></span> High
-        </div>
+        {SEVERITY_LEVELS.map(level => (
+          <div key={level.id} className="flex items-center gap-2 text-[13px] font-sans font-medium text-slate-500">
+            <span className="w-3.5 h-3.5 rounded-sm" style={{ backgroundColor: level.color }}></span> {level.label}
+          </div>
+        ))}
       </div>
     </div>
   );

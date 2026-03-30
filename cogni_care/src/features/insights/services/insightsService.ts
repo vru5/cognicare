@@ -1,18 +1,18 @@
 import { API_BASE_URL } from "@/constants/auth";
 import { PieChartData, DailyAverage } from "../types/insightsTypes";
 
-export async function getInsightsEligibility(patientId: string): Promise<{ eligible: boolean, days: number, joinedAt: string }> {
+export async function getInsightsEligibility(patientId: string): Promise<{ eligible: boolean, hasOneMonthData: boolean, days: number, joinedAt: string }> {
     try {
         const response = await fetch(`${API_BASE_URL}/api/insights/eligibility?patientId=${patientId}`);
         const data = await response.json();
         if (!data.success) {
             console.error("Failed to fetch eligibility");
-            return { eligible: false, days: 0, joinedAt: new Date().toISOString() };
+            return { eligible: false, hasOneMonthData: false, days: 0, joinedAt: new Date().toISOString() };
         }
-        return { eligible: data.eligible, days: data.days, joinedAt: data.joinedAt };
+        return { eligible: data.eligible, hasOneMonthData: !!data.hasOneMonthData, days: data.days, joinedAt: data.joinedAt };
     } catch (error) {
         console.error("Error fetching insights insights eligibility:", error);
-        return { eligible: false, days: 0, joinedAt: new Date().toISOString() };
+        return { eligible: false, hasOneMonthData: false, days: 0, joinedAt: new Date().toISOString() };
     }
 }
 

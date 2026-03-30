@@ -216,12 +216,23 @@ export async function updateSymptomLogAction(logId: string, patientId: string, n
     }
 }
 
-export async function deleteSymptomLogAction(logId: string, patientId: string): Promise<{ success: boolean; error?: string }> {
+export async function deleteSymptomLogAction(logId: string, patientId: string, requesterId?: string, isCarer: boolean = false): Promise<{ success: boolean; error?: string }> {
     try {
         const log = await prisma.symptomLog.findUnique({ where: { id: logId } });
 
         if (!log || log.patientId !== patientId) {
             return { success: false, error: "Log not found or unauthorized" };
+        }
+
+        // Authorization: Carers delete their own, Patients delete their own
+        if (isCarer) {
+            if (!log.isFromCarer || log.carerId !== requesterId) {
+                return { success: false, error: "Carers can only delete logs they created" };
+            }
+        } else {
+            if (log.isFromCarer) {
+                return { success: false, error: "Patients cannot delete carer logs" };
+            }
         }
 
         await prisma.carerNote.deleteMany({ where: { logId: logId } });

@@ -7,8 +7,8 @@
 }
 
 .report-page {
-  width: 794px; /* A4 width at 96 DPI */
-  min-height: 1123px;
+  width: 950px; /* Increased from 794px to zoom out contents */
+  min-height: 1344px; /* Proportional to A4 ratio */
   background-color: #ffffff;
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   position: relative;
@@ -69,17 +69,16 @@
 
 .report-body {
   padding: 25px 40px;
+  text-align: left;
 }
 
 .section-title {
   font-size: 15px;
   font-weight: 800;
   color: #1a1a2e;
-  margin-bottom: 12px;
-  letter-spacing: -0.2px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
+  margin: 25px 0 10px 0;
+  letter-spacing: normal;
+  display: block;
 }
 
 .insight-card {

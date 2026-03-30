@@ -3,12 +3,12 @@ import { format } from "date-fns";
 import { PageShellProps } from "../../types/props";
 import { TEXT_MONITORING, TEXT_CONFIDENTIAL, LABEL_PATIENT, LABEL_PAGE, LABEL_OF } from "../../constants/report";
 
-export const PageShell: React.FC<PageShellProps> = ({ 
-  children, 
-  pageNum, 
+export const PageShell: React.FC<PageShellProps> = ({
+  children,
+  pageNum,
   totalPages,
-  patientName, 
-  patientId 
+  patientName,
+  patientId
 }) => (
   <div className="report-page">
     <div style={{ position: "relative", zIndex: 1, minHeight: '1040px' }}>{children}</div>

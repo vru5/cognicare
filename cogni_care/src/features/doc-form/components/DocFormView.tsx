@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef, useMemo } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { Activity } from "lucide-react";
 import MobilePageLayout from "@/components/shared/MobilePageLayout";
-import { getDoctorFormData, updateDoctorFormData } from "@/features/export/services/exportService";
+import { getDoctorFormData, updateDoctorFormData, gradeHistoryRisk } from "@/features/export/services/exportService";
 import { generatePdfFromElement } from "@/features/export/services/pdfService";
 import DocFormPDF from "./DocFormPDF";
 import { SeverityMeter } from "./SeverityMeter";
@@ -20,6 +20,7 @@ import {
   DEFAULT_TES,
   DEFAULT_HISTORY
 } from "../constants/docFormConfig";
+import { DOC_FORM_STRINGS } from "../constants/docStrings";
 import {
   TesData,
   SymptomCheck,
@@ -34,7 +35,7 @@ export default function DocFormView() {
 
   const [activeSection, setActiveSection] = useState("symptoms");
   const [prefillStatus, setPrefillStatus] = useState("loading");
-  const [prefillMsg, setPrefillMsg] = useState("Mapping symptoms to criteria…");
+  const [prefillMsg, setPrefillMsg] = useState(DOC_FORM_STRINGS.PREFILL.LOADING_MSG_INITIAL);
   const [aiFilledKeys, setAiFilledKeys] = useState(new Set<string>());
   const [tes, setTes] = useState<TesData>(DEFAULT_TES);
   const [symptomChecks, setSymptomChecks] = useState<Record<string, SymptomCheck>>({});
@@ -42,6 +43,8 @@ export default function DocFormView() {
   const [history, setHistory] = useState<HistoryData>(DEFAULT_HISTORY);
   const [concerns, setConcerns] = useState<Record<number, boolean>>({});
   const [patientData, setPatientData] = useState<PatientDetails | null>(null);
+  const [aiHistoryGrade, setAiHistoryGrade] = useState<number | null>(null);
+  const [isGrading, setIsGrading] = useState(false);
 
   const [isExporting, setIsExporting] = useState(false);
   const [showErrors, setShowErrors] = useState(false);
@@ -50,14 +53,14 @@ export default function DocFormView() {
   useEffect(() => {
     if (!patientId) {
       setPrefillStatus("error");
-      setPrefillMsg("Missing patient ID.");
+      setPrefillMsg(DOC_FORM_STRINGS.PREFILL.ERROR_MISSING_ID);
       return;
     }
 
     const run = async () => {
       try {
         setPrefillStatus("loading");
-        setPrefillMsg("Mapping symptoms to TES criteria…");
+        setPrefillMsg(DOC_FORM_STRINGS.PREFILL.LOADING_MSG_TES);
 
         const data = await getDoctorFormData(patientId);
         if (!data) throw new Error("AI pre-fill failed or no data found");
@@ -105,13 +108,13 @@ export default function DocFormView() {
       } catch (err) {
         console.error("[DocForm] Prefill processing failed:", err);
         setPrefillStatus("error");
-        setPrefillMsg("Auto-fill failed — please fill in manually.");
+        setPrefillMsg(DOC_FORM_STRINGS.PREFILL.ERROR_FAILED);
       }
     };
     run();
   }, [patientId]);
 
-  const updateTes = (k: string, v: any) => {
+  const updateTes = (k: string, v: string | boolean) => {
     setAiFilledKeys((p) => { const n = new Set(p); n.delete(k); return n; });
     setTes(p => ({ ...p, [k]: v }));
   };
@@ -184,7 +187,7 @@ export default function DocFormView() {
                   <span className="animate-pulse text-3xl text-primary drop-shadow-sm">✦</span>
                 </div>
                 <div className="space-y-1.5">
-                  <h3 className="text-xl font-black text-[#0B4063] tracking-tight">Auto-filling form</h3>
+                  <h3 className="text-xl font-black text-[#0B4063] tracking-tight">{DOC_FORM_STRINGS.PREFILL.LOADING_TITLE}</h3>
                   <p className="text-sm font-bold text-primary/70">{prefillMsg}</p>
                 </div>
               </div>
@@ -200,7 +203,7 @@ export default function DocFormView() {
                 {prefillStatus === "done" && (
                   <div className="bg-white/95 backdrop-blur-xl border-l-4 border-l-green-500 border border-green-100/50 rounded-2xl p-4 shadow-sm flex items-center gap-3 text-sm text-green-700">
                     <span className="font-bold text-green-600 bg-green-100 w-6 h-6 rounded-full flex items-center justify-center shrink-0">✓</span>
-                    <span><b>Form pre-filled</b> from logs. Fields marked <span className="inline-block translate-y-[-1px]"><AiBadge /></span> were inferred.</span>
+                    <span><b>{DOC_FORM_STRINGS.PREFILL.SUCCESS_BOLD}</b> {DOC_FORM_STRINGS.PREFILL.SUCCESS_TEXT} <span className="inline-block translate-y-[-1px]"><AiBadge /></span> {DOC_FORM_STRINGS.PREFILL.SUCCESS_SUFFIX}</span>
                   </div>
                 )}
               </div>
@@ -216,10 +219,10 @@ export default function DocFormView() {
 
                       {activeSection === "summary" && (
                         <div className="space-y-6">
-                          <SeverityMeter tes={tes} symptomChecks={symptomChecks} history={history} />
+                          <SeverityMeter tes={tes} symptomChecks={symptomChecks} history={history} aiHistoryGrade={aiHistoryGrade} />
                           <div className="bg-sky-50/50 text-card-foreground rounded-2xl border border-sky-100 p-6 shadow-sm">
-                            <div className="text-[13px] font-black flex items-center mb-3 uppercase tracking-widest text-[#0ea5e9]">📋 Patient Summary & Next Steps</div>
-                            <p className="text-[13px] leading-relaxed font-bold text-sky-800/70">The data above is ready for exporting. Click Download below to generate the clinical navigation report for your provider.</p>
+                            <div className="text-[13px] font-black flex items-center mb-3 uppercase tracking-widest text-[#0ea5e9]">{DOC_FORM_STRINGS.SUMMARY.VIEW_TITLE}</div>
+                            <p className="text-[13px] leading-relaxed font-bold text-sky-800/70">{DOC_FORM_STRINGS.SUMMARY.VIEW_DESC}</p>
                           </div>
                         </div>
                       )}
@@ -235,30 +238,41 @@ export default function DocFormView() {
               <div>
                 {curIdx > 0 && (
                   <button onClick={() => { window.scrollTo(0, 0); setActiveSection(SECTIONS[curIdx - 1].id); }} className="px-6 py-3 rounded-xl border-2 border-slate-200 bg-white text-sm font-bold text-slate-400 hover:bg-slate-50 transition-all active:scale-95">
-                    Back
+                    {DOC_FORM_STRINGS.NAVIGATION.BTN_BACK}
                   </button>
                 )}
               </div>
               <div className="flex gap-3">
                 {curIdx < SECTIONS.length - 1 ? (
-                  <button 
-                    onClick={() => {
-                        setShowErrors(false);
-                        window.scrollTo(0, 0);
-                        setActiveSection(SECTIONS[curIdx + 1].id);
-                    }} 
+                  <button
+                    onClick={async () => {
+                      setShowErrors(false);
+                      const nextSec = SECTIONS[curIdx + 1].id;
+
+                      // Background AI Grading trigger
+                      if (nextSec === "concerns" && !isGrading) {
+                        setIsGrading(true);
+                        gradeHistoryRisk(history).then(res => {
+                          if (res?.success) setAiHistoryGrade(res.historyScore);
+                          setIsGrading(false);
+                        }).catch(() => setIsGrading(false));
+                      }
+
+                      window.scrollTo(0, 0);
+                      setActiveSection(nextSec);
+                    }}
                     disabled={!isCurrentSectionValid}
                     className={`px-10 py-3 rounded-xl shadow-lg font-black text-sm uppercase tracking-widest transition-all ${isCurrentSectionValid ? "bg-[#0ea5e9] text-white hover:opacity-95 active:scale-[0.98] shadow-blue-200" : "bg-slate-100 text-slate-300 cursor-not-allowed border border-slate-200 shadow-none"}`}
                   >
-                    Next Step
+                    {DOC_FORM_STRINGS.NAVIGATION.BTN_NEXT}
                   </button>
                 ) : (
-                  <button 
+                  <button
                     onClick={handleExport}
                     disabled={isExporting || !isCurrentSectionValid}
                     className={`flex items-center gap-2 px-10 py-3 rounded-xl font-black text-sm uppercase tracking-widest transition-all ${(isExporting || !isCurrentSectionValid) ? 'bg-slate-100 text-slate-300 cursor-not-allowed border border-slate-200 shadow-none' : 'bg-[#0ea5e9] text-white shadow-lg hover:opacity-95 active:scale-[0.98] shadow-blue-200'}`}
                   >
-                    {isExporting ? 'Generating...' : 'Download PDF'}
+                    {isExporting ? DOC_FORM_STRINGS.GENERAL.BTN_GENERATING : DOC_FORM_STRINGS.GENERAL.BTN_DOWNLOAD_PDF}
                   </button>
                 )}
               </div>
@@ -267,10 +281,10 @@ export default function DocFormView() {
         </div>
       </MobilePageLayout>
 
-      <div className="fixed overflow-hidden -z-50 pointer-events-none opacity-0 left-[200vw] top-0">
+      <div style={{ position: "absolute", top: "-10000px", left: 0, width: "950px" }}>
         {patientData && (
-          <div ref={pdfRef} className="bg-white text-black print-mode-wrapper w-[800px] font-serif">
-            <DocFormPDF data={{ patient: patientData as PatientDetails, tes, symptoms: symptomChecks, history, concerns }} />
+          <div ref={pdfRef} className="bg-white text-black print-mode-wrapper w-[950px] font-serif">
+            <DocFormPDF data={{ patient: patientData as PatientDetails, tes, symptoms: symptomChecks, history, concerns, aiHistoryGrade }} />
           </div>
         )}
       </div>

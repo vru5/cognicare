@@ -60,5 +60,24 @@ export const TEXT_VERSION = "Version 2.5-flash";
 export const TEXT_MONITORING = "CogniCare Monitoring";
 export const TEXT_CONFIDENTIAL = "Confidential";
 export const LABEL_PATIENT = "Patient:";
+export const LABEL_PATIENT_UPPER = "PATIENT";
+export const LABEL_CARER = "Carer:";
+export const LABEL_CARER_UPPER = "CARER";
 export const LABEL_PAGE = "Page";
 export const LABEL_OF = "of";
+
+// Menu & Status Labels (Consolidated from exportStrings.ts)
+export const MENU_LABEL_EXPORT = "Export Data";
+export const MENU_STATUS_EXPORTING = "Exporting...";
+export const MENU_STATUS_ANALYZING = "Analyzing symptoms...";
+export const MENU_STATUS_CACHED = "Using cached report data...";
+export const MENU_STATUS_CREATING_PDF = "Creating PDF...";
+export const MENU_STATUS_COMPLETE = "Complete!";
+export const MENU_ITEM_DOWNLOAD_AI = "Download (AI PDF)";
+export const MENU_ITEM_EXPORT_FORM = "Export Doc Form";
+export const MENU_TOOLTIP_LOGS = "Requires 1 month of logs";
+export const MENU_ERROR_PDF_CAPTURE = "Failed to capture PDF";
+export const MENU_ERROR_GENERATE_REPORT = "Failed to generate report. Please try again.";
+
+export const STATUS_READY = "✓ Report Ready";
+export const STATUS_ERROR = "✕ Error Generating";

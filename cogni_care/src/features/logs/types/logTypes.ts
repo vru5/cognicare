@@ -32,10 +32,12 @@ export interface LogSummaryCard extends Record<SymptomPillar, string | null | un
     patientId: string;
     rawText: string;
     notes?: CarerNote[];
-    isFromCarer?: boolean; // Kept for UI compatibility during transition or for standalone logs
+    isFromCarer?: boolean;
     carerId?: string;
     carerName?: string;
     type: "patient" | "carer";
+    message?: string; // Optional message from AI analysis
+    [key: string]: unknown;
 };
 
 export type MoodPillarsConfig = Partial<Record<SymptomPillar, Config>>;

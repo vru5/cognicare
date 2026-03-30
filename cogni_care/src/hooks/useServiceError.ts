@@ -9,7 +9,7 @@ import { useState, useCallback } from "react";
 export function useServiceError() {
   const [, setError] = useState();
 
-  const handleServiceError = useCallback((error: any) => {
+  const handleServiceError = useCallback((error: unknown) => {
     console.error("[useServiceError] Captured async error:", error);
     setError(() => {
       // Throwing inside a state setter ensures React catches it in the next render

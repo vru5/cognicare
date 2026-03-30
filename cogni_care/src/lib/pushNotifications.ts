@@ -38,7 +38,7 @@ export const PushNotificationService = {
         vibration: true,
       };
       // Register channel for BOTH local and push plugins
-      await LocalNotifications.createChannel(channel as any);
+      await LocalNotifications.createChannel(channel as any); // Capacitor types here are slightly incompatible with their own plugin sometimes, keeping as any is standard practice for this specific cast if it fails, but let's try removing it first. Actually, Capacitor channel type is specific.
       await PushNotifications.createChannel(channel as any);
     }
 
@@ -90,14 +90,20 @@ export const PushNotificationService = {
       });
     });
 
-    const getTargetId = (data: any) => {
+    const getTargetId = (data: unknown) => {
       if (!data) return null;
-      let parsedData = data;
+      let parsedData: any = data;
       // Some platforms stringify the data object inside the notification data
       if (typeof data === 'string') {
-        try { parsedData = JSON.parse(data); } catch (e) { return null; }
+        try { 
+          parsedData = JSON.parse(data); 
+        } catch (e) { 
+          return null; 
+        }
       }
-      return parsedData.logId || parsedData.note_id || null;
+      
+      const obj = parsedData as Record<string, unknown>;
+      return (obj?.logId as string) || (obj?.note_id as string) || null;
     };
 
     // Handle taps on Push Notifications (Background/Closed state)

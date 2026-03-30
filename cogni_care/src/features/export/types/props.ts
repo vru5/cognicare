@@ -31,6 +31,8 @@ export interface ReportHeaderProps {
     label: string;
     value: string;
     sub: string;
+    patientCount?: number;
+    carerCount?: number;
   };
 }
 
@@ -44,15 +46,23 @@ export interface PageShellProps {
 
 export interface DoughnutChartProps {
   averages: Record<string, number>;
+  patientPillarLogs: Record<string, number>;
+  carerPillarLogs: Record<string, number>;
 }
 
 export interface PillarRadarProps {
   scoresA: Record<string, number>;
   scoresB: Record<string, number>;
+  patientScoresA?: Record<string, number>;
+  carerScoresA?: Record<string, number>;
+  patientScoresB?: Record<string, number>;
+  carerScoresB?: Record<string, number>;
 }
 
 export interface SparkLineProps {
   trend: (number | null)[];
+  patientTrend?: (number | null)[];
+  carerTrend?: (number | null)[];
   color: string;
 }
 
@@ -60,4 +70,5 @@ export interface ExportMenuProps {
   patientId: string;
   dateA: Date;
   dateB: Date;
+  hasOneMonthData: boolean;
 }

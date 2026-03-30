@@ -15,19 +15,25 @@ export interface Analysis {
     sleepSeverity?: number | null;
     social?: string | null;
     socialSeverity?: number | null;
+    isFromCarer?: boolean;
 } 
 
 export interface SymptomRecord extends Analysis {
+    type?: "patient" | "carer";
     id: string;
     createdAt: Date | string;
     patientId: string;
     rawText: string;
+    isFromCarer?: boolean;
+    carerId?: string | null;
     notes?: CarerNoteRecord[];
     comments?: CarerNoteRecord[];
 }
 
 export interface SymptomLogUpdateData extends Analysis {
     rawText?: string;
+    isFromCarer?: boolean;
+    carerId?: string | null;
 }
 
 export interface CarerNoteRecord {
