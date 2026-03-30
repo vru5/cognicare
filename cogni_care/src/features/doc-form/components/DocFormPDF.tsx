@@ -9,7 +9,7 @@ import { SeverityGauge } from "./SeverityGauge";
 // MAIN COMPONENT
 // ─────────────────────────────────────────────────────────────────────────────
 export default function DocFormPDF({ data }: { data: any }) {
-  const { patient = {}, tes = {}, symptoms = {}, history = {}, concerns = {} } = data || {};
+  const { patient = {}, tes = {}, symptoms = {}, history = {}, concerns = {}, aiHistoryGrade = null } = data || {};
 
   // Merge backend patient info with live form data (tes)
   const mergedPatient = {
@@ -37,14 +37,15 @@ export default function DocFormPDF({ data }: { data: any }) {
     if ((history.nonPrescription as string)?.length > 2) historyScore += 2;
     if ((history.stoppedChores as string)?.length > 2) historyScore += 2;
     historyScore = Math.min(Math.round(historyScore), 15);
+    const historyFinalScore = aiHistoryGrade !== null && aiHistoryGrade !== undefined ? aiHistoryGrade : historyScore;
 
     const rhiMet = [tes.rhi_concussions4, tes.rhi_moderate2, tes.rhi_sports6, tes.rhi_military, tes.rhi_other].filter(Boolean).length;
     const coreMet = [tes.core_cognitive, tes.core_behavioral, tes.core_mood].filter(Boolean).length;
     const supMet = [tes.sup_decline, tes.sup_delayed, tes.sup_impulsivity, tes.sup_anxiety, tes.sup_apathy, tes.sup_paranoia, tes.sup_suicidality, tes.sup_headache, tes.sup_motor].filter(Boolean).length;
     const tesScore = Math.min(Math.round(rhiMet * 5 + coreMet * 9 + Math.min(supMet * 4, 20) + (tes.symptoms_12months ? 8 : 0)), 55);
 
-    const total = Math.min(symptomScore + historyScore + tesScore, 100);
-    return { total, symptomScore, historyScore, tesScore, presentCount, worseCount, rhiMet, coreMet, supMet };
+    const total = Math.min(symptomScore + historyFinalScore + tesScore, 100);
+    return { total, symptomScore, historyScore: historyFinalScore, tesScore, presentCount, worseCount, rhiMet, coreMet, supMet };
   };
 
   const scoreData = computeScore();
@@ -67,7 +68,7 @@ export default function DocFormPDF({ data }: { data: any }) {
 
   const sources = [
     { label: "Symptom Burden", score: scoreData.symptomScore, max: 30, c: "#3d6b8f", desc: `${scoreData.presentCount} present · ${scoreData.worseCount} worsening` },
-    { label: "Patient History", score: scoreData.historyScore, max: 15, c: "#6b52ae", desc: "7/7 fields completed" },
+    { label: "Patient History", score: scoreData.historyScore, max: 15, c: "#6b52ae", desc: aiHistoryGrade !== null ? "✦ AI Evaluated Content" : "7/7 fields completed" },
     { label: "TES Criteria", score: scoreData.tesScore, max: 55, c: "#c0674a", desc: `RHI:${scoreData.rhiMet} · Core:${scoreData.coreMet} · Sup:${scoreData.supMet}` },
   ];
 

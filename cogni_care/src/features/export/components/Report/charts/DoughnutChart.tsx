@@ -3,12 +3,18 @@ import { PILLARS_CONFIG } from "../../../constants/pillars";
 import { PillarConfig } from "../../../types/report";
 import { DoughnutChartProps } from "../../../types/props";
 
-export const DoughnutChart: React.FC<DoughnutChartProps> = ({ averages }) => {
+export const DoughnutChart: React.FC<DoughnutChartProps> = ({ 
+  averages,
+  patientPillarLogs,
+  carerPillarLogs
+}) => {
   const total = Object.values(averages).reduce((a: number, b: number) => a + b, 0) || 1;
   const data = PILLARS_CONFIG.map((p: PillarConfig) => ({
     ...p,
     value: averages[p.key] || 0,
-    percent: +((averages[p.key] || 0) / total * 100).toFixed(1)
+    percent: +((averages[p.key] || 0) / total * 100).toFixed(1),
+    pCount: patientPillarLogs[p.key] || 0,
+    cCount: carerPillarLogs[p.key] || 0
   }));
 
   const radius = 80;
@@ -109,10 +115,13 @@ export const DoughnutChart: React.FC<DoughnutChartProps> = ({ averages }) => {
               <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                 <span style={{ fontSize: 16 }}>{p.icon}</span>
                 <span style={{ fontSize: 13, fontWeight: 800, color: "#1a1a2e" }}>{p.label}</span>
+                <span style={{ fontSize: 8, color: '#999', marginLeft: 4, opacity: 0.8, fontWeight: 600 }}>
+                  (P:{p.pCount} / C:{p.cCount})
+                </span>
               </div>
-              <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-                <span style={{ fontSize: 14, fontWeight: 900, color: p.color }}>{p.percent}%</span>
-                <span style={{ fontSize: 10, color: "#b3b3b3", fontWeight: 700 }}>avg {p.value.toFixed(1)}</span>
+              <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
+                <span style={{ fontSize: 14, fontWeight: 900, color: p.color, whiteSpace: 'nowrap' }}>{p.percent}%</span>
+                <span style={{ fontSize: 10, color: "#b3b3b3", fontWeight: 700, whiteSpace: 'nowrap' }}>avg {p.value.toFixed(1)}</span>
               </div>
             </div>
             {/* Progress Bar */}

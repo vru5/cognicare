@@ -51,11 +51,36 @@ export const ReportHeader: React.FC<ReportHeaderProps> = ({
       minWidth: 160 
     }}>
       {periodInfo ? (
-        <>
-          <div style={{ fontSize: 9, letterSpacing: 3, textTransform: 'uppercase', color: 'rgba(255,255,255,0.45)', fontWeight: 700 }}>{periodInfo.label}</div>
-          <div style={{ fontSize: 15, fontWeight: 900, color: '#5fa8d3', marginTop: 4 }}>{periodInfo.value}</div>
-          <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', marginTop: 4 }}>{periodInfo.sub}</div>
-        </>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 12 }}>
+          <div style={{ textAlign: 'right' }}>
+            <div style={{ fontSize: 9, letterSpacing: 3, textTransform: 'uppercase', color: 'rgba(255,255,255,0.45)', fontWeight: 700 }}>{periodInfo.label}</div>
+            <div style={{ fontSize: 15, fontWeight: 900, color: '#5fa8d3', marginTop: 4 }}>{periodInfo.value}</div>
+            <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', marginTop: 4 }}>{periodInfo.sub}</div>
+          </div>
+          
+          {(periodInfo.patientCount !== undefined || periodInfo.carerCount !== undefined) && (
+            <div style={{ 
+              background: 'rgba(255,255,255,0.05)', 
+              border: '1px solid rgba(255,255,255,0.1)', 
+              borderRadius: 14, 
+              padding: '10px 18px',
+              display: 'flex',
+              gap: 20,
+              minWidth: 180,
+              justifyContent: 'center'
+            }}>
+              <div style={{ textAlign: 'center' }}>
+                 <div style={{ fontSize: 8, letterSpacing: 1.5, textTransform: 'uppercase', color: 'rgba(255,255,255,0.4)', fontWeight: 700, marginBottom: 2 }}>PATIENT</div>
+                 <div style={{ fontSize: 16, fontWeight: 900, color: '#5fa8d3' }}>{periodInfo.patientCount || 0} logs</div>
+              </div>
+              <div style={{ width: 1, background: 'rgba(255,255,255,0.1)', alignSelf: 'stretch' }} />
+              <div style={{ textAlign: 'center' }}>
+                 <div style={{ fontSize: 8, letterSpacing: 1.5, textTransform: 'uppercase', color: 'rgba(255,255,255,0.4)', fontWeight: 700, marginBottom: 2 }}>CARER</div>
+                 <div style={{ fontSize: 16, fontWeight: 900, color: '#2ecc71' }}>{periodInfo.carerCount || 0} logs</div>
+              </div>
+            </div>
+          )}
+        </div>
       ) : (
         <>
           <div style={{ fontSize: 9, letterSpacing: 3, textTransform: 'uppercase', color: 'rgba(255,255,255,0.45)', fontWeight: 700 }}>{LABEL_PERIOD}</div>

@@ -32,7 +32,10 @@ export async function generatePdfFromElement(
         useCORS: true,
         backgroundColor: "#ffffff",
         logging: false,
-        windowWidth: 800, // Standardize width for capture
+        width: 794,
+        windowWidth: 794,
+        scrollX: 0,
+        scrollY: 0,
         onclone: (clonedDoc) => {
           // 1. Remove all linked stylesheets (they might contain lab/oklch and innerHTML is empty)
           clonedDoc.querySelectorAll('link[rel="stylesheet"]').forEach(l => l.remove());
@@ -112,74 +115,52 @@ export async function generatePdfFromElement(
     onProgress?.("Downloading PDF...");
     
     // Check if we are on a mobile device (even if in a browser)
-    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    // Improved device detection: only match true mobile devices (excluding desktop OSs)
+    const isMobile = (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) && !(/Windows|Macintosh|Linux/i.test(navigator.userAgent));
 
     if (Capacitor.isNativePlatform()) {
       onProgress?.("Preparing for mobile viewing...");
+      // ... (Capacitor logic remains correct as is)
+      const pdfBase64 = pdf.output('datauristring').split(',')[1];
+      const fileName = filename.endsWith('.pdf') ? filename : `${filename}.pdf`;
+      const savedFile = await Filesystem.writeFile({
+        path: fileName,
+        data: pdfBase64,
+        directory: Directory.Documents,
+        recursive: true
+      });
       try {
-        const pdfBase64 = pdf.output('datauristring').split(',')[1];
-        const fileName = filename.endsWith('.pdf') ? filename : `${filename}.pdf`;
-        
-        const savedFile = await Filesystem.writeFile({
-          path: fileName,
-          data: pdfBase64,
-          directory: Directory.Documents,
-          recursive: true
-        });
-        
-        onProgress?.("Opening PDF...");
-        await new Promise(r => setTimeout(r, 200));
-        
-        await FileOpener.open({
-          filePath: savedFile.uri,
-          contentType: 'application/pdf'
-        });
-      } catch (err) {
-        console.error("Native Open Error:", err);
-        const pdfBase64 = pdf.output('datauristring').split(',')[1];
-        const fileName = filename.endsWith('.pdf') ? filename : `${filename}.pdf`;
-        const savedFile = await Filesystem.writeFile({
-          path: fileName,
-          data: pdfBase64,
-          directory: Directory.Documents,
-          recursive: true
-        });
-        
-        await Share.share({
-          title: 'Symptom Report',
-          text: 'Sharing your clinical symptom report.',
-          url: savedFile.uri,
-          dialogTitle: 'Share Report'
-        });
-      }
-    } else if (isMobile && navigator.share) {
-      // For mobile browsers, use the Web Share API if available
-      onProgress?.("Opening share options...");
-      try {
-        const blob = pdf.output('blob');
-        const file = new File([blob], filename, { type: 'application/pdf' });
-        
-        if (navigator.canShare && navigator.canShare({ files: [file] })) {
-          await navigator.share({
-            files: [file],
-            title: 'Symptom Report',
-            text: 'Your clinical symptom report is ready.'
-          });
-        } else {
-          // Fallback to opening in a new tab if sharing files isn't supported
-          const blobUrl = URL.createObjectURL(blob);
-          window.open(blobUrl, '_blank');
-        }
-      } catch (err) {
-        console.error("Web Share Error:", err);
-        pdf.save(filename);
+        await FileOpener.open({ filePath: savedFile.uri, contentType: 'application/pdf' });
+      } catch {
+        await Share.share({ title: 'Symptom Report', text: 'Clinical report', url: savedFile.uri });
       }
     } else {
-      // Desktop or fallback
+      // BROWSER (Desktop & Mobile)
+      onProgress?.("Downloading Report...");
+      
+      // 1. Force a direct download (Save)
       pdf.save(filename);
-      // Also open in new tab for immediate viewing if requested
-      const blobUrl = URL.createObjectURL(pdf.output('blob'));
-      window.open(blobUrl, '_blank');
+
+      // 2. ONLY for actual mobile browsers, ALSO attempt to trigger share if they might prefer it
+      if (isMobile && navigator.share) {
+        try {
+          const blob = pdf.output('blob');
+          const file = new File([blob], filename, { type: 'application/pdf' });
+          if (navigator.canShare && navigator.canShare({ files: [file] })) {
+             await navigator.share({ files: [file], title: 'Symptom Report' });
+          }
+        } catch (e) {
+          console.warn("Share failed, but file should be downloaded.", e);
+        }
+      } else {
+        // 3. For Desktop, also open in new tab for immediate viewing if not blocked
+        try {
+          const blobUrl = URL.createObjectURL(pdf.output('blob'));
+          window.open(blobUrl, '_blank');
+        } catch (e) {
+          console.warn("Viewer blocked, but file should be downloaded.");
+        }
+      }
     }
     return true;
   } catch (error) {

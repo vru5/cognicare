@@ -7,7 +7,7 @@ import { PILLARS_CONFIG } from "../../constants/pillars";
 import { PillarConfig } from "../../types/report";
 import { ComparisonPageProps } from "../../types/props";
 
-import { SUBTITLE_COMPARISON_REPORT, LABEL_COMPARISON, TEXT_VS, LABEL_SINCE, LABEL_CHANGE, LABEL_WORSENED, LABEL_IMPROVED, LABEL_STABLE, LABEL_PILLAR_OVERVIEW, TITLE_COMPARATIVE_BREAKDOWN, LABEL_MOST_IMPROVED, LABEL_BIGGEST_WORSENING } from "../../constants/report";
+import { TITLE_HEALTH_MONITOR, LABEL_COMPARISON, TEXT_VS, LABEL_SINCE, LABEL_CHANGE, LABEL_WORSENED, LABEL_IMPROVED, LABEL_STABLE, LABEL_PILLAR_OVERVIEW, TITLE_COMPARATIVE_BREAKDOWN, LABEL_MOST_IMPROVED, LABEL_BIGGEST_WORSENING } from "../../constants/report";
 
 export const ComparisonPage: React.FC<ComparisonPageProps> = ({ data }) => {
   const { patient, period, comparison, summary } = data;
@@ -15,8 +15,8 @@ export const ComparisonPage: React.FC<ComparisonPageProps> = ({ data }) => {
   return (
     <PageShell pageNum={3} totalPages={5} patientName={patient.name} patientId={patient.id}>
       <ReportHeader
-        title="COGNICARE"
-        subtitle={`${SUBTITLE_COMPARISON_REPORT} — ${period.dateA} ${TEXT_VS} ${period.dateB}`}
+        title={TITLE_HEALTH_MONITOR}
+        subtitle={`Single Day Analysis`}
         patient={patient}
         summary={summary}
         periodInfo={{
@@ -38,7 +38,9 @@ export const ComparisonPage: React.FC<ComparisonPageProps> = ({ data }) => {
           <div style={{ flex: 1, textAlign: 'center', padding: '16px 10px', borderRight: '1px solid #e8e4dc' }}>
             <div style={{ fontSize: 9, color: '#999', textTransform: 'uppercase', letterSpacing: 2, fontWeight: 800, marginBottom: 4 }}>{period.dateA}</div>
             <div style={{ fontSize: 28, fontWeight: 900, color: '#1a1a2e', lineHeight: 1 }}>{comparison.totalA}</div>
-            <div style={{ fontSize: 10, color: '#999', marginTop: 4 }}>{comparison.logsCountA} log{comparison.logsCountA !== 1 ? 's' : ''}</div>
+            <div style={{ fontSize: 10, color: '#999', marginTop: 4 }}>
+              <strong>{comparison.patientLogsA}P</strong> / <strong>{comparison.carerLogsA}C</strong>
+            </div>
           </div>
           <div style={{ flex: 1, textAlign: 'center', padding: '16px 10px', borderRight: '1px solid #e8e4dc' }}>
             <div style={{ fontSize: 9, color: '#999', textTransform: 'uppercase', letterSpacing: 2, fontWeight: 800, marginBottom: 8 }}>{LABEL_CHANGE}</div>
@@ -57,16 +59,45 @@ export const ComparisonPage: React.FC<ComparisonPageProps> = ({ data }) => {
           <div style={{ flex: 1, textAlign: 'center', padding: '16px 10px' }}>
             <div style={{ fontSize: 9, color: '#999', textTransform: 'uppercase', letterSpacing: 2, fontWeight: 800, marginBottom: 4 }}>{period.dateB}</div>
             <div style={{ fontSize: 28, fontWeight: 900, color: '#c0674a', lineHeight: 1 }}>{comparison.totalB}</div>
-            <div style={{ fontSize: 10, color: '#999', marginTop: 4 }}>{comparison.logsCountB} log{comparison.logsCountB !== 1 ? 's' : ''}</div>
+            <div style={{ fontSize: 10, color: '#999', marginTop: 4 }}>
+              <strong>{comparison.patientLogsB}P</strong> / <strong>{comparison.carerLogsB}C</strong>
+            </div>
           </div>
         </div>
 
         <div style={{ display: 'flex', gap: 30, marginBottom: 28 }}>
           <div style={{ flex: '0 0 220px' }}>
             <div style={{ fontSize: 9, fontWeight: 800, letterSpacing: 2, textTransform: 'uppercase', color: '#999', marginBottom: 12 }}>{LABEL_PILLAR_OVERVIEW}</div>
-            <PillarRadar scoresA={comparison.scoresA} scoresB={comparison.scoresB} />
+            <PillarRadar 
+              scoresA={comparison.scoresA} 
+              scoresB={comparison.scoresB} 
+              patientScoresA={comparison.patientScoresA}
+              carerScoresA={comparison.carerScoresA}
+              patientScoresB={comparison.patientScoresB}
+              carerScoresB={comparison.carerScoresB}
+            />
           </div>
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 14 }}>
+            <div style={{ 
+              background: '#f8fafc', 
+              border: '1px solid #e2e8f0', 
+              borderRadius: 14, 
+              padding: '16px 20px', 
+              display: 'flex', 
+              gap: 24, 
+              justifyContent: 'center',
+              alignItems: 'center'
+            }}>
+              <div style={{ textAlign: 'center' }}>
+                <div style={{ fontSize: 8, letterSpacing: 1.5, textTransform: 'uppercase', color: '#64748b', fontWeight: 800, marginBottom: 2 }}>PATIENT</div>
+                <div style={{ fontSize: 16, fontWeight: 900, color: '#3d6b8f' }}>{(comparison.patientLogsA || 0) + (comparison.patientLogsB || 0)} logs</div>
+              </div>
+              <div style={{ width: 1, height: 28, background: '#e2e8f0' }} />
+              <div style={{ textAlign: 'center' }}>
+                <div style={{ fontSize: 8, letterSpacing: 1.5, textTransform: 'uppercase', color: '#64748b', fontWeight: 800, marginBottom: 2 }}>CARER</div>
+                <div style={{ fontSize: 16, fontWeight: 900, color: '#2ecc71' }}>{(comparison.carerLogsA || 0) + (comparison.carerLogsB || 0)} logs</div>
+              </div>
+            </div>
             <div style={{ background: '#fff5f2', border: '1px solid #f0c4b4', borderRadius: 14, padding: '16px 20px' }}>
               <div style={{ fontSize: 9, fontWeight: 800, color: '#c0674a', textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 6 }}>▲ {LABEL_BIGGEST_WORSENING}</div>
               <div style={{ fontSize: 16, fontWeight: 900, color: '#1a1a2e', marginBottom: 4 }}>{comparison.biggestWorsening.label}</div>
@@ -99,6 +130,10 @@ export const ComparisonPage: React.FC<ComparisonPageProps> = ({ data }) => {
             const isWorsening = valB > valA;
             const displayDiff = isImprovement ? +(valA - valB).toFixed(1) : isWorsening ? -(valB - valA).toFixed(1) : 0;
             const diffColor = isImprovement ? '#16a34a' : isWorsening ? '#dc2626' : '#94a3b8';
+            const pCountLeft = valA >= valB ? (comparison.patientPillarLogsA[p.key]||0) : (comparison.patientPillarLogsB[p.key]||0);
+            const cCountLeft = valA >= valB ? (comparison.carerPillarLogsA[p.key]||0) : (comparison.carerPillarLogsB[p.key]||0);
+            const pCountRight = valA >= valB ? (comparison.patientPillarLogsB[p.key]||0) : (comparison.patientPillarLogsA[p.key]||0);
+            const cCountRight = valA >= valB ? (comparison.carerPillarLogsB[p.key]||0) : (comparison.carerPillarLogsA[p.key]||0);
 
             return (
               <div key={p.key} className="comp-pillar-card" style={{ padding: '16px 20px' }}>
@@ -117,17 +152,24 @@ export const ComparisonPage: React.FC<ComparisonPageProps> = ({ data }) => {
                     {displayDiff > 0 ? `+${displayDiff}` : displayDiff < 0 ? displayDiff : LABEL_STABLE.toLowerCase()}
                   </div>
                 </div>
-                <div style={{ display: 'flex', gap: 12, fontSize: 10, color: '#666', alignItems: 'center' }}>
+                <div style={{ display: "flex", gap: 12, fontSize: 10, color: '#666', alignItems: 'center', marginBottom: 6 }}>
                   <div style={{ display: 'flex', flexDirection: 'column' }}>
                     <span style={{ fontSize: 8, textTransform: 'uppercase', color: '#999' }}>{labelLeft}</span>
-                    <strong style={{ fontSize: 13, color: '#1a1a2e' }}>{valLeft}</strong>
+                    <strong style={{ fontSize: 13, color: '#1a1a2e' }}>P:{pCountLeft} / C:{cCountLeft}</strong>
+                    <div style={{ fontSize: 8, color: '#999', marginTop: 1, opacity: 0.8 }}>
+                      Severity: {valLeft}
+                    </div>
                   </div>
-                  <ChevronRight size={12} color="#ccc" style={{ marginTop: 8 }} />
+                  <ChevronRight size={12} color="#ccc" style={{ marginTop: 2 }} />
                   <div style={{ display: 'flex', flexDirection: 'column' }}>
                     <span style={{ fontSize: 8, textTransform: 'uppercase', color: '#999' }}>{labelRight}</span>
-                    <strong style={{ fontSize: 13, color: '#1a1a2e' }}>{valRight}</strong>
+                    <strong style={{ fontSize: 13, color: '#1a1a2e' }}>P:{pCountRight} / C:{cCountRight}</strong>
+                    <div style={{ fontSize: 8, color: '#999', marginTop: 1, opacity: 0.8 }}>
+                      Severity: {valRight}
+                    </div>
                   </div>
                 </div>
+
               </div>
             );
           })}

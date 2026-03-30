@@ -55,3 +55,18 @@ export async function updateDoctorFormData(patientId: string, data: any) {
     return false;
   }
 }
+
+export async function gradeHistoryRisk(history: any) {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/export/grade-history`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ history }),
+    });
+    const result = await response.json();
+    return result.success ? result : null;
+  } catch (error) {
+    console.error("Error grading history:", error);
+    return null;
+  }
+}

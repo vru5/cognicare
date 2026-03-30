@@ -11,6 +11,7 @@ import { TITLE_HEALTH_MONITOR, SUBTITLE_SYMPTOM_ANALYSIS, LABEL_DIAGNOSIS_DATE, 
 
 export const SummaryPage: React.FC<SummaryPageProps> = ({ data }) => {
   const { patient, overall, summary } = data;
+  const { patientPillarLogs, carerPillarLogs, patientMonthlyLogs, carerMonthlyLogs } = overall;
 
   return (
     <PageShell pageNum={1} totalPages={5} patientName={patient.name} patientId={patient.id}>
@@ -32,8 +33,12 @@ export const SummaryPage: React.FC<SummaryPageProps> = ({ data }) => {
           boxShadow: '0 4px 12px rgba(0,0,0,0.03)'
         }}>
           <div style={{ flex: 1, textAlign: 'center', padding: '20px 10px', borderRight: '1px solid #f0ece6' }}>
-            <div style={{ fontSize: 9, color: '#999', textTransform: 'uppercase', letterSpacing: 2, fontWeight: 800, marginBottom: 8 }}>{LABEL_DIAGNOSIS_DATE}</div>
-            <div style={{ fontSize: 18, fontWeight: 900, color: '#1a1a2e' }}>{summary.diagnosisDate}</div>
+            <div style={{ fontSize: 9, color: '#999', textTransform: 'uppercase', letterSpacing: 2, fontWeight: 800, marginBottom: 8 }}>PATIENT LOGS</div>
+            <div style={{ fontSize: 18, fontWeight: 900, color: '#1a1a2e' }}>{summary.patientLogsCount}</div>
+          </div>
+          <div style={{ flex: 1, textAlign: 'center', padding: '20px 10px', borderRight: '1px solid #f0ece6' }}>
+            <div style={{ fontSize: 9, color: '#999', textTransform: 'uppercase', letterSpacing: 2, fontWeight: 800, marginBottom: 8 }}>CARER LOGS</div>
+            <div style={{ fontSize: 18, fontWeight: 900, color: '#1a1a2e' }}>{summary.carerLogsCount}</div>
           </div>
           <div style={{ flex: 1, textAlign: 'center', padding: '20px 10px', borderRight: '1px solid #f0ece6' }}>
             <div style={{ fontSize: 9, color: '#999', textTransform: 'uppercase', letterSpacing: 2, fontWeight: 800, marginBottom: 8 }}>{LABEL_TOTAL_LOGS}</div>
@@ -54,7 +59,13 @@ export const SummaryPage: React.FC<SummaryPageProps> = ({ data }) => {
           {TEXT_BURDEN_DESCRIPTION} {summary.diagnosisDate}.
         </div>
 
-        <DoughnutChart averages={overall.pillarAvg} />
+        <DoughnutChart 
+          averages={overall.pillarAvg} 
+          patientPillarLogs={patientPillarLogs}
+          carerPillarLogs={carerPillarLogs}
+        />
+
+        {/* The Overall Symptom Burden section was removed as per user feedback to focus on monthly trends and log counts in the table below */}
 
         <h2 className="section-title" style={{ marginTop: 40 }}>{TITLE_TRENDS_BY_PILLAR}</h2>
         <div className="trend-table" style={{ marginBottom: 30 }}>
@@ -71,15 +82,33 @@ export const SummaryPage: React.FC<SummaryPageProps> = ({ data }) => {
               </div>
               {overall.months.map((_: string, j: number) => {
                 const value = overall.monthlyTrend[p.key]?.[j];
+                const pCount = patientMonthlyLogs?.[p.key]?.[j] || 0;
+                const cCount = carerMonthlyLogs?.[p.key]?.[j] || 0;
+
                 return (
-                  <div key={j} style={{ flex: 1, textAlign: "center", fontSize: 11, fontWeight: 600, color: value != null ? "#444" : "#ccc" }}>
-                    {value != null ? value.toFixed(1) : "—"}
+                  <div key={j} style={{ flex: 1, textAlign: "center" }}>
+                    {value != null ? (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                        <span style={{ fontSize: 11, fontWeight: 700, color: "#444" }}>{value.toFixed(1)}</span>
+                        {(pCount > 0 || cCount > 0) && (
+                          <div style={{ fontSize: 8, color: '#999', opacity: 0.8 }}>
+                            {pCount > 0 && <span>P:{pCount}</span>}
+                            {pCount > 0 && cCount > 0 && <span style={{ margin: '0 1px' }}>/</span>}
+                            {cCount > 0 && <span>C:{cCount}</span>}
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <span style={{ fontSize: 11, color: "#ccc" }}>—</span>
+                    )}
                   </div>
                 );
               })}
               <div style={{ flex: "0 0 100px", display: "flex", justifyContent: "center" }}>
                 <SparkLine
                   trend={(overall.monthlyTrend[p.key] || []).slice(0, overall.months.length)}
+                  patientTrend={(overall.patientMonthlyTrend?.[p.key] || []).slice(0, overall.months.length)}
+                  carerTrend={(overall.carerMonthlyTrend?.[p.key] || []).slice(0, overall.months.length)}
                   color={p.color}
                 />
               </div>

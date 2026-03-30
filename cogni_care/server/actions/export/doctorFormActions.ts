@@ -315,3 +315,46 @@ export async function updateDoctorFormCacheAction(
         return { success: false, error: "Failed to update cache" };
     }
 }
+
+export async function gradeHistoryRiskAction(
+    history: any
+): Promise<{ success: boolean; historyScore: number; rationale: string }> {
+    const apiKey = (process.env.GEMINI_API_KEY || "").trim();
+    if (!apiKey) return { success: false, historyScore: 0, rationale: "API Key missing" };
+    
+    const genAI = new GoogleGenerativeAI(apiKey);
+    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+
+    const prompt = `You are a clinical neuro-specialist. Evaluate the following patient history responses for risk factors associated with Traumatic Encephalopathy Syndrome (TES).
+
+HISTORY DATA:
+- Stopped activities: ${history.stoppedChores || "None"}
+- Drinking/Alcohol: ${history.drinking || "None"}
+- Substances/Non-prescription: ${history.nonPrescription || "None"}
+- Diet: ${history.diet || "None"}
+- Family History: ${history.familyHistory || "None"}
+- Support Network: ${history.supportNetwork || "None"}
+
+TASK: 
+1. Assign a severity/risk score from 0 to 15. 
+2. IGNORE responses that clearly state "None", "No", "N/A", or "Denies". They should contribute 0 points.
+3. WEIGH "Stopped activities" and "Alcohol/Substance" concerns more heavily.
+4. Provide a very brief (1 sentence) clinical rationale.
+
+RESPOND ONLY IN VALID JSON:
+{ "historyScore": number, "rationale": "string" }`;
+
+    try {
+        const result = await model.generateContent(prompt);
+        const responseText = result.response.text().replace(/```json/g, "").replace(/```/g, "").trim();
+        const parsed = JSON.parse(responseText);
+        return { 
+            success: true, 
+            historyScore: Math.min(Math.max(parsed.historyScore || 0, 0), 15), 
+            rationale: parsed.rationale || "" 
+        };
+    } catch (err) {
+        console.error("Grade History Error:", err);
+        return { success: false, historyScore: 0, rationale: "AI evaluation failed" };
+    }
+}

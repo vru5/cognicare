@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef, useMemo } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { Activity } from "lucide-react";
 import MobilePageLayout from "@/components/shared/MobilePageLayout";
-import { getDoctorFormData, updateDoctorFormData } from "@/features/export/services/exportService";
+import { getDoctorFormData, updateDoctorFormData, gradeHistoryRisk } from "@/features/export/services/exportService";
 import { generatePdfFromElement } from "@/features/export/services/pdfService";
 import DocFormPDF from "./DocFormPDF";
 import { SeverityMeter } from "./SeverityMeter";
@@ -42,6 +42,8 @@ export default function DocFormView() {
   const [history, setHistory] = useState<HistoryData>(DEFAULT_HISTORY);
   const [concerns, setConcerns] = useState<Record<number, boolean>>({});
   const [patientData, setPatientData] = useState<PatientDetails | null>(null);
+  const [aiHistoryGrade, setAiHistoryGrade] = useState<number | null>(null);
+  const [isGrading, setIsGrading] = useState(false);
 
   const [isExporting, setIsExporting] = useState(false);
   const [showErrors, setShowErrors] = useState(false);
@@ -216,7 +218,7 @@ export default function DocFormView() {
 
                       {activeSection === "summary" && (
                         <div className="space-y-6">
-                          <SeverityMeter tes={tes} symptomChecks={symptomChecks} history={history} />
+                          <SeverityMeter tes={tes} symptomChecks={symptomChecks} history={history} aiHistoryGrade={aiHistoryGrade} />
                           <div className="bg-sky-50/50 text-card-foreground rounded-2xl border border-sky-100 p-6 shadow-sm">
                             <div className="text-[13px] font-black flex items-center mb-3 uppercase tracking-widest text-[#0ea5e9]">📋 Patient Summary & Next Steps</div>
                             <p className="text-[13px] leading-relaxed font-bold text-sky-800/70">The data above is ready for exporting. Click Download below to generate the clinical navigation report for your provider.</p>
@@ -242,10 +244,21 @@ export default function DocFormView() {
               <div className="flex gap-3">
                 {curIdx < SECTIONS.length - 1 ? (
                   <button 
-                    onClick={() => {
+                    onClick={async () => {
                         setShowErrors(false);
+                        const nextSec = SECTIONS[curIdx + 1].id;
+                        
+                        // Background AI Grading trigger
+                        if (nextSec === "concerns" && !isGrading) {
+                          setIsGrading(true);
+                          gradeHistoryRisk(history).then(res => {
+                            if (res?.success) setAiHistoryGrade(res.historyScore);
+                            setIsGrading(false);
+                          }).catch(() => setIsGrading(false));
+                        }
+
                         window.scrollTo(0, 0);
-                        setActiveSection(SECTIONS[curIdx + 1].id);
+                        setActiveSection(nextSec);
                     }} 
                     disabled={!isCurrentSectionValid}
                     className={`px-10 py-3 rounded-xl shadow-lg font-black text-sm uppercase tracking-widest transition-all ${isCurrentSectionValid ? "bg-[#0ea5e9] text-white hover:opacity-95 active:scale-[0.98] shadow-blue-200" : "bg-slate-100 text-slate-300 cursor-not-allowed border border-slate-200 shadow-none"}`}
@@ -267,10 +280,10 @@ export default function DocFormView() {
         </div>
       </MobilePageLayout>
 
-      <div className="fixed overflow-hidden -z-50 pointer-events-none opacity-0 left-[200vw] top-0">
+      <div style={{ position: "absolute", top: "-10000px", left: 0, width: "794px" }}>
         {patientData && (
-          <div ref={pdfRef} className="bg-white text-black print-mode-wrapper w-[800px] font-serif">
-            <DocFormPDF data={{ patient: patientData as PatientDetails, tes, symptoms: symptomChecks, history, concerns }} />
+          <div ref={pdfRef} className="bg-white text-black print-mode-wrapper w-[794px] font-serif">
+            <DocFormPDF data={{ patient: patientData as PatientDetails, tes, symptoms: symptomChecks, history, concerns, aiHistoryGrade }} />
           </div>
         )}
       </div>

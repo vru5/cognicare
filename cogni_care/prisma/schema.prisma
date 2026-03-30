@@ -129,3 +129,15 @@ model DoctorFormCache {
 
   @@map("doctor_form_cache")
 }
+
+model ProfessionalReportCache {
+  patientId String
+  dateA     String
+  dateB     String
+  hash      String
+  data      Json
+  updatedAt DateTime @updatedAt
+
+  @@id([patientId, dateA, dateB])
+  @@map("professional_report_cache")
+}

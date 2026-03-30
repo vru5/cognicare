@@ -2,7 +2,7 @@ import React from "react";
 import { TesData, SymptomCheck, HistoryData, SeverityMeterProps } from "../types/docForm";
 import { SeverityGauge } from "./SeverityGauge";
 
-export const SeverityMeter: React.FC<SeverityMeterProps> = ({ tes, symptomChecks, history }) => {
+export const SeverityMeter: React.FC<SeverityMeterProps> = ({ tes, symptomChecks, history, aiHistoryGrade }) => {
   const presentCount = Object.values(symptomChecks).filter((s) => s.present).length;
   const worseCount = Object.values(symptomChecks).filter((s) => s.worse).length;
   const improvingCount = Object.values(symptomChecks).filter((s) => s.improving).length;
@@ -21,7 +21,8 @@ export const SeverityMeter: React.FC<SeverityMeterProps> = ({ tes, symptomChecks
   const supMet = [tes.sup_decline, tes.sup_delayed, tes.sup_impulsivity, tes.sup_anxiety, tes.sup_apathy, tes.sup_paranoia, tes.sup_suicidality, tes.sup_headache, tes.sup_motor].filter(Boolean).length;
   const tesScore = Math.min(Math.round(rhiMet * 5 + coreMet * 9 + Math.min(supMet * 4, 20) + (tes.symptoms_12months ? 8 : 0)), 55);
 
-  const totalScore = Math.min(symptomScore + historyScore + tesScore, 100);
+  const historyFinalScore = aiHistoryGrade !== null && aiHistoryGrade !== undefined ? aiHistoryGrade : historyScore;
+  const totalScore = Math.min(symptomScore + historyFinalScore + tesScore, 100);
 
   let level, levelCol, urgency;
   if (totalScore >= 75) {
@@ -40,7 +41,13 @@ export const SeverityMeter: React.FC<SeverityMeterProps> = ({ tes, symptomChecks
 
   const sources = [
     { label: "Symptoms", score: symptomScore, max: 30, color: "#4a6b82", desc: `${presentCount} present, ${worseCount} worsening` },
-    { label: "History", score: historyScore, max: 15, color: "#e5b05c", desc: `${filledHistory}/7 fields` },
+    { 
+      label: "History", 
+      score: historyFinalScore, 
+      max: 15, 
+      color: "#e5b05c", 
+      desc: aiHistoryGrade !== null ? "✦ AI Evaluated Content" : `${filledHistory}/7 fields` 
+    },
     { label: "TES", score: tesScore, max: 55, color: "#c96d54", desc: `RHI:${rhiMet} Core:${coreMet} Sup:${supMet}` },
   ];
 

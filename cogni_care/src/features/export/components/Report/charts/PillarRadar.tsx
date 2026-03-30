@@ -3,7 +3,14 @@ import { PILLARS_CONFIG } from "../../../constants/pillars";
 import { PillarConfig } from "../../../types/report";
 import { PillarRadarProps } from "../../../types/props";
 
-export const PillarRadar: React.FC<PillarRadarProps> = ({ scoresA, scoresB }) => {
+export const PillarRadar: React.FC<PillarRadarProps> = ({ 
+  scoresA, 
+  scoresB,
+  patientScoresA,
+  carerScoresA,
+  patientScoresB,
+  carerScoresB
+}) => {
   const cx = 130; 
   const cy = 130;
   const r = 70;
@@ -32,6 +39,11 @@ export const PillarRadar: React.FC<PillarRadarProps> = ({ scoresA, scoresB }) =>
   const scaleA = PILLARS_CONFIG.map((p: PillarConfig) => (scoresA[p.key] || 0) / 10);
   const scaleB = PILLARS_CONFIG.map((p: PillarConfig) => (scoresB[p.key] || 0) / 10);
   
+  const pScaleA = patientScoresA ? PILLARS_CONFIG.map((p: PillarConfig) => (patientScoresA[p.key] || 0) / 10) : [];
+  const cScaleA = carerScoresA ? PILLARS_CONFIG.map((p: PillarConfig) => (carerScoresA[p.key] || 0) / 10) : [];
+  const pScaleB = patientScoresB ? PILLARS_CONFIG.map((p: PillarConfig) => (patientScoresB[p.key] || 0) / 10) : [];
+  const cScaleB = carerScoresB ? PILLARS_CONFIG.map((p: PillarConfig) => (carerScoresB[p.key] || 0) / 10) : [];
+  
   return (
     <div style={{ width: 260, height: 260, margin: '0 auto' }}>
       <svg width="100%" height="100%" viewBox="0 0 260 260">
@@ -50,8 +62,16 @@ export const PillarRadar: React.FC<PillarRadarProps> = ({ scoresA, scoresB }) =>
           return <line key={i} x1={cx} y1={cy} x2={p.x} y2={p.y} stroke="#e0dcd6" strokeWidth={0.7} />; 
         })}
         
-        <path d={toPath(scaleA.map((s: number, i: number) => point(i, s)))} fill="#3d6b8f" fillOpacity={0.15} stroke="#3d6b8f" strokeWidth={1.5} />
-        <path d={toPath(scaleB.map((s: number, i: number) => point(i, s)))} fill="#c0674a" fillOpacity={0.25} stroke="#c0674a" strokeWidth={2.5} />
+        {/* Patient / Carer Polygons for Date A (Subtle) */}
+        {patientScoresA && <path d={toPath(pScaleA.map((s, i) => point(i, s)))} fill="none" stroke="#3d6b8f" strokeWidth={0.8} strokeDasharray="2,1" opacity={0.4} />}
+        {carerScoresA && <path d={toPath(cScaleA.map((s, i) => point(i, s)))} fill="none" stroke="#3d6b8f" strokeWidth={0.8} strokeDasharray="1,1" opacity={0.3} />}
+
+        {/* Patient / Carer Polygons for Date B (Subtle) */}
+        {patientScoresB && <path d={toPath(pScaleB.map((s, i) => point(i, s)))} fill="none" stroke="#c0674a" strokeWidth={1} strokeDasharray="3,1" opacity={0.5} />}
+        {carerScoresB && <path d={toPath(cScaleB.map((s, i) => point(i, s)))} fill="none" stroke="#c0674a" strokeWidth={1} strokeDasharray="2,1" opacity={0.4} />}
+
+        <path d={toPath(scaleA.map((s: number, i: number) => point(i, s)))} fill="#3d6b8f" fillOpacity={0.12} stroke="#3d6b8f" strokeWidth={1.2} />
+        <path d={toPath(scaleB.map((s: number, i: number) => point(i, s)))} fill="#c0674a" fillOpacity={0.2} stroke="#c0674a" strokeWidth={2.2} />
         
         {PILLARS_CONFIG.map((p: PillarConfig, i: number) => {
           // Precise positioning

@@ -107,6 +107,7 @@ export interface SeverityMeterProps {
   tes: TesData;
   symptomChecks: Record<string, SymptomCheck>;
   history: HistoryData;
+  aiHistoryGrade?: number | null;
 }
 
 export interface DocFormHeaderProps {

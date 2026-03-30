@@ -13,7 +13,9 @@ export const DocFormHeader: React.FC<DocFormHeaderProps> = ({ title, patient }) 
       color: "#fff", 
       display: "flex", 
       justifyContent: "space-between", 
-      alignItems: "center" 
+      alignItems: "center",
+      width: "100%",
+      boxSizing: "border-box"
     }}>
       <div>
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>

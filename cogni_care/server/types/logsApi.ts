@@ -15,6 +15,7 @@ export interface Analysis {
     sleepSeverity?: number | null;
     social?: string | null;
     socialSeverity?: number | null;
+    isFromCarer?: boolean;
 } 
 
 export interface SymptomRecord extends Analysis {
