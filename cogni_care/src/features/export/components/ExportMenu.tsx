@@ -8,7 +8,7 @@ import { generatePdfFromElement } from "../services/pdfService";
 import { ReportTemplate } from "./ReportTemplate";
 import { ReportData } from "../types/report";
 import { ExportMenuProps } from "../types/props";
-import { MENU_LABEL_EXPORT, MENU_STATUS_EXPORTING, MENU_STATUS_ANALYZING, MENU_STATUS_CACHED, MENU_STATUS_CREATING_PDF, MENU_STATUS_COMPLETE, MENU_ITEM_DOWNLOAD_AI, MENU_ITEM_EXPORT_FORM, ERROR_FETCH_DATA, ERROR_PDF_CAPTURE, ERROR_GENERATE_REPORT } from "../constants/menu";
+import { EXPORT_STRINGS } from "../constants/exportStrings";
 
 export default function ExportMenu({ patientId, dateA, dateB, hasOneMonthData }: ExportMenuProps) {
   const [isOpen, setIsOpen] = useState(false);
@@ -48,23 +48,23 @@ export default function ExportMenu({ patientId, dateA, dateB, hasOneMonthData }:
 
       // 3. Skip API call if we already have the data for this specific selection
       if (data && cachedKey === cacheKey) {
-        setGeneratingStatus(MENU_STATUS_CACHED);
+        setGeneratingStatus(EXPORT_STRINGS.MENU.STATUS_CACHED);
       } else {
-        setGeneratingStatus(MENU_STATUS_ANALYZING);
+        setGeneratingStatus(EXPORT_STRINGS.MENU.STATUS_ANALYZING);
         data = await getProfessionalReportData(patientId, dateA, dateB);
-        if (!data) throw new Error(ERROR_FETCH_DATA);
-        
+        if (!data) throw new Error(EXPORT_STRINGS.MENU.ITEM_DOWNLOAD_AI); // Generic error if fetch fails
+
         setReportData(data);
         setCachedKey(cacheKey);
       }
-      
-      setGeneratingStatus(MENU_STATUS_CREATING_PDF);
+
+      setGeneratingStatus(EXPORT_STRINGS.MENU.STATUS_CREATING_PDF);
 
       setTimeout(async () => {
         try {
           if (reportRef.current && data) {
             await generatePdfFromElement(
-              reportRef.current, 
+              reportRef.current,
               `Symptom-Report-${data.patient.id}-${format(new Date(), "dd-MM-yyyy")}.pdf`,
               setGeneratingStatus
             );
@@ -72,17 +72,17 @@ export default function ExportMenu({ patientId, dateA, dateB, hasOneMonthData }:
         } catch (innerError: unknown) {
           console.error("PDF Capture Error:", innerError);
           const msg = innerError instanceof Error ? innerError.message : String(innerError);
-          alert(`${ERROR_PDF_CAPTURE}: ${msg}. Please try again.`);
+          alert(`${EXPORT_STRINGS.MENU.ERROR_PDF_CAPTURE}: ${msg}. Please try again.`);
         } finally {
           setIsGenerating(false);
-          setGeneratingStatus(MENU_STATUS_COMPLETE);
+          setGeneratingStatus(EXPORT_STRINGS.MENU.STATUS_COMPLETE);
           setTimeout(() => setGeneratingStatus(""), 3000);
         }
       }, 1000);
 
     } catch (error) {
       console.error("Export Error:", error);
-      alert(ERROR_GENERATE_REPORT);
+      alert(EXPORT_STRINGS.MENU.ITEM_DOWNLOAD_AI); // Generic error
       setIsGenerating(false);
       setGeneratingStatus("");
     }
@@ -90,15 +90,15 @@ export default function ExportMenu({ patientId, dateA, dateB, hasOneMonthData }:
 
   const menuItems = [
     {
-      label: MENU_ITEM_DOWNLOAD_AI,
+      label: EXPORT_STRINGS.MENU.ITEM_DOWNLOAD_AI,
       icon: Download,
       onClick: handleProfessionalDownload,
     },
     {
-      label: MENU_ITEM_EXPORT_FORM,
+      label: EXPORT_STRINGS.MENU.ITEM_EXPORT_FORM,
       icon: FileText,
       disabled: !hasOneMonthData,
-      tooltip: !hasOneMonthData ? "Requires 1 month of logs" : undefined,
+      tooltip: !hasOneMonthData ? EXPORT_STRINGS.MENU.TOOLTIP_LOGS : undefined,
       onClick: () => {
         setIsOpen(false);
         router.push(`/insights/doc-form?patientId=${patientId}`);
@@ -117,14 +117,14 @@ export default function ExportMenu({ patientId, dateA, dateB, hasOneMonthData }:
           isGenerating && "opacity-80 cursor-wait"
         )}
       >
-        {isGenerating || (generatingStatus === MENU_STATUS_COMPLETE) ? (
+        {isGenerating || (generatingStatus === EXPORT_STRINGS.MENU.STATUS_COMPLETE) ? (
           <>
             {isGenerating && <Loader2 className="w-4 h-4 animate-spin" />}
-            <span>{generatingStatus || MENU_STATUS_EXPORTING}</span>
+            <span>{generatingStatus || EXPORT_STRINGS.MENU.STATUS_EXPORTING}</span>
           </>
         ) : (
           <>
-            <span>{MENU_LABEL_EXPORT}</span>
+            <span>{EXPORT_STRINGS.MENU.LABEL_EXPORT}</span>
             <ChevronDown className={cn("w-4 h-4 transition-transform duration-200", isOpen && "rotate-180")} />
           </>
         )}
@@ -140,8 +140,8 @@ export default function ExportMenu({ patientId, dateA, dateB, hasOneMonthData }:
                 disabled={item.disabled}
                 className={cn(
                   "w-full flex items-center justify-between px-4 py-3 text-sm transition-colors text-left group",
-                  item.disabled 
-                    ? "opacity-50 cursor-not-allowed bg-slate-50" 
+                  item.disabled
+                    ? "opacity-50 cursor-not-allowed bg-slate-50"
                     : "text-slate-700 hover:bg-primary/5 hover:text-primary"
                 )}
               >
@@ -162,7 +162,7 @@ export default function ExportMenu({ patientId, dateA, dateB, hasOneMonthData }:
 
       {/* Template for PDF capture - keep in DOM but invisible to user */}
       {reportData && (
-        <div 
+        <div
           style={{ position: "fixed", top: 0, left: "-9999px", opacity: 0, pointerEvents: "none", zIndex: -100 }}
         >
           <ReportTemplate ref={reportRef} data={reportData} />

@@ -37,7 +37,7 @@ export interface LogSummaryCard extends Record<SymptomPillar, string | null | un
     carerName?: string;
     type: "patient" | "carer";
     message?: string; // Optional message from AI analysis
-    [key: string]: any;
+    [key: string]: unknown;
 };
 
 export type MoodPillarsConfig = Partial<Record<SymptomPillar, Config>>;

@@ -4,18 +4,28 @@ import { mask } from "@yellowsakura/js-pii-mask";
 import { AppError } from "server/types/logsApi.js";
 import { format, differenceInMonths, differenceInDays } from "date-fns";
 import crypto from "crypto";
+import { HISTORY_GRADING_PROMPT, DOCTOR_FORM_PREFILL_PROMPT } from "../../constants/prompts.js";
+import { 
+    DoctorFormData, 
+    DoctorFormResponse, 
+    SymptomMetrics, 
+    SymptomMetric,
+    SymptomCheck,
+    SYMPTOM_ROWS,
+    TesData
+} from "../../types/doctorForm.js";
+import { HistoryData } from "../../../src/features/doc-form/types/docForm.js"; // HistoryData is complex, importing from src for now as it's purely types
 
 export async function generateDoctorFormDataAction(
   patientId: string
-): Promise<any> {
+): Promise<DoctorFormResponse> {
   const apiKey = (process.env.GEMINI_API_KEY || "").trim();
   const genAI = new GoogleGenerativeAI(apiKey);
   const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
   try {
     // 1. Fetch Patient Info
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const patientProfile = await (prisma as any).profilePatient.findUnique({
+    const patientProfile = await prisma.profilePatient.findUnique({
       where: { id: patientId },
       include: { 
         user: true,
@@ -60,22 +70,23 @@ export async function generateDoctorFormDataAction(
     const currentHash = crypto.createHash("md5").update(logsContent).digest("hex");
 
     // 2.2 Check Persistent DB Cache
-    const cached = await (prisma as any).doctorFormCache.findUnique({
+    const cached = await prisma.doctorFormCache.findUnique({
         where: { patientId }
     });
 
     if (cached && cached.hash === currentHash) {
-      console.log(`[DoctorForm] DB Cache HIT for ${patientId}. Keys:`, Object.keys(cached.data as any));
-      const hitData = {
+      const cachedData = cached.data as unknown as DoctorFormData;
+      console.log(`[DoctorForm] DB Cache HIT for ${patientId}. Keys:`, Object.keys(cachedData));
+      const hitData: DoctorFormResponse = {
         success: true,
         data: {
-            ...(cached.data as any),
+            ...cachedData,
             tes: {
-                ...((cached.data as any).tes || {}),
-                name: (cached.data as any).tes?.name || patientName // Safety re-inject
+                ...(cachedData.tes || {}),
+                name: cachedData.tes?.name || patientName // Safety re-inject
             },
             patientDetails: {
-                ...(cached.data as any).patientDetails,
+                ...cachedData.patientDetails,
                 evaluationDate: format(new Date(), "dd/MM/yyyy") // Always use current eval date
             }
         }
@@ -85,7 +96,7 @@ export async function generateDoctorFormDataAction(
     console.log(`[DoctorForm] DB Cache MISS for ${patientId} (New data or expired)`);
 
     // 3. Process Averages and Trends
-    const symptomMetrics = {
+    const symptomMetrics: SymptomMetrics = {
       irritability: { avgScore: 0, trend: "staying_same", durationMonths: 0 },
       depression: { avgScore: 0, trend: "staying_same", durationMonths: 0 },
       anxiety: { avgScore: 0, trend: "staying_same", durationMonths: 0 },
@@ -101,24 +112,13 @@ export async function generateDoctorFormDataAction(
       fatigue: { avgScore: 0, trend: "staying_same", durationMonths: 0 },
     };
 
-    const SYMPTOM_ROWS = [
-      "Quick Temper, Anger, Irritability", "Physical & Verbal Outbursts", "Impulsivity, Lack of Self Control",
-      "Inappropriate Behavior, Aggressiveness", "Addictive Behavior", "Memory Problems", "Poor Judgment",
-      "Trouble Concentrating & Learning", "Difficulty Following Verbal Exchanges", "Trouble Prioritizing, Planning & Organizing",
-      "Difficulty Putting Ideas on Paper", "Difficulty Reading", "Deficient Handwriting", "Depression, Feeling Hopeless, Helpless",
-      "Anxiety, Feeling of Doom", "Lack of Motivation, Initiative", "Feeling Worthless, Low Self Esteem", "Reclusiveness",
-      "Suicidal Thoughts", "Paranoia", "Apathy, Lack of Empathy", "Trouble Sleeping", "Frequent Headaches",
-      "Unexplained Localized Pain", "Muscle Spasms", "Slurred Speech", "Ringing in Ears", "Sensitivity to Light",
-      "Sensitivity to Noise", "Balance and Vertigo Issues", "Brain Fog", "Extreme Fatigue", "Short Term Memory Loss",
-      "Explosive Anger", "Extreme Depression", "Noise Sensitivity", "Light Sensitivity", "Loss in Vision Focus",
-      "Dark Thoughts", "Loss of Sense of Time",
-    ];
+
 
     // Calculate actual data based on the pillars (simplified approximation)
     // For a real app, you would parse the rawText to find specific symptoms,
     // but here we map pillars to key symptoms as best approximation.
-    const getAvg = (logs: any[], field: string) => {
-        const vals = logs.map(l => l[field] as number).filter(v => v > 0);
+    const getAvg = (logs: { physicalSeverity: number | null, moodSeverity: number | null, cognitiveSeverity: number | null, sleepSeverity: number | null, socialSeverity: number | null }[], field: string) => {
+        const vals = logs.map(l => (l as any)[field] as number).filter(v => v > 0);
         return vals.length > 0 ? +(vals.reduce((a, b) => a + b, 0) / vals.length).toFixed(1) : 0;
     };
 
@@ -172,50 +172,27 @@ export async function generateDoctorFormDataAction(
     // 4. Construct Prompt
     const maskedLogsText = allLogs.slice(0, 10).map(l => `[${format(new Date(l.createdAt), "dd/MM/yyyy")}]: ${mask(l.rawText || "")}`).join("\n");
 
-    const prompt = `You are a clinical assistant pre-filling a CTE TES assessment form from patient symptom log data.
-
-PATIENT:
-- Name: ${mask(patientName)}, Age: 47
-- Evaluation date: ${format(new Date(), "dd/MM/yyyy")}
-- Months since first log: ${monthsSinceFirst} (first log: ${format(diagnosisDate, "dd MMM yyyy")})
-- Contact sports: 0 years, Concussions recorded: 0
-- Recent logs (MASKED):
-${maskedLogsText}
-- Symptom scores (avg last month, 0-10):
-${Object.entries(symptomMetrics).map(([k,v])=>`  ${k}: ${v.avgScore}/10, trend:${v.trend}, duration:${v.durationMonths}mo`).join("\n")}
-
-RULES:
-1. Only fill fields you can DIRECTLY infer. Leave all others as "" or false.
-2. NEVER infer: military, biomarkers, imaging, family history, lifestyle, cte_likelihood.
-3. rhi_sports6=true only if years>=6. rhi_concussions4=true only if concussions>=4.
-4. core_cognitive=true if memory or focus >=6. core_mood=true if depression or anxiety >=6. core_behavioral=true if irritability >=7.
-5. sup_anxiety if anxiety>=5. sup_apathy if apathy>=5. sup_headache if headache>=5. sup_impulsivity if irritability>=7. sup_decline if months>=12.
-6. symptoms_12months: one factual sentence if months>=12, else "".
-7. subtype: "Cognitive" if only cognitive; "Behavioral/Mood" if only mood/behavioral; "Mixed" if both; else "".
-8. course: "Progressive" if 3+ symptoms getting_worse; "Stable" if none worsening; else "".
-9. Symptom checklist: Set "present" to true if avgScore > 0. 
-   CRITICAL: If "present" is true, YOU MUST also provide "duration" (exactly "recent" or "6months+") 
-   and "trend" (exactly "improving", "staying_same", or "getting_worse"). 
-   NEVER leave them empty if "present" is true.
-10. Ensure the output is valid JSON.
-
-Respond ONLY in valid JSON. Use this exact structure:
-{
-  "tes":{"name":"","evalDate":"","rhi_concussions4":false,"rhi_sports6":false,"rhi_military":false,"rhi_other":false,"rhi_notes":"","core_cognitive":false,"core_behavioral":false,"core_mood":false,"sup_decline":false,"sup_delayed":false,"sup_impulsivity":false,"sup_anxiety":false,"sup_apathy":false,"sup_paranoia":false,"sup_suicidality":false,"sup_headache":false,"sup_motor":false,"symptoms_12months":"","subtype":"","course":"","cte_likelihood":""},
-  "symptomChecks": ${JSON.stringify(Object.fromEntries(SYMPTOM_ROWS.map(s => [s, {present:false, duration:"", trend:""}])))}
-}`;
+    const prompt = DOCTOR_FORM_PREFILL_PROMPT(
+        patientName,
+        format(new Date(), "dd/MM/yyyy"),
+        monthsSinceFirst,
+        format(diagnosisDate, "dd MMM yyyy"),
+        maskedLogsText,
+        symptomMetrics,
+        SYMPTOM_ROWS
+    );
 
     // 5. Query Gemini
     const result = await model.generateContent(prompt);
     const responseText = result.response.text().replace(/```json/g, "").replace(/```/g, "").trim();
     
-    let parsedData: any = {};
+    let parsedData: { tes: Partial<TesData>, symptomChecks: Record<string, SymptomCheck> } = { tes: {}, symptomChecks: {} };
     try {
         parsedData = JSON.parse(responseText);
         
         // Post-process to ensure duration/trend are never empty if present is true
         if (parsedData.symptomChecks) {
-            Object.entries(parsedData.symptomChecks).forEach(([sym, val]: [string, any]) => {
+            Object.entries(parsedData.symptomChecks).forEach(([_, val]) => {
                 if (val.present) {
                     if (!val.duration || val.duration === "") val.duration = "recent";
                     if (!val.trend || val.trend === "") val.trend = "staying_same";
@@ -234,14 +211,14 @@ Respond ONLY in valid JSON. Use this exact structure:
         throw new Error("Invalid output from AI model");
     }
 
-    const finalResult = {
+    const finalResult: DoctorFormResponse = {
       success: true,
       data: {
         ...parsedData,
         tes: {
-          ...((parsedData as any).tes || {}),
-          name: (parsedData as any).tes?.name || patientName // Ensure name is always filled
-        },
+          ...(parsedData.tes || {}),
+          name: parsedData.tes?.name || patientName // Ensure name is always filled
+        } as TesData,
         patientDetails: {
           name: patientName,
           consultant: patientProfile.carers?.[0]?.carer?.user?.name || "",
@@ -253,11 +230,10 @@ Respond ONLY in valid JSON. Use this exact structure:
       }
     };
 
-    // 6. Persist to DB cache
     try {
-        await (prisma as any).doctorFormCache.upsert({
+        await prisma.doctorFormCache.upsert({
             where: { patientId },
-            update: { hash: currentHash, data: finalResult.data },
+            update: { hash: currentHash, data: finalResult.data as any },
             create: { patientId, hash: currentHash, data: finalResult.data as any }
         });
         console.log(`[DoctorForm] Cache SAVED for ${patientId}`);
@@ -275,8 +251,8 @@ Respond ONLY in valid JSON. Use this exact structure:
 
 export async function updateDoctorFormCacheAction(
     patientId: string,
-    data: any
-): Promise<any> {
+    data: DoctorFormData
+): Promise<{ success: boolean; error?: string }> {
     try {
         // 1. Fetch Logs to calculate the current hash
         // We use the same hash logic as the generator to ensure consistency
@@ -302,9 +278,9 @@ export async function updateDoctorFormCacheAction(
 
         // 2. Persist the manual override to the DB cache
         // Note: The 'data' passed here should match the structure { tes, symptomChecks, patientDetails }
-        await (prisma as any).doctorFormCache.upsert({
+        await prisma.doctorFormCache.upsert({
             where: { patientId },
-            update: { hash: currentHash, data },
+            update: { hash: currentHash, data: data as any },
             create: { patientId, hash: currentHash, data: data as any }
         });
 
@@ -317,7 +293,7 @@ export async function updateDoctorFormCacheAction(
 }
 
 export async function gradeHistoryRiskAction(
-    history: any
+    history: HistoryData
 ): Promise<{ success: boolean; historyScore: number; rationale: string }> {
     const apiKey = (process.env.GEMINI_API_KEY || "").trim();
     if (!apiKey) return { success: false, historyScore: 0, rationale: "API Key missing" };
@@ -325,24 +301,7 @@ export async function gradeHistoryRiskAction(
     const genAI = new GoogleGenerativeAI(apiKey);
     const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
-    const prompt = `You are a clinical neuro-specialist. Evaluate the following patient history responses for risk factors associated with Traumatic Encephalopathy Syndrome (TES).
-
-HISTORY DATA:
-- Stopped activities: ${history.stoppedChores || "None"}
-- Drinking/Alcohol: ${history.drinking || "None"}
-- Substances/Non-prescription: ${history.nonPrescription || "None"}
-- Diet: ${history.diet || "None"}
-- Family History: ${history.familyHistory || "None"}
-- Support Network: ${history.supportNetwork || "None"}
-
-TASK: 
-1. Assign a severity/risk score from 0 to 15. 
-2. IGNORE responses that clearly state "None", "No", "N/A", or "Denies". They should contribute 0 points.
-3. WEIGH "Stopped activities" and "Alcohol/Substance" concerns more heavily.
-4. Provide a very brief (1 sentence) clinical rationale.
-
-RESPOND ONLY IN VALID JSON:
-{ "historyScore": number, "rationale": "string" }`;
+    const prompt = HISTORY_GRADING_PROMPT(history);
 
     try {
         const result = await model.generateContent(prompt);

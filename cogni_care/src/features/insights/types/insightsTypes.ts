@@ -22,12 +22,17 @@ export interface ComparisonCardsProps {
   loading: boolean;
 }
 
+export interface SymptomDataPoint {
+  name: string;
+  score: number;
+}
+
 export interface SymptomBarChartProps {
-  data: { name: string; score: number }[];
+  data: SymptomDataPoint[];
   gradientId: string;
   gradientColors: { start: string; end: string };
-  selectedSymptom: any;
-  onSelectSymptom: (data: any) => void;
+  selectedSymptom: SymptomDataPoint | null;
+  onSelectSymptom: (data: SymptomDataPoint) => void;
   accentColor: string;
 }
 

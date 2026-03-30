@@ -74,16 +74,13 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
         console.log(`[NotificationProvider] Connecting to socket and joining room ${targetId}`);
         const socket = getSocket(targetId);
 
-        socket.on('new_notification', (payload: any) => {
+        socket.on('new_notification', (payload: Partial<NotificationRecord>) => {
             console.log('[NotificationProvider] Socket new_notification received:', payload);
             
-            // Construct a proper notification record if the backend didn't send a full one
-            // In a more complex app, the backend would save it to DB first and emit the record
-            // For now, if it's just a payload, we might need to refetch or merge
-            
-            // If the payload has the full record (id, title, etc.), use it
-            if (payload.id) {
-                setNotifications(prev => [payload, ...prev]);
+            // If the payload has the full record, use it
+            if (payload.id && payload.title && payload.body) {
+                const fullRecord = payload as NotificationRecord;
+                setNotifications(prev => [fullRecord, ...prev]);
                 setUnreadCount(prev => prev + 1);
             } else {
                 // If it's just a signal, refetch all

@@ -1,4 +1,4 @@
-import React from "react";
+import { SEVERITY_LEVELS } from "../constants/docFormConfig";
 
 const polarToCartesian = (centerX: number, centerY: number, radius: number, angleInDegrees: number) => {
   const angleInRadians = (angleInDegrees - 180) * Math.PI / 180.0;
@@ -34,10 +34,17 @@ export const SeverityGauge = ({ score }: { score: number }) => {
 
   return (
     <svg viewBox={`0 0 ${outerWidth} ${cy + 10}`} style={{ width: '100%', height: '100%', overflow: 'visible' }}>
-      <path d={describeArc(cx, cy, innerR, outerR, 0, 45)} fill="#51947b" />
-      <path d={describeArc(cx, cy, innerR, outerR, 45, 90)} fill="#4a6b82" />
-      <path d={describeArc(cx, cy, innerR, outerR, 90, 135)} fill="#e5b05c" />
-      <path d={describeArc(cx, cy, innerR, outerR, 135, 180)} fill="#c96d54" />
+      {SEVERITY_LEVELS.map((level, i) => {
+        const startAngle = i * 45;
+        const endAngle = (i + 1) * 45;
+        return (
+          <path 
+            key={level.id} 
+            d={describeArc(cx, cy, innerR, outerR, startAngle, endAngle)} 
+            fill={level.color} 
+          />
+        );
+      })}
       
       {/* Needle */}
       <g style={{ transform: `rotate(${(score / 100) * 180 - 90}deg)`, transformOrigin: `${cx}px ${cy}px`, transition: 'transform 1s cubic-bezier(0.4, 0, 0.2, 1)' }}>

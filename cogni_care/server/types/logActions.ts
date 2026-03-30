@@ -1,4 +1,5 @@
 import { Prisma } from "@prisma/client";
+import { SymptomRecord } from "./logsApi.js";
 
 export type CarerNoteWithUser = Prisma.CarerNoteGetPayload<{
     include: {
@@ -16,13 +17,13 @@ export interface PermissionCheckResult {
 
 export interface LogActionResponse {
     success: boolean;
-    log?: any; // Will replace with more specific types if needed, or use SymptomRecord
+    log?: SymptomRecord; // Replaced any with specific type
     error?: string;
 }
 
 export interface LogsActionResponse {
     success: boolean;
-    logs?: any[];
+    logs?: SymptomRecord[];
     restricted?: boolean;
     error?: string;
 }

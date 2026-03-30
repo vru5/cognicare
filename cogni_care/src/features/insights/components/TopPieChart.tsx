@@ -20,6 +20,15 @@ import {
   TAP_SLICE_DETAILS 
 } from "../constants/insightsConstants";
 
+interface CustomizedLabelProps {
+  cx: number;
+  cy: number;
+  midAngle: number;
+  innerRadius: number;
+  outerRadius: number;
+  percent: number;
+}
+
 const renderCustomizedLabel = ({
   cx,
   cy,
@@ -27,7 +36,7 @@ const renderCustomizedLabel = ({
   innerRadius,
   outerRadius,
   percent,
-}: any) => {
+}: CustomizedLabelProps) => {
   const RADIAN = Math.PI / 180;
   const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
   const x = cx + radius * Math.cos(-midAngle * RADIAN);
@@ -48,7 +57,7 @@ const renderCustomizedLabel = ({
 };
 
 export default function TopPieChart({ data }: TopPieChartProps) {
-  const [selected, setSelected] = useState<any>(null);
+  const [selected, setSelected] = useState<{ name: string; value: number } | null>(null);
 
   if (!data || data.length === 0) return null;
 

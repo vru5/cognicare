@@ -19,6 +19,7 @@ export interface Analysis {
 } 
 
 export interface SymptomRecord extends Analysis {
+    type?: "patient" | "carer";
     id: string;
     createdAt: Date | string;
     patientId: string;

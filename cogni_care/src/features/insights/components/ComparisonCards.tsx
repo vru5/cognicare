@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { format } from "date-fns";
-import { DailyAverage, ComparisonCardsProps } from "../types/insightsTypes";
+import { DailyAverage, ComparisonCardsProps, SymptomDataPoint } from "../types/insightsTypes";
 import { SYMPTOM_FULL_NAMES, VS_TEXT } from "../constants/insightsConstants";
 import SymptomBarChart from "./SymptomBarChart";
 import SymptomDatePicker from "./SymptomDatePicker";
@@ -25,8 +25,8 @@ export default function ComparisonCards({
   dataB,
   loading,
 }: ComparisonCardsProps) {
-  const [selectedA, setSelectedA] = useState<any>(null);
-  const [selectedB, setSelectedB] = useState<any>(null);
+  const [selectedA, setSelectedA] = useState<SymptomDataPoint | null>(null);
+  const [selectedB, setSelectedB] = useState<SymptomDataPoint | null>(null);
 
   const chartA = processRecharts(dataA);
   const chartB = processRecharts(dataB);

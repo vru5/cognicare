@@ -1,4 +1,5 @@
 import { TesData, HistoryData } from "../types/docForm";
+import { DOC_FORM_STRINGS } from "./docStrings";
 
 export const SECTIONS = [
   { id: "symptoms", icon: "✅", label: "Symptoms" },
@@ -8,67 +9,7 @@ export const SECTIONS = [
   { id: "summary", icon: "📊", label: "Summary" },
 ];
 
-export const SYMPTOM_ROWS = [
-  "Quick Temper, Anger, Irritability",
-  "Physical & Verbal Outbursts",
-  "Impulsivity, Lack of Self Control",
-  "Inappropriate Behavior, Aggressiveness",
-  "Addictive Behavior",
-  "Memory Problems",
-  "Poor Judgment",
-  "Trouble Concentrating & Learning",
-  "Difficulty Following Verbal Exchanges",
-  "Trouble Prioritizing, Planning & Organizing",
-  "Difficulty Putting Ideas on Paper",
-  "Difficulty Reading",
-  "Deficient Handwriting",
-  "Depression, Feeling Hopeless, Helpless",
-  "Anxiety, Feeling of Doom",
-  "Lack of Motivation, Initiative",
-  "Feeling Worthless, Low Self Esteem",
-  "Reclusiveness",
-  "Suicidal Thoughts",
-  "Paranoia",
-  "Apathy, Lack of Empathy",
-  "Trouble Sleeping",
-  "Frequent Headaches",
-  "Unexplained Localized Pain",
-  "Muscle Spasms",
-  "Slurred Speech",
-  "Ringing in Ears",
-  "Sensitivity to Light",
-  "Sensitivity to Noise",
-  "Balance and Vertigo Issues",
-  "Brain Fog",
-  "Extreme Fatigue",
-  "Short Term Memory Loss",
-  "Explosive Anger",
-  "Extreme Depression",
-  "Noise Sensitivity",
-  "Light Sensitivity",
-  "Loss in Vision Focus",
-  "Dark Thoughts",
-  "Loss of Sense of Time",
-];
 
-export const PILLARS = ["physical", "cognitive", "mood", "sleep", "social"];
-
-export const PILLAR_META = {
-  physical: { label: "Physical", color: "#ef4444", bg: "#fef2f2" },
-  cognitive: { label: "Cognitive", color: "#3b82f6", bg: "#eff6ff" },
-  mood: { label: "Mood", color: "#a855f7", bg: "#f3e8ff" },
-  sleep: { label: "Sleep", color: "#6366f1", bg: "#eef2ff" },
-  social: { label: "Social", color: "#22c55e", bg: "#f0fdf4" }
-} as Record<string, { label: string, color: string, bg: string }>;
-
-export const SYMPTOM_LIST = SYMPTOM_ROWS.map(sym => {
-  let pillar = "physical";
-  if (["Trouble Sleeping"].includes(sym)) pillar = "sleep";
-  else if (["Quick Temper, Anger, Irritability", "Depression, Feeling Hopeless, Helpless", "Anxiety, Feeling of Doom", "Feeling Worthless, Low Self Esteem", "Suicidal Thoughts", "Explosive Anger", "Extreme Depression", "Dark Thoughts"].includes(sym)) pillar = "mood";
-  else if (["Memory Problems", "Poor Judgment", "Trouble Concentrating & Learning", "Difficulty Following Verbal Exchanges", "Trouble Prioritizing, Planning & Organizing", "Difficulty Putting Ideas on Paper", "Difficulty Reading", "Deficient Handwriting", "Brain Fog", "Short Term Memory Loss", "Loss of Sense of Time"].includes(sym)) pillar = "cognitive";
-  else if (["Impulsivity, Lack of Self Control", "Inappropriate Behavior, Aggressiveness", "Addictive Behavior", "Lack of Motivation, Initiative", "Reclusiveness", "Paranoia", "Apathy, Lack of Empathy", "Physical & Verbal Outbursts"].includes(sym)) pillar = "social";
-  return { key: sym, label: sym, pillar };
-});
 
 export const CONCERN_ITEMS = [
   "Loud noises, heavy music, chaos, or crowded waiting areas are very disturbing",
@@ -101,9 +42,104 @@ export const GAUGE_CONFIG = {
   CX: 120, CY: 120, R: 100, IR: 68
 };
 
-export const GAUGE_SEGMENTS = [
-  { min: 0, max: 20, c: "#2e8b6e", lbl: "Low" },
-  { min: 20, max: 45, c: "#3d6b8f", lbl: "Mild" },
-  { min: 45, max: 75, c: "#e8a838", lbl: "Moderate" },
-  { min: 75, max: 100, c: "#c0674a", lbl: "High" },
+export const SEVERITY_LEVELS = [
+  { 
+    id: "low", 
+    label: DOC_FORM_STRINGS.SUMMARY.LEVEL_INSUFFICIENT, 
+    color: "#51947b", 
+    bg: "#f8f6f1",
+    textColorClass: "text-[#51947b]", 
+    minScore: 0, 
+    urgency: DOC_FORM_STRINGS.SUMMARY.URGENCY_INSUFFICIENT 
+  },
+  { 
+    id: "mild", 
+    label: DOC_FORM_STRINGS.SUMMARY.LEVEL_MILD, 
+    color: "#3d6b8f", 
+    bg: "#eef4f9",
+    textColorClass: "text-[#3d6b8f]", 
+    minScore: 25, 
+    urgency: DOC_FORM_STRINGS.SUMMARY.URGENCY_MILD 
+  },
+  { 
+    id: "moderate", 
+    label: DOC_FORM_STRINGS.SUMMARY.LEVEL_MODERATE, 
+    color: "#e8a838", 
+    bg: "#fdf6e7",
+    textColorClass: "text-[#e8a838]", 
+    minScore: 50, 
+    urgency: DOC_FORM_STRINGS.SUMMARY.URGENCY_MODERATE 
+  },
+  { 
+    id: "high", 
+    label: DOC_FORM_STRINGS.SUMMARY.LEVEL_HIGH, 
+    color: "#c0674a", 
+    bg: "#fdf1ed",
+    textColorClass: "text-[#c0674a]", 
+    minScore: 75, 
+    urgency: DOC_FORM_STRINGS.SUMMARY.URGENCY_HIGH 
+  },
 ];
+
+export const HISTORY_FIELDS: { key: keyof HistoryData; label: string }[] = [
+  { key: "stoppedChores", label: "Have you stopped chores/activities you used to do due to memory or thinking?" },
+  { key: "drinking", label: "Have you ever had drinking problems?" },
+  { key: "nonPrescription", label: "Are you taking any non prescription drugs?" },
+  { key: "diet", label: "What is your diet like?" },
+  { key: "familyHistory", label: "Is there family history of dementia or other neurological diseases (Alzheimer's, ALS, Parkinson's disease)?" },
+  { key: "supportNetwork", label: "What is your support network like?" },
+  { key: "additionalNotes", label: "Additional notes (Optional)" },
+];
+
+export const SYMPTOM_DURATIONS = {
+  RECENT: "recent",
+  SIX_MONTHS_PLUS: "6months+"
+};
+
+export const RHI_CRITERIA: { key: keyof TesData; label: string }[] = [
+  { key: "rhi_concussions4", label: "≥4 concussions or mild TBIs" },
+  { key: "rhi_moderate2", label: "≥2 moderate/severe TBIs" },
+  { key: "rhi_sports6", label: "≥6 years contact sports" },
+  { key: "rhi_military", label: "Military with combat exposure" },
+  { key: "rhi_other", label: "Other significant RHI" }
+];
+
+export const CORE_FEATURES: { key: keyof TesData; label: string }[] = [
+  { key: "core_cognitive", label: "Cognitive impairment" },
+  { key: "core_behavioral", label: "Behavioral — explosive/violent" },
+  { key: "core_mood", label: "Mood — depressed/hopeless" }
+];
+
+export const SUPPORTIVE_FEATURES: { key: keyof TesData; label: string }[] = [
+  { key: "sup_decline", label: "Documented decline" },
+  { key: "sup_delayed", label: "Delayed onset" },
+  { key: "sup_impulsivity", label: "Impulsivity" },
+  { key: "sup_anxiety", label: "Anxiety" },
+  { key: "sup_apathy", label: "Apathy" },
+  { key: "sup_paranoia", label: "Paranoia" },
+  { key: "sup_suicidality", label: "Suicidality" },
+  { key: "sup_headache", label: "Headache" },
+  { key: "sup_motor", label: "Motor impairment" }
+];
+
+export const DIAGNOSTIC_SUBTYPES = ["Cognitive", "Behavioral/Mood", "Mixed", "Dementia"];
+export const CLINICAL_COURSES = ["Stable", "Progressive", "Unknown/Inconsistent"];
+export const CTE_LIKELIHOODS = ["Probable CTE", "Possible CTE", "Unlikely CTE"];
+
+export const MOTOR_FEATURES: { key: keyof TesData; label: string }[] = [
+  { key: "motor_dysarthria", label: "Dysarthria" },
+  { key: "motor_dysgraphia", label: "Dysgraphia" },
+  { key: "motor_brady", label: "Bradykinesia" },
+  { key: "motor_tremor", label: "Tremor" },
+  { key: "motor_rigidity", label: "Rigidity" },
+  { key: "motor_gait", label: "Gait change" },
+  { key: "motor_falls", label: "Falls / parkinsonism" }
+];
+
+export const PATIENT_INFO_FIELDS: { key: keyof TesData; label: string; placeholder: string }[] = [
+  { key: "name", label: DOC_FORM_STRINGS.PATIENT_INFO.LABEL_NAME, placeholder: DOC_FORM_STRINGS.PATIENT_INFO.PLACEHOLDER_NAME },
+  { key: "age", label: DOC_FORM_STRINGS.PATIENT_INFO.LABEL_AGE, placeholder: DOC_FORM_STRINGS.PATIENT_INFO.PLACEHOLDER_AGE },
+  { key: "consultant", label: DOC_FORM_STRINGS.PATIENT_INFO.LABEL_CONSULTANT, placeholder: DOC_FORM_STRINGS.PATIENT_INFO.PLACEHOLDER_CONSULTANT },
+  { key: "evalDate", label: DOC_FORM_STRINGS.PATIENT_INFO.LABEL_EVAL_DATE, placeholder: DOC_FORM_STRINGS.PATIENT_INFO.PLACEHOLDER_EVAL_DATE },
+];
+

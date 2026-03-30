@@ -63,7 +63,7 @@ export interface ReportData {
   };
   ai: {
     overallInsights: AIInsight[];
-    comparisonInsights: Array<AIInsight & { color?: string }>;
+    comparisonInsights: Array<AIInsight & { color?: string; bg?: string }>;
     careTeamPoints: string[];
   };
   summary: {

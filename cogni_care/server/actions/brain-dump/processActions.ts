@@ -2,15 +2,16 @@ import { SymptomRecord } from "./../../types/logsApi";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { mask } from "@yellowsakura/js-pii-mask";
 import { prisma } from "../../lib/prisma.js";
-import { Analysis, AppError } from "server/types/logsApi.js";
+import { Analysis, AppError } from "../../types/logsApi.js";
 import { getIO } from "../../lib/socket.js";
+import { LogActionResponse } from "../../types/logActions.js";
 
 export async function processBrainDumpAction(
   rawText: string,
   patientId: string,
   isFromCarer: boolean = false,
   carerId?: string
-) {
+): Promise<LogActionResponse> {
   const apiKey = (process.env.GEMINI_API_KEY || "").trim();
 
   const genAI = new GoogleGenerativeAI(apiKey);
@@ -100,7 +101,7 @@ export async function processBrainDumpAction(
           genericPhrases.includes(val.toLowerCase())
         ) {
           analysis[key] = null;
-          analysis[(key + "Severity") as keyof Analysis] = null;
+          analysis[(key + "Severity") as keyof Analysis] = undefined;
         }
       });
     } catch (apiErr: unknown) {
@@ -111,8 +112,7 @@ export async function processBrainDumpAction(
     }
 
     // We must check the Profile table because PAT- IDs are NOT in the User table
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const profile = await (prisma as any).profilePatient.findUnique({
+    const profile = await prisma.profilePatient.findUnique({
       where: { id: patientId },
     });
 
