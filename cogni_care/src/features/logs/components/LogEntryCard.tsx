@@ -179,7 +179,7 @@ export default function LogEntryCard({ log, patientId, onUpdate, onDelete, highl
                                 onSeverityChange={handleSliderChange}
                                 onSeverityCommit={handleSliderCommit}
                                 activePillars={activePillars.map(p => p.key)}
-                                labels={log}
+                                labels={log as unknown as Record<string, string | null | undefined>}
                             />
                         </div>
                     )}

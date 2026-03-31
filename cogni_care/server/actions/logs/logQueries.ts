@@ -1,5 +1,6 @@
 import { prisma } from "../../lib/prisma";
 import { LogsActionResponse } from "../../types/logActions";
+import { SymptomRecord } from "../../types/logsApi";
 
 export async function getLogsAction(patientId: string, requesterProfileId?: string, isCarer: boolean = false): Promise<LogsActionResponse> {
     try {
@@ -50,15 +51,16 @@ export async function getLogsAction(patientId: string, requesterProfileId?: stri
             }),
         ]);
 
-        const formattedSymptomLogs = symptomLogs.map((log) => ({
-            ...log,
+        const formattedSymptomLogs: SymptomRecord[] = symptomLogs.map(({ carer: logCarer, notes: logNotes, ...log }) => ({
+            ...(log as unknown as SymptomRecord),
             type: "patient" as const,
-            carerName: (log as any).carer?.user?.name ?? undefined,
-            notes: log.notes.map((c) => ({
+            carerName: logCarer?.user?.name ?? undefined,
+            notes: logNotes.map((c) => ({
                 id: c.id,
                 createdAt: c.createdAt,
                 text: c.text,
                 carerId: c.carerId,
+                patientId: c.patientId,
                 carerName: c.carer.user.name ?? undefined,
             })),
         }));

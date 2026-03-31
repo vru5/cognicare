@@ -99,7 +99,7 @@ export default function SummaryCard({
         severities={localSeverities}
         onSeverityChange={handleSliderChange}
         onSeverityCommit={handleSliderCommit}
-        labels={summary}
+        labels={summary as unknown as Record<string, string | null | undefined>}
       />
     </div>
   );

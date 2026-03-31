@@ -26,6 +26,7 @@ export interface SymptomRecord extends Analysis {
     rawText: string;
     isFromCarer?: boolean;
     carerId?: string | null;
+    carerName?: string;
     notes?: CarerNoteRecord[];
     comments?: CarerNoteRecord[];
 }

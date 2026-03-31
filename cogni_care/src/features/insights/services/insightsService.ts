@@ -1,5 +1,5 @@
 import { API_BASE_URL } from "@/constants/auth";
-import { PieChartData, DailyAverage } from "../types/insightsTypes";
+import { PieChartData, DailyAverage, MajorSymptomsData } from "../types/insightsTypes";
 
 export async function getInsightsEligibility(patientId: string): Promise<{ eligible: boolean, hasOneMonthData: boolean, days: number, joinedAt: string }> {
     try {
@@ -45,5 +45,20 @@ export async function getDailyAverage(patientId: string, date: Date | string): P
     } catch (error) {
         console.error("Error fetching daily average:", error);
         return null;
+    }
+}
+
+export async function getMajorSymptoms(patientId: string): Promise<MajorSymptomsData> {
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/insights/major-symptoms?patientId=${patientId}`);
+        const data = await response.json();
+        if (!data.success) {
+            console.error("Failed to fetch major symptoms");
+            return { topSymptoms: [], alerts: [] };
+        }
+        return data.data;
+    } catch (error) {
+        console.error("Error fetching major symptoms:", error);
+        return { topSymptoms: [], alerts: [] };
     }
 }

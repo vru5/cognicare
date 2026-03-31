@@ -2,7 +2,8 @@ import express from "express";
 import { 
     getInsightsEligibilityQuery, 
     getAllTimeLogAggregatesQuery, 
-    getDailyAverageQuery 
+    getDailyAverageQuery,
+    getMajorSymptomsQuery 
 } from "../actions/insights/insightsQueries.js";
 
 const router = express.Router();
@@ -48,6 +49,22 @@ router.get("/daily", async (req, res) => {
     
     try {
         const result = await getDailyAverageQuery(patientId, date);
+        res.json({ success: true, data: result });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ success: false, error: "Server Error" });
+    }
+});
+
+// GET /api/insights/major-symptoms
+router.get("/major-symptoms", async (req, res) => {
+    const { patientId } = req.query;
+    if (!patientId || typeof patientId !== "string") {
+        return res.status(400).json({ success: false, error: "Missing patientId" });
+    }
+    
+    try {
+        const result = await getMajorSymptomsQuery(patientId);
         res.json({ success: true, data: result });
     } catch (error) {
         console.error(error);
