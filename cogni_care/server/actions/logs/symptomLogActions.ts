@@ -206,6 +206,7 @@ export async function updateSymptomLogAction(logId: string, patientId: string, n
                     createdAt: note.createdAt,
                     text: note.text,
                     carerId: note.carerId,
+                    patientId: note.patientId,
                     carerName: note.carer?.user?.name ?? undefined,
                 })),
             },

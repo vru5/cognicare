@@ -105,18 +105,23 @@ export async function addCarerCommentAction(logId: string, carerId: string, text
             console.warn("[Socket] Failed to emit CARER_COMMENT notification:", err);
         }
 
+        if (!note.log) {
+            return { success: false, error: "Log not found" };
+        }
+
         return {
             success: true,
             log: {
-                ...note.log,
+                ...(note.log as unknown as SymptomRecord),
                 type: "patient" as const,
-                notes: note.log?.notes.map((c) => ({
+                notes: note.log.notes.map((c) => ({
                     id: c.id,
                     createdAt: c.createdAt,
                     text: c.text,
                     carerId: c.carerId,
+                    patientId: c.patientId,
                     carerName: c.carer.user.name ?? undefined,
-                })) || [],
+                })),
             },
         };
     } catch (error) {
@@ -225,6 +230,7 @@ export async function deleteCarerNoteAction(noteId: string, carerId: string, pat
                             createdAt: c.createdAt,
                             text: c.text,
                             carerId: c.carerId,
+                            patientId: c.patientId,
                             carerName: c.carer.user.name ?? undefined,
                         })),
                     },

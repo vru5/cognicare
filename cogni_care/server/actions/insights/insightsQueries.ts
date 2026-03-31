@@ -1,5 +1,6 @@
 import { prisma } from "../../lib/prisma.js";
 import { startOfDay, endOfDay, differenceInDays } from "date-fns";
+import { RISK_KEYWORDS } from "../../constants/riskKeywords.js";
 
 export async function getInsightsEligibilityQuery(patientId: string) {
   // Get distinct days where at least one log exists
@@ -94,4 +95,112 @@ export async function getDailyAverageQuery(patientId: string, date: Date | strin
     sleep: Math.round(sleep / logs.length),
     social: Math.round(social / logs.length),
   };
+}
+
+export async function getMajorSymptomsQuery(patientId: string) {
+  const logs = await prisma.symptomLog.findMany({
+    where: { patientId },
+    select: {
+      createdAt: true,
+      rawText: true,
+      isFromCarer: true,
+      physical: true,
+      physicalSeverity: true,
+      mood: true,
+      moodSeverity: true,
+      cognitive: true,
+      cognitiveSeverity: true,
+      sleep: true,
+      sleepSeverity: true,
+      social: true,
+      socialSeverity: true,
+    },
+    orderBy: { createdAt: "desc" },
+  });
+
+  if (logs.length === 0) return { topSymptoms: [], alerts: [] };
+
+  const symptomMap: Record<string, { severity: number; pillar: string; lastSeen: Date; patientCount: number; carerCount: number }> = {};
+  const alerts: { type: string; message: string; date: Date }[] = [];
+
+  const todayStart = startOfDay(new Date()).getTime();
+
+  logs.forEach(log => {
+      const isToday = startOfDay(log.createdAt).getTime() === todayStart;
+
+      // Check for alerts in raw text
+      const lowerRaw = (log.rawText || "").toLowerCase();
+      RISK_KEYWORDS.forEach(keyword => {
+          if (isToday && lowerRaw.includes(keyword)) {
+              alerts.push({
+                  type: "red",
+                  message: `High priority symptom detected: "${keyword}"`,
+                  date: log.createdAt
+              });
+          }
+      });
+
+      // Pillars
+      const pillars = [
+          { name: log.physical, severity: log.physicalSeverity, key: "physical" },
+          { name: log.mood, severity: log.moodSeverity, key: "mood" },
+          { name: log.cognitive, severity: log.cognitiveSeverity, key: "cognitive" },
+          { name: log.sleep, severity: log.sleepSeverity, key: "sleep" },
+          { name: log.social, severity: log.socialSeverity, key: "social" },
+      ];
+
+      pillars.forEach(p => {
+          if (p.name && p.severity !== null && p.severity !== undefined) {
+              const name = p.name.trim();
+              
+              if (name.toLowerCase() !== "null" && name !== "") {
+                  if (!symptomMap[name]) {
+                      symptomMap[name] = { severity: p.severity, pillar: p.key, lastSeen: log.createdAt, patientCount: 0, carerCount: 0 };
+                  }
+
+                  // Update severity if this one is higher
+                  if (symptomMap[name].severity < p.severity) {
+                      symptomMap[name].severity = p.severity;
+                      symptomMap[name].pillar = p.key;
+                      symptomMap[name].lastSeen = log.createdAt;
+                  }
+
+                  // Track counts
+                  if (log.isFromCarer) symptomMap[name].carerCount++;
+                  else symptomMap[name].patientCount++;
+                  
+                  // Also check pillar name for risk keywords
+                  const lowerName = name.toLowerCase();
+                  RISK_KEYWORDS.forEach(keyword => {
+                      if (isToday && lowerName.includes(keyword)) {
+                          alerts.push({
+                              type: "red",
+                              message: `Critical symptom: ${name}`,
+                              date: log.createdAt
+                          });
+                      }
+                  });
+              }
+          }
+      });
+  });
+
+  // Deduplicate alerts by message AND a rough timestamp (per minute) to show multiple entries
+  const uniqueAlerts = Array.from(new Map(
+    alerts.map(a => [`${a.message}-${new Date(a.date).toISOString().slice(0, 16)}`, a])
+  ).values())
+    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+  const topSymptoms = Object.entries(symptomMap)
+    .map(([name, data]) => ({ 
+        name, 
+        severity: data.severity,
+        pillar: data.pillar,
+        lastSeen: data.lastSeen,
+        source: data.patientCount >= data.carerCount ? 'patient' : 'carer'
+    }))
+    .sort((a, b) => b.severity - a.severity)
+    .slice(0, 5);
+
+  return { topSymptoms, alerts: uniqueAlerts };
 }

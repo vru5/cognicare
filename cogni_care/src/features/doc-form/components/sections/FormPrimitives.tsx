@@ -3,17 +3,17 @@ import { AiBadge } from "@/components/shared/AiBadge";
 import { Checkbox } from "@/components/shared/Checkbox";
 import { TesData } from "../../types/docForm";
 
-export const CheckRow = ({ fieldKey, label, tes, updateTes, aiFilledKeys }: { fieldKey: keyof TesData; label: string; tes: TesData; updateTes: (k: string, v: string | boolean) => void; aiFilledKeys: Set<keyof TesData> }) => (
+export const CheckRow = ({ fieldKey, label, tes, updateTes, aiFilledKeys }: { fieldKey: keyof TesData; label: string; tes: TesData; updateTes: (k: string, v: string | boolean) => void; aiFilledKeys: Set<string> }) => (
   <div className="flex items-start gap-3 mb-2.5">
     <Checkbox checked={!!tes[fieldKey]} checkedColor="#0ea5e9" onChange={() => updateTes(fieldKey as string, !tes[fieldKey])} />
     <span onClick={() => updateTes(fieldKey as string, !tes[fieldKey])} className="text-[13px] flex-1 leading-snug cursor-pointer select-none">
       {label}
-      {aiFilledKeys.has(fieldKey) && tes[fieldKey] && <AiBadge />}
+      {aiFilledKeys.has(fieldKey as string) && tes[fieldKey] && <AiBadge />}
     </span>
   </div>
 );
 
-export const InputField = ({ fieldKey, placeholder, tes, updateTes, aiFilledKeys, label, showErrors }: { fieldKey: keyof TesData; placeholder: string; tes: TesData; updateTes: (k: string, v: string | boolean) => void; aiFilledKeys: Set<keyof TesData>; label: string; showErrors?: boolean }) => {
+export const InputField = ({ fieldKey, placeholder, tes, updateTes, aiFilledKeys, label, showErrors }: { fieldKey: keyof TesData; placeholder: string; tes: TesData; updateTes: (k: string, v: string | boolean) => void; aiFilledKeys: Set<string>; label: string; showErrors?: boolean }) => {
   const isMandatory = fieldKey === 'name' || fieldKey === 'age';
   const isError = (showErrors || isMandatory) && !tes[fieldKey];
   return (

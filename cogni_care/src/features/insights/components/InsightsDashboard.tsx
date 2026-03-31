@@ -11,8 +11,9 @@ import {
   getInsightsEligibility,
   getAllTimeLogAggregates,
   getDailyAverage,
+  getMajorSymptoms,
 } from "../services/insightsService"
-import { DailyAverage, PieChartData } from "../types/insightsTypes"
+import { DailyAverage, PieChartData, MajorSymptomsData } from "../types/insightsTypes"
 import {
   INSIGHTS_TITLE,
   INSIGHTS_LOCKED_TITLE,
@@ -27,6 +28,7 @@ import {
 import TopPieChart from "./TopPieChart"
 import ComparisonCards from "./ComparisonCards"
 import BreakdownTable from "./BreakdownTable"
+import MajorSymptomsCard from "./MajorSymptomsCard"
 import InsightsCard from "@/components/shared/InsightsCard"
 import ExportMenu from "@/features/export/components/ExportMenu"
 
@@ -46,6 +48,7 @@ export default function InsightsDashboard() {
   const [joinedAt, setJoinedAt] = useState<Date>(new Date())
 
   const [allTimeData, setAllTimeData] = useState<PieChartData>([])
+  const [majorSymptomsData, setMajorSymptomsData] = useState<MajorSymptomsData>({ topSymptoms: [], alerts: [] })
   const [fetchingComparison, setFetchingComparison] = useState(false)
 
   const [dateA, setDateA] = useState<Date>(subDays(startOfToday(), 1))
@@ -74,8 +77,12 @@ export default function InsightsDashboard() {
         }
 
         if (isEligible) {
-          const agg = await getAllTimeLogAggregates(patientId as string)
+          const [agg, major] = await Promise.all([
+            getAllTimeLogAggregates(patientId as string),
+            getMajorSymptoms(patientId as string)
+          ])
           setAllTimeData(agg)
+          setMajorSymptomsData(major)
         }
       } catch (err) {
         console.error("Initialization error:", err)
@@ -153,6 +160,10 @@ export default function InsightsDashboard() {
         </div>
       ) : (
         <div className="w-full flex flex-col gap-8 animate-in fade-in duration-500">
+          
+          <MajorSymptomsCard 
+            alerts={majorSymptomsData.alerts} 
+          />
 
           <TopPieChart data={allTimeData} />
 

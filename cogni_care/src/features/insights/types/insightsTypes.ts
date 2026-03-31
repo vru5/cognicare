@@ -36,6 +36,26 @@ export interface SymptomBarChartProps {
   accentColor: string;
 }
 
+
+export interface MajorSymptom {
+  name: string;
+  severity: number;
+  pillar: string;
+  lastSeen: string;
+  source: 'patient' | 'carer';
+}
+
+export interface InsightAlert {
+  type: string;
+  message: string;
+  date: string;
+}
+
+export interface MajorSymptomsData {
+  topSymptoms: MajorSymptom[];
+  alerts: InsightAlert[];
+}
+
 export interface TopPieChartProps {
   data: PieChartData;
 }
