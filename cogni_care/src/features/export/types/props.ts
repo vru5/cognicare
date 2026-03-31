@@ -68,7 +68,8 @@ export interface SparkLineProps {
 
 export interface ExportMenuProps {
   patientId: string;
-  dateA: Date;
-  dateB: Date;
-  hasOneMonthData: boolean;
+  startDate: Date;
+  endDate: Date;
+  joinedAt: Date;
+  accentColor: string;
 }

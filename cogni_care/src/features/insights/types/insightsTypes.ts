@@ -1,26 +1,9 @@
 import { SymptomPillar } from "@/features/logs/types/logTypes";
 
-export type PieChartData = { name: string; value: number; fill: string }[];
+
 
 export type DailyAverage = Record<SymptomPillar, number>;
 
-export interface BreakdownTableProps {
-  dateA: Date;
-  dateB: Date;
-  dataA: DailyAverage | null;
-  dataB: DailyAverage | null;
-}
-
-export interface ComparisonCardsProps {
-  dateA: Date;
-  dateB: Date;
-  joinedAt: Date;
-  onChangeDateA: (date: Date) => void;
-  onChangeDateB: (date: Date) => void;
-  dataA: DailyAverage | null;
-  dataB: DailyAverage | null;
-  loading: boolean;
-}
 
 export interface SymptomDataPoint {
   name: string;
@@ -51,11 +34,16 @@ export interface InsightAlert {
   date: string;
 }
 
-export interface MajorSymptomsData {
+export interface MajorSymptomsResponse {
   topSymptoms: MajorSymptom[];
   alerts: InsightAlert[];
 }
 
-export interface TopPieChartProps {
-  data: PieChartData;
+export interface EligibilityResponse {
+  eligible: boolean;
+  hasOneMonthData: boolean;
+  days: number;
+  joinedAt: string | Date;
 }
+
+

@@ -2,17 +2,18 @@
 
 import { Bar, BarChart, XAxis, YAxis, Cell, CartesianGrid } from "recharts";
 import { BarChart2 } from "lucide-react";
+import { cn } from "@/lib/utils";
 import {
   ChartContainer,
   ChartTooltip,
   ChartTooltipContent,
   type ChartConfig,
 } from "@/components/ui/chart";
-import { 
-  getSymptomEmoji, 
-  TAP_BAR_DETAILS, 
-  NO_DATA_RECORD_DATE, 
-  SYMPTOM_BAR_CHART_CONFIG 
+import {
+  getSymptomEmoji,
+  TAP_BAR_DETAILS,
+  NO_DATA_RECORD_DATE,
+  SYMPTOM_BAR_CHART_CONFIG
 } from "../constants/insightsConstants";
 import { SymptomBarChartProps } from "../types/insightsTypes";
 
@@ -45,6 +46,11 @@ export default function SymptomBarChart({
         <BarChart
           data={data}
           margin={{ top: 10, left: -20, right: 0, bottom: 0 }}
+          onClick={(state) => {
+            if (state && state.activePayload && state.activePayload.length > 0) {
+              onSelectSymptom(state.activePayload[0].payload);
+            }
+          }}
         >
           <defs>
             <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
@@ -70,21 +76,29 @@ export default function SymptomBarChart({
             domain={[0, 10]}
             tickLine={false}
             axisLine={false}
-            tick={{ fontSize: 9, fill: "#bbb" }}
+            tick={{ fontSize: 9, fill: "#94A3B8" }}
             tickCount={6}
           />
           <ChartTooltip
             cursor={{ fill: "rgba(0,0,0,0.04)" }}
             content={<ChartTooltipContent nameKey="name" />}
           />
-          <Bar dataKey="score" radius={[4, 4, 0, 0]} onClick={(data) => onSelectSymptom(data)}>
-            {data.map((entry, index) => (
-              <Cell
-                key={`cell-${index}`}
-                fill={`url(#${gradientId})`}
-                className="cursor-pointer outline-none"
-              />
-            ))}
+          <Bar dataKey="score" radius={[4, 4, 0, 0]}>
+            {data.map((entry, index) => {
+              const isSelected = selectedSymptom?.name === entry.name;
+              return (
+                <Cell
+                  key={`cell-${index}`}
+                  fill={`url(#${gradientId})`}
+                  className={cn(
+                    "cursor-pointer outline-none transition-all duration-300",
+                    isSelected ? "opacity-100" : selectedSymptom ? "opacity-40" : "opacity-100"
+                  )}
+                  stroke={isSelected ? accentColor : "none"}
+                  strokeWidth={2}
+                />
+              );
+            })}
           </Bar>
         </BarChart>
       </ChartContainer>
@@ -99,8 +113,8 @@ export default function SymptomBarChart({
           </span>
         </div>
       ) : (
-        <p className="text-center text-[10px] font-black tracking-widest text-slate-300 mt-4 uppercase">
-            {TAP_BAR_DETAILS}
+        <p className="text-center text-[10px] font-black tracking-widest text-slate-400 mt-4 uppercase">
+          {TAP_BAR_DETAILS}
         </p>
       )}
     </div>
