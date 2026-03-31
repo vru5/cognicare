@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/chart";
 import {
   getSymptomEmoji,
+  getPillarColor,
   TAP_BAR_DETAILS,
   NO_DATA_RECORD_DATE,
   SYMPTOM_BAR_CHART_CONFIG
@@ -54,7 +55,7 @@ export default function SymptomBarChart({
         >
           <defs>
             <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor={gradientColors.start} stopOpacity={1} />
+              <stop offset="5%" stopColor={gradientColors.start} stopOpacity={5} />
               <stop offset="95%" stopColor={gradientColors.end} stopOpacity={1} />
             </linearGradient>
           </defs>
@@ -104,8 +105,8 @@ export default function SymptomBarChart({
       </ChartContainer>
 
       {selectedSymptom ? (
-        <div className="mt-4 p-3 bg-slate-50 w-full rounded-xl border border-slate-100 flex justify-between items-center animate-in slide-in-from-top-1 duration-200">
-          <span className="text-sm font-black" style={{ color: accentColor }}>
+        <div className="mt-4 p-3 bg-sky-50/70 w-full rounded-xl border border-sky-100 flex justify-between items-center animate-in slide-in-from-top-1 duration-200">
+          <span className="text-sm font-black" style={{ color: getPillarColor(selectedSymptom.name) }}>
             {selectedSymptom.name}
           </span>
           <span className="text-sm font-black text-slate-400">

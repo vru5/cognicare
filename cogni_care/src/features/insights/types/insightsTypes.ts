@@ -46,4 +46,47 @@ export interface EligibilityResponse {
   joinedAt: string | Date;
 }
 
+export interface AiInsightSummary {
+  summary: string;
+  status: "improving" | "worsening" | "stable";
+  topConcern: {
+    pillar: string;
+    reason: string;
+  } | null;
+  keyFindings: {
+    pillar: string;
+    subCategory: string;
+    finding: string;
+  }[];
+  criticalRisks: {
+    type: string;
+    message: string;
+    priority: "high" | "medium";
+  }[];
+}
+
+export interface MajorSymptomsCardProps {
+  alerts: InsightAlert[];
+  symptoms: MajorSymptom[];
+  accentColor: string;
+}
+
+export interface AiInsightSectionProps {
+  insights: AiInsightSummary;
+  accentColor: string;
+}
+
+export interface SymptomDatePickerProps {
+  selectedDate: Date;
+  onChange: (date: Date) => void;
+  minDate?: Date;
+  maxDate?: Date;
+  accentColor: string;
+}
+
+export interface InsightsDashboardProps {
+  patientId: string;
+  accentColor: string;
+}
+
 

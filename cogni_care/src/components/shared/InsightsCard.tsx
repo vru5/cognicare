@@ -25,7 +25,7 @@ export default function InsightsCard({
   return (
     <div
       className={cn(
-        "w-full bg-white rounded-[2.5rem] p-5 pb-8 flex flex-col gap-5 shadow-sm border border-white/20 outline-none",
+        "w-full bg-white rounded-[2rem] p-5 pb-8 flex flex-col gap-5 shadow-sm border border-white/20 outline-none",
         className
       )}
     >

@@ -5,14 +5,7 @@ import { format, startOfMonth, isBefore, isAfter, startOfDay } from "date-fns";
 import { motion, AnimatePresence } from "framer-motion";
 import { Calendar as CalendarIcon } from "lucide-react";
 import Calendar from "@/components/shared/Calendar";
-
-interface SymptomDatePickerProps {
-  selectedDate: Date;
-  onChange: (date: Date) => void;
-  minDate?: Date;
-  maxDate?: Date;
-  accentColor: string;
-}
+import { SymptomDatePickerProps } from "../types/insightsTypes";
 
 export default function SymptomDatePicker({
   selectedDate,

@@ -25,7 +25,11 @@ export const SYMPTOM_EMOJIS: Record<string, string> = {
 
 
 export const getSymptomEmoji = (pillar: string) => SYMPTOM_EMOJIS[pillar.toLowerCase()] || pillar;
-export const getPillarColor = (pillarName: string) => PILLAR_COLORS[pillarName] || "#888";
+export const getPillarColor = (pillarName: string) => {
+  const normalized = pillarName.charAt(0).toUpperCase() + pillarName.slice(1).toLowerCase();
+  if (normalized.includes("Mood")) return PILLAR_COLORS.Mood;
+  return PILLAR_COLORS[normalized] || "#888";
+};
 
 // UI Strings
 export const INSIGHTS_TITLE = "Insights";
@@ -34,7 +38,7 @@ export const INSIGHTS_LOCKED_DESCRIPTION = "Log your symptoms for 7 distinct day
 export const PROGRESS_LABEL = "Progress";
 export const PROGRESS_DAYS_FOOTER = (remaining: number) => `${remaining} more days to go!`;
 
-export const HEALTH_REPORT_TITLE = "Health\nReport";
+export const HEALTH_REPORT_TITLE = "Health Report";
 export const SYMPTOM_COMPARISON_SUBTITLE = "Select Range";
 
 export const TAP_BAR_DETAILS = "Tap a bar to see details";

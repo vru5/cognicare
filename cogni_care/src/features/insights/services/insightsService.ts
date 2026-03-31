@@ -2,7 +2,8 @@ import { API_BASE_URL } from "@/constants/auth";
 import { 
     DailyAverage, 
     MajorSymptomsResponse, 
-    EligibilityResponse 
+    EligibilityResponse,
+    AiInsightSummary
 } from "../types/insightsTypes";
 
 export async function getInsightsEligibility(patientId: string): Promise<EligibilityResponse | null> {
@@ -59,5 +60,26 @@ export async function getMajorSymptoms(patientId: string): Promise<MajorSymptoms
     } catch (error) {
         console.error("Error fetching major symptoms:", error);
         return { topSymptoms: [], alerts: [] };
+    }
+}
+
+export async function getAiSummary(patientId: string, startDate: Date | string, endDate: Date | string): Promise<AiInsightSummary | null> {
+    try {
+        const startString = startDate instanceof Date ? startDate.toISOString() : new Date(startDate).toISOString();
+        const endString = endDate instanceof Date ? endDate.toISOString() : new Date(endDate).toISOString();
+        
+        const url = `${API_BASE_URL}/api/insights/ai-summary?patientId=${patientId}&date=${startString}&endDate=${endString}`;
+        const response = await fetch(url);
+        const data = await response.json();
+        
+        if (!data.success) {
+            console.error("Failed to fetch AI summary", data.error);
+            return null;
+        }
+        
+        return data.data;
+    } catch (error) {
+        console.error("Error fetching AI summary:", error);
+        return null;
     }
 }

@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import { format, isBefore, isAfter, startOfDay, startOfMonth, addMonths, differenceInMonths } from "date-fns";
 import { motion, AnimatePresence } from "framer-motion";
 import { Calendar as CalendarIcon, ArrowRight } from "lucide-react";
+import { cn } from "@/lib/utils";
 import Calendar from "./Calendar";
 
 interface DateRangePickerProps {
@@ -13,6 +14,7 @@ interface DateRangePickerProps {
   minDate?: Date;
   maxDate?: Date;
   accentColor: string;
+  disabled?: boolean;
 }
 
 export default function DateRangePicker({
@@ -22,6 +24,7 @@ export default function DateRangePicker({
   minDate,
   maxDate,
   accentColor,
+  disabled = false,
 }: DateRangePickerProps) {
   const [isStartOpen, setIsStartOpen] = useState(false);
   const [isEndOpen, setIsEndOpen] = useState(false);
@@ -83,10 +86,10 @@ export default function DateRangePicker({
   return (
     <div className="flex flex-col sm:flex-row items-center gap-3 w-full max-w-md mx-auto">
       {/* Start Date */}
-      <div className="relative w-full" ref={startRef}>
+      <div className={cn("relative w-full", disabled && "opacity-50 pointer-events-none")} ref={startRef}>
         <div 
-          onClick={() => setIsStartOpen(!isStartOpen)}
-          className="w-full flex items-center bg-slate-50 hover:bg-slate-100 transition-all rounded-2xl px-4 py-3 text-slate-800 cursor-pointer border border-slate-100 active:scale-95 shadow-sm"
+          onClick={() => !disabled && setIsStartOpen(!isStartOpen)}
+          className="w-full flex items-center bg-sky-50 hover:bg-sky-100/50 transition-all rounded-2xl px-4 py-3 text-slate-800 cursor-pointer border border-sky-100/50 active:scale-95 shadow-sm"
         >
           <div className="flex flex-col flex-1">
             <span className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-0.5">Start Date</span>
@@ -120,10 +123,10 @@ export default function DateRangePicker({
       <div className="hidden sm:block opacity-40"><ArrowRight className="w-5 h-5 text-slate-400" /></div>
 
       {/* End Date */}
-      <div className="relative w-full" ref={endRef}>
+      <div className={cn("relative w-full", disabled && "opacity-50 pointer-events-none")} ref={endRef}>
         <div 
-          onClick={() => setIsEndOpen(!isEndOpen)}
-          className="w-full flex items-center bg-slate-50 hover:bg-slate-100 transition-all rounded-2xl px-4 py-3 text-slate-800 cursor-pointer border border-slate-100 active:scale-95 shadow-sm"
+          onClick={() => !disabled && setIsEndOpen(!isEndOpen)}
+          className="w-full flex items-center bg-sky-50 hover:bg-sky-100/50 transition-all rounded-2xl px-4 py-3 text-slate-800 cursor-pointer border border-sky-100/50 active:scale-95 shadow-sm"
         >
           <div className="flex flex-col flex-1">
             <span className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-0.5">End Date</span>

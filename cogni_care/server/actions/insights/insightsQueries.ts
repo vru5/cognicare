@@ -6,14 +6,16 @@ export async function getInsightsEligibilityQuery(patientId: string) {
   console.log(`[ELIGIBILITY] Checking for patientId: ${patientId}`);
   
   // Get distinct days where at least one log exists
-  const uniqueDays = await prisma.$queryRaw<any[]>`
+  interface DbCount { count: bigint | number; COUNT?: bigint | number; }
+  const uniqueDays = await prisma.$queryRaw<DbCount[]>`
     SELECT COUNT(DISTINCT DATE_TRUNC('day', "createdAt")) as count 
     FROM symptom_logs 
     WHERE "patientId" = ${patientId}
   `;
   
   // Robust conversion from BigInt to Number
-  const rawCount = uniqueDays[0]?.count ?? uniqueDays[0]?.COUNT ?? 0;
+  const result = uniqueDays[0];
+  const rawCount = result?.count ?? result?.COUNT ?? 0;
   const daysCount = typeof rawCount === 'bigint' ? Number(rawCount) : Number(rawCount || 0);
 
   console.log(`[ELIGIBILITY] Result for ${patientId}: ${daysCount} distinct days.`);

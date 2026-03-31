@@ -141,3 +141,14 @@ model ProfessionalReportCache {
   @@id([patientId, dateA, dateB])
   @@map("professional_report_cache")
 }
+model AiInsightCache {
+  patientId String
+  startDate String
+  endDate   String
+  hash      String
+  data      Json
+  updatedAt DateTime @updatedAt
+
+  @@id([patientId, startDate, endDate])
+  @@map("ai_insight_cache")
+}
