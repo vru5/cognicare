@@ -1,17 +1,24 @@
 import { prisma } from "../../lib/prisma.js";
-import { startOfDay, endOfDay, differenceInDays } from "date-fns";
+import { startOfDay, endOfDay, differenceInDays, subDays } from "date-fns";
 import { RISK_KEYWORDS } from "../../constants/riskKeywords.js";
 
 export async function getInsightsEligibilityQuery(patientId: string) {
+  console.log(`[ELIGIBILITY] Checking for patientId: ${patientId}`);
+  
   // Get distinct days where at least one log exists
-  const uniqueDays = await prisma.$queryRaw<any[]>`
+  interface DbCount { count: bigint | number; COUNT?: bigint | number; }
+  const uniqueDays = await prisma.$queryRaw<DbCount[]>`
     SELECT COUNT(DISTINCT DATE_TRUNC('day', "createdAt")) as count 
     FROM symptom_logs 
     WHERE "patientId" = ${patientId}
   `;
   
-  // Use Number() to convert BigInt if necessary
-  const daysCount = uniqueDays[0]?.count ? Number(uniqueDays[0].count) : 0;
+  // Robust conversion from BigInt to Number
+  const result = uniqueDays[0];
+  const rawCount = result?.count ?? result?.COUNT ?? 0;
+  const daysCount = typeof rawCount === 'bigint' ? Number(rawCount) : Number(rawCount || 0);
+
+  console.log(`[ELIGIBILITY] Result for ${patientId}: ${daysCount} distinct days.`);
 
   const patient = await prisma.profilePatient.findUnique({
     where: { id: patientId },
@@ -26,46 +33,17 @@ export async function getInsightsEligibilityQuery(patientId: string) {
   };
 }
 
-export async function getAllTimeLogAggregatesQuery(patientId: string) {
-  const logs = await prisma.symptomLog.findMany({
-    where: { patientId },
-    select: {
-      physicalSeverity: true,
-      moodSeverity: true,
-      cognitiveSeverity: true,
-      sleepSeverity: true,
-      socialSeverity: true,
-    }
-  });
-  
-  if (logs.length === 0) return [];
 
-  let physical = 0, mood = 0, cognitive = 0, sleep = 0, social = 0;
-  logs.forEach(log => {
-    physical += log.physicalSeverity || 0;
-    mood += log.moodSeverity || 0;
-    cognitive += log.cognitiveSeverity || 0;
-    sleep += log.sleepSeverity || 0;
-    social += log.socialSeverity || 0;
-  });
-  
-  return [
-    { name: "Physical", value: physical, fill: "var(--color-physical)" },
-    { name: "Mood", value: mood, fill: "var(--color-mood)" },
-    { name: "Cognitive", value: cognitive, fill: "var(--color-cognitive)" },
-    { name: "Sleep", value: sleep, fill: "var(--color-sleep)" },
-    { name: "Social", value: social, fill: "var(--color-social)" },
-  ];
-}
+export async function getRangeAverageQuery(patientId: string, startDate: Date | string, endDate?: Date | string) {
+  const start = startOfDay(new Date(startDate));
+  const end = endDate ? endOfDay(new Date(endDate)) : endOfDay(new Date(startDate));
 
-export async function getDailyAverageQuery(patientId: string, date: Date | string) {
-  const targetDate = new Date(date);
   const logs = await prisma.symptomLog.findMany({
     where: { 
       patientId,
       createdAt: {
-        gte: startOfDay(targetDate),
-        lte: endOfDay(targetDate),
+        gte: start,
+        lte: end,
       }
     },
     select: {
@@ -88,18 +66,23 @@ export async function getDailyAverageQuery(patientId: string, date: Date | strin
     social += log.socialSeverity || 0;
   });
   
+  const count = logs.length;
   return {
-    physical: Math.round(physical / logs.length),
-    mood: Math.round(mood / logs.length),
-    cognitive: Math.round(cognitive / logs.length),
-    sleep: Math.round(sleep / logs.length),
-    social: Math.round(social / logs.length),
+    physical: Math.round(physical / count),
+    mood: Math.round(mood / count),
+    cognitive: Math.round(cognitive / count),
+    sleep: Math.round(sleep / count),
+    social: Math.round(social / count),
   };
 }
 
 export async function getMajorSymptomsQuery(patientId: string) {
+  const sevenDaysAgo = subDays(new Date(), 7);
   const logs = await prisma.symptomLog.findMany({
-    where: { patientId },
+    where: { 
+      patientId,
+      createdAt: { gte: sevenDaysAgo }
+    },
     select: {
       createdAt: true,
       rawText: true,
@@ -120,7 +103,7 @@ export async function getMajorSymptomsQuery(patientId: string) {
 
   if (logs.length === 0) return { topSymptoms: [], alerts: [] };
 
-  const symptomMap: Record<string, { severity: number; pillar: string; lastSeen: Date; patientCount: number; carerCount: number }> = {};
+  const symptomMap: Record<string, { severity: number; pillar: string; lastSeen: Date; patientCount: number; carerCount: number; isRisk: boolean }> = {};
   const alerts: { type: string; message: string; date: Date }[] = [];
 
   const todayStart = startOfDay(new Date()).getTime();
@@ -128,19 +111,18 @@ export async function getMajorSymptomsQuery(patientId: string) {
   logs.forEach(log => {
       const isToday = startOfDay(log.createdAt).getTime() === todayStart;
 
-      // Check for alerts in raw text
+      // Collect risk matches for this log to avoid duplication
+      const logRiskMatches = new Map<string, string>(); // keyword -> display representation
+
       const lowerRaw = (log.rawText || "").toLowerCase();
+      // 1. Check Risk Keywords
       RISK_KEYWORDS.forEach(keyword => {
-          if (isToday && lowerRaw.includes(keyword)) {
-              alerts.push({
-                  type: "red",
-                  message: `High priority symptom detected: "${keyword}"`,
-                  date: log.createdAt
-              });
+          if (lowerRaw.includes(keyword)) {
+              logRiskMatches.set(keyword, keyword);
           }
       });
 
-      // Pillars
+      // 2. Pillars extraction
       const pillars = [
           { name: log.physical, severity: log.physicalSeverity, key: "physical" },
           { name: log.mood, severity: log.moodSeverity, key: "mood" },
@@ -152,36 +134,58 @@ export async function getMajorSymptomsQuery(patientId: string) {
       pillars.forEach(p => {
           if (p.name && p.severity !== null && p.severity !== undefined) {
               const name = p.name.trim();
-              
               if (name.toLowerCase() !== "null" && name !== "") {
                   if (!symptomMap[name]) {
-                      symptomMap[name] = { severity: p.severity, pillar: p.key, lastSeen: log.createdAt, patientCount: 0, carerCount: 0 };
+                      symptomMap[name] = { severity: p.severity, pillar: p.key, lastSeen: log.createdAt, patientCount: 0, carerCount: 0, isRisk: false };
                   }
-
-                  // Update severity if this one is higher
                   if (symptomMap[name].severity < p.severity) {
                       symptomMap[name].severity = p.severity;
                       symptomMap[name].pillar = p.key;
                       symptomMap[name].lastSeen = log.createdAt;
                   }
-
-                  // Track counts
                   if (log.isFromCarer) symptomMap[name].carerCount++;
                   else symptomMap[name].patientCount++;
-                  
-                  // Also check pillar name for risk keywords
-                  const lowerName = name.toLowerCase();
+
+                  // Also check pillar name for risks
                   RISK_KEYWORDS.forEach(keyword => {
-                      if (isToday && lowerName.includes(keyword)) {
-                          alerts.push({
-                              type: "red",
-                              message: `Critical symptom: ${name}`,
-                              date: log.createdAt
-                          });
+                      if (name.toLowerCase().includes(keyword)) {
+                          logRiskMatches.set(keyword, name);
                       }
                   });
               }
           }
+      });
+
+      // 3. Alerts (Today Only)
+      if (isToday) {
+          logRiskMatches.forEach((displayName) => {
+              alerts.push({
+                  type: "red",
+                  message: `Critical risk detected: ${displayName}`,
+                  date: log.createdAt
+              });
+          });
+      }
+
+      // 4. Update Symptom Map with detected risks (Full 7-day window)
+      logRiskMatches.forEach((displayName) => {
+          const symptomName = displayName.charAt(0).toUpperCase() + displayName.slice(1);
+          if (!symptomMap[symptomName]) {
+              symptomMap[symptomName] = { 
+                  severity: 10, 
+                  pillar: "mood", 
+                  lastSeen: log.createdAt, 
+                  patientCount: 0, 
+                  carerCount: 0,
+                  isRisk: true
+              };
+          } else {
+              // If it already exists, mark it as a risk and elevate severity
+              symptomMap[symptomName].isRisk = true;
+              symptomMap[symptomName].severity = 10;
+          }
+          if (log.isFromCarer) symptomMap[symptomName].carerCount++;
+          else symptomMap[symptomName].patientCount++;
       });
   });
 
@@ -197,9 +201,21 @@ export async function getMajorSymptomsQuery(patientId: string) {
         severity: data.severity,
         pillar: data.pillar,
         lastSeen: data.lastSeen,
+        isRisk: data.isRisk,
+        frequency: data.patientCount + data.carerCount,
         source: data.patientCount >= data.carerCount ? 'patient' : 'carer'
     }))
-    .sort((a, b) => b.severity - a.severity)
+    .sort((a, b) => {
+        // 1. Priority: Risks
+        if (a.isRisk && !b.isRisk) return -1;
+        if (!a.isRisk && b.isRisk) return 1;
+        
+        // 2. Priority: Severity
+        if (b.severity !== a.severity) return b.severity - a.severity;
+        
+        // 3. Priority: Frequency
+        return b.frequency - a.frequency;
+    })
     .slice(0, 5);
 
   return { topSymptoms, alerts: uniqueAlerts };

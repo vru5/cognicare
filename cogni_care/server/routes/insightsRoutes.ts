@@ -1,12 +1,28 @@
 import express from "express";
 import { 
     getInsightsEligibilityQuery, 
-    getAllTimeLogAggregatesQuery, 
-    getDailyAverageQuery,
+    getRangeAverageQuery,
     getMajorSymptomsQuery 
 } from "../actions/insights/insightsQueries.js";
+import { getAIInsightsSummary } from "../actions/insights/aiInsightsActions.js";
 
 const router = express.Router();
+
+// GET /api/insights/ai-summary
+router.get("/ai-summary", async (req, res) => {
+    const { patientId, date, endDate } = req.query;
+    if (!patientId || typeof patientId !== "string" || !date || typeof date !== "string" || !endDate || typeof endDate !== "string") {
+        return res.status(400).json({ success: false, error: "Missing required fields" });
+    }
+    
+    try {
+        const result = await getAIInsightsSummary(patientId, date, endDate);
+        res.json({ success: true, data: result });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ success: false, error: "Server Error" });
+    }
+});
 
 // GET /api/insights/eligibility
 router.get("/eligibility", async (req, res) => {
@@ -17,22 +33,6 @@ router.get("/eligibility", async (req, res) => {
     
     try {
         const result = await getInsightsEligibilityQuery(patientId);
-        res.json({ success: true, ...result });
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ success: false, error: "Server Error" });
-    }
-});
-
-// GET /api/insights/aggregates
-router.get("/aggregates", async (req, res) => {
-    const { patientId } = req.query;
-    if (!patientId || typeof patientId !== "string") {
-        return res.status(400).json({ success: false, error: "Missing patientId" });
-    }
-    
-    try {
-        const result = await getAllTimeLogAggregatesQuery(patientId);
         res.json({ success: true, data: result });
     } catch (error) {
         console.error(error);
@@ -42,13 +42,13 @@ router.get("/aggregates", async (req, res) => {
 
 // GET /api/insights/daily
 router.get("/daily", async (req, res) => {
-    const { patientId, date } = req.query;
+    const { patientId, date, endDate } = req.query;
     if (!patientId || typeof patientId !== "string" || !date || typeof date !== "string") {
         return res.status(400).json({ success: false, error: "Missing required fields" });
     }
     
     try {
-        const result = await getDailyAverageQuery(patientId, date);
+        const result = await getRangeAverageQuery(patientId, date, endDate as string);
         res.json({ success: true, data: result });
     } catch (error) {
         console.error(error);

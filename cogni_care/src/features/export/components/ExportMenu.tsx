@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useMemo } from "react";
-import { format } from "date-fns";
+import { format, differenceInDays } from "date-fns";
 import { useRouter } from "next/navigation";
 import { Download, FileText, ChevronDown, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -10,7 +10,7 @@ import { ReportData } from "../types/report";
 import { ExportMenuProps } from "../types/props";
 import { EXPORT_STRINGS } from "../constants/exportStrings";
 
-export default function ExportMenu({ patientId, dateA, dateB, hasOneMonthData }: ExportMenuProps) {
+export default function ExportMenu({ patientId, startDate, endDate, joinedAt, accentColor }: ExportMenuProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatingStatus, setGeneratingStatus] = useState("");
@@ -18,6 +18,10 @@ export default function ExportMenu({ patientId, dateA, dateB, hasOneMonthData }:
   const menuRef = useRef<HTMLDivElement>(null);
   const reportRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
+
+  const hasOneMonthData = useMemo(() => {
+    return differenceInDays(new Date(), joinedAt) >= 30;
+  }, [joinedAt]);
 
   // Close menu when clicking outside
   useEffect(() => {
@@ -32,8 +36,8 @@ export default function ExportMenu({ patientId, dateA, dateB, hasOneMonthData }:
 
   // 1. Generate a unique cache key for the current inputs
   const cacheKey = useMemo(() => {
-    return `${patientId}-${dateA.toISOString().split('T')[0]}-${dateB.toISOString().split('T')[0]}`;
-  }, [patientId, dateA, dateB]);
+    return `${patientId}-${startDate.toISOString().split('T')[0]}-${endDate.toISOString().split('T')[0]}`;
+  }, [patientId, startDate, endDate]);
 
   // 2. Track the key used for the currently stored reportData
   const [cachedKey, setCachedKey] = useState<string | null>(null);
@@ -51,8 +55,8 @@ export default function ExportMenu({ patientId, dateA, dateB, hasOneMonthData }:
         setGeneratingStatus(EXPORT_STRINGS.MENU.STATUS_CACHED);
       } else {
         setGeneratingStatus(EXPORT_STRINGS.MENU.STATUS_ANALYZING);
-        data = await getProfessionalReportData(patientId, dateA, dateB);
-        if (!data) throw new Error(EXPORT_STRINGS.MENU.ITEM_DOWNLOAD_AI); // Generic error if fetch fails
+        data = await getProfessionalReportData(patientId, startDate, endDate);
+        if (!data) throw new Error(EXPORT_STRINGS.MENU.ITEM_DOWNLOAD_AI); 
 
         setReportData(data);
         setCachedKey(cacheKey);
@@ -82,7 +86,7 @@ export default function ExportMenu({ patientId, dateA, dateB, hasOneMonthData }:
 
     } catch (error) {
       console.error("Export Error:", error);
-      alert(EXPORT_STRINGS.MENU.ITEM_DOWNLOAD_AI); // Generic error
+      alert(EXPORT_STRINGS.MENU.ITEM_DOWNLOAD_AI); 
       setIsGenerating(false);
       setGeneratingStatus("");
     }
@@ -112,20 +116,22 @@ export default function ExportMenu({ patientId, dateA, dateB, hasOneMonthData }:
         onClick={() => setIsOpen(!isOpen)}
         disabled={isGenerating}
         className={cn(
-          "flex items-center gap-2 px-4 py-2 bg-gradient-to-br from-primary to-[#0A4B75] text-white rounded-xl text-sm font-bold transition-all active:scale-95 shadow-lg shadow-primary/20",
-          isOpen && "ring-2 ring-primary/40 ring-offset-2",
+          "flex items-center gap-2 px-4 py-2 bg-gradient-to-br from-primary to-[#0A4B75] text-white rounded-xl text-xs font-black uppercase tracking-widest transition-all active:scale-95 shadow-lg shadow-primary/20 hover:scale-[1.02] hover:shadow-xl hover:shadow-primary/30",
+          isOpen && "ring-2 ring-white/40 ring-offset-2",
           isGenerating && "opacity-80 cursor-wait"
         )}
       >
         {isGenerating || (generatingStatus === EXPORT_STRINGS.MENU.STATUS_COMPLETE) ? (
           <>
-            {isGenerating && <Loader2 className="w-4 h-4 animate-spin" />}
+            {isGenerating && <Loader2 className="w-3 h-3 animate-spin" />}
             <span>{generatingStatus || EXPORT_STRINGS.MENU.STATUS_EXPORTING}</span>
           </>
         ) : (
           <>
             <span>{EXPORT_STRINGS.MENU.LABEL_EXPORT}</span>
-            <ChevronDown className={cn("w-4 h-4 transition-transform duration-200", isOpen && "rotate-180")} />
+            <ChevronDown 
+              className={cn("w-3.5 h-3.5 transition-transform duration-200", isOpen && "rotate-180")} 
+            />
           </>
         )}
       </button>
@@ -142,12 +148,12 @@ export default function ExportMenu({ patientId, dateA, dateB, hasOneMonthData }:
                   "w-full flex items-center justify-between px-4 py-3 text-sm transition-colors text-left group",
                   item.disabled
                     ? "opacity-50 cursor-not-allowed bg-slate-50"
-                    : "text-slate-700 hover:bg-primary/5 hover:text-primary"
+                    : "text-slate-600 hover:bg-slate-50 hover:text-primary"
                 )}
               >
                 <div className="flex items-center gap-3">
-                  <item.icon className={cn("w-5 h-5", !item.disabled && "opacity-60 group-hover:opacity-100")} />
-                  <span className="font-semibold">{item.label}</span>
+                  <item.icon className={cn("w-4.5 h-4.5", !item.disabled && "text-slate-400 group-hover:text-primary transition-colors")} />
+                  <span className="font-bold tracking-tight">{item.label}</span>
                 </div>
                 {item.disabled && item.tooltip && (
                   <span className="text-[9px] font-black uppercase tracking-tighter bg-slate-200 text-slate-500 px-1.5 py-0.5 rounded leading-none whitespace-nowrap">

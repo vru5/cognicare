@@ -10,6 +10,8 @@ interface InsightsCardProps {
   className?: string;
   headerClassName?: string;
   subtitleClassName?: string;
+  accentColor?: string;
+  isLocked?: boolean;
 }
 
 export default function InsightsCard({
@@ -23,7 +25,7 @@ export default function InsightsCard({
   return (
     <div
       className={cn(
-        "w-full bg-white/30 backdrop-blur-md rounded-[2.5rem] p-5 pb-8 flex flex-col gap-5 shadow-sm border border-white/20 outline-none",
+        "w-full bg-white rounded-[2rem] p-5 pb-8 flex flex-col gap-5 shadow-sm border border-white/20 outline-none",
         className
       )}
     >

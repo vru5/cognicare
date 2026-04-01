@@ -22,7 +22,7 @@ function InsightsController() {
     }
 
     // Otherwise, show the dashboard itself (using the patientId or fallback to ProfilePatient)
-    return <InsightsDashboard />;
+    return <InsightsDashboard patientId={patientId || user?.profileId || ""} accentColor="#3b82f6" />;
 }
 
 export default function InsightsPage() {
