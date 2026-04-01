@@ -1,5 +1,5 @@
 import { prisma } from "../../lib/prisma.js";
-import { startOfDay, endOfDay, differenceInDays } from "date-fns";
+import { startOfDay, endOfDay, differenceInDays, subDays } from "date-fns";
 import { RISK_KEYWORDS } from "../../constants/riskKeywords.js";
 
 export async function getInsightsEligibilityQuery(patientId: string) {
@@ -77,8 +77,12 @@ export async function getRangeAverageQuery(patientId: string, startDate: Date | 
 }
 
 export async function getMajorSymptomsQuery(patientId: string) {
+  const sevenDaysAgo = subDays(new Date(), 7);
   const logs = await prisma.symptomLog.findMany({
-    where: { patientId },
+    where: { 
+      patientId,
+      createdAt: { gte: sevenDaysAgo }
+    },
     select: {
       createdAt: true,
       rawText: true,
@@ -99,7 +103,7 @@ export async function getMajorSymptomsQuery(patientId: string) {
 
   if (logs.length === 0) return { topSymptoms: [], alerts: [] };
 
-  const symptomMap: Record<string, { severity: number; pillar: string; lastSeen: Date; patientCount: number; carerCount: number }> = {};
+  const symptomMap: Record<string, { severity: number; pillar: string; lastSeen: Date; patientCount: number; carerCount: number; isRisk: boolean }> = {};
   const alerts: { type: string; message: string; date: Date }[] = [];
 
   const todayStart = startOfDay(new Date()).getTime();
@@ -111,13 +115,14 @@ export async function getMajorSymptomsQuery(patientId: string) {
       const logRiskMatches = new Map<string, string>(); // keyword -> display representation
 
       const lowerRaw = (log.rawText || "").toLowerCase();
+      // 1. Check Risk Keywords
       RISK_KEYWORDS.forEach(keyword => {
-          if (isToday && lowerRaw.includes(keyword)) {
+          if (lowerRaw.includes(keyword)) {
               logRiskMatches.set(keyword, keyword);
           }
       });
 
-      // Pillars
+      // 2. Pillars extraction
       const pillars = [
           { name: log.physical, severity: log.physicalSeverity, key: "physical" },
           { name: log.mood, severity: log.moodSeverity, key: "mood" },
@@ -129,28 +134,21 @@ export async function getMajorSymptomsQuery(patientId: string) {
       pillars.forEach(p => {
           if (p.name && p.severity !== null && p.severity !== undefined) {
               const name = p.name.trim();
-              
               if (name.toLowerCase() !== "null" && name !== "") {
                   if (!symptomMap[name]) {
-                      symptomMap[name] = { severity: p.severity, pillar: p.key, lastSeen: log.createdAt, patientCount: 0, carerCount: 0 };
+                      symptomMap[name] = { severity: p.severity, pillar: p.key, lastSeen: log.createdAt, patientCount: 0, carerCount: 0, isRisk: false };
                   }
-
-                  // Update severity if this one is higher
                   if (symptomMap[name].severity < p.severity) {
                       symptomMap[name].severity = p.severity;
                       symptomMap[name].pillar = p.key;
                       symptomMap[name].lastSeen = log.createdAt;
                   }
-
-                  // Track counts
                   if (log.isFromCarer) symptomMap[name].carerCount++;
                   else symptomMap[name].patientCount++;
-                  
-                  // Also check pillar name for risk keywords
-                  const lowerName = name.toLowerCase();
+
+                  // Also check pillar name for risks
                   RISK_KEYWORDS.forEach(keyword => {
-                      if (isToday && lowerName.includes(keyword)) {
-                          // Pillar match overrides or supplements rawText match for this keyword
+                      if (name.toLowerCase().includes(keyword)) {
                           logRiskMatches.set(keyword, name);
                       }
                   });
@@ -158,13 +156,36 @@ export async function getMajorSymptomsQuery(patientId: string) {
           }
       });
 
-      // Push unique alerts for this log
-      logRiskMatches.forEach((displayName) => {
-          alerts.push({
-              type: "red",
-              message: `Critical risk detected: ${displayName}`,
-              date: log.createdAt
+      // 3. Alerts (Today Only)
+      if (isToday) {
+          logRiskMatches.forEach((displayName) => {
+              alerts.push({
+                  type: "red",
+                  message: `Critical risk detected: ${displayName}`,
+                  date: log.createdAt
+              });
           });
+      }
+
+      // 4. Update Symptom Map with detected risks (Full 7-day window)
+      logRiskMatches.forEach((displayName) => {
+          const symptomName = displayName.charAt(0).toUpperCase() + displayName.slice(1);
+          if (!symptomMap[symptomName]) {
+              symptomMap[symptomName] = { 
+                  severity: 10, 
+                  pillar: "mood", 
+                  lastSeen: log.createdAt, 
+                  patientCount: 0, 
+                  carerCount: 0,
+                  isRisk: true
+              };
+          } else {
+              // If it already exists, mark it as a risk and elevate severity
+              symptomMap[symptomName].isRisk = true;
+              symptomMap[symptomName].severity = 10;
+          }
+          if (log.isFromCarer) symptomMap[symptomName].carerCount++;
+          else symptomMap[symptomName].patientCount++;
       });
   });
 
@@ -180,9 +201,21 @@ export async function getMajorSymptomsQuery(patientId: string) {
         severity: data.severity,
         pillar: data.pillar,
         lastSeen: data.lastSeen,
+        isRisk: data.isRisk,
+        frequency: data.patientCount + data.carerCount,
         source: data.patientCount >= data.carerCount ? 'patient' : 'carer'
     }))
-    .sort((a, b) => b.severity - a.severity)
+    .sort((a, b) => {
+        // 1. Priority: Risks
+        if (a.isRisk && !b.isRisk) return -1;
+        if (!a.isRisk && b.isRisk) return 1;
+        
+        // 2. Priority: Severity
+        if (b.severity !== a.severity) return b.severity - a.severity;
+        
+        // 3. Priority: Frequency
+        return b.frequency - a.frequency;
+    })
     .slice(0, 5);
 
   return { topSymptoms, alerts: uniqueAlerts };

@@ -46,6 +46,12 @@ export interface EligibilityResponse {
   joinedAt: string | Date;
 }
 
+export interface KeyFinding {
+  pillar: string;
+  subCategory: string;
+  finding: string;
+}
+
 export interface AiInsightSummary {
   summary: string;
   status: "improving" | "worsening" | "stable";
@@ -53,11 +59,7 @@ export interface AiInsightSummary {
     pillar: string;
     reason: string;
   } | null;
-  keyFindings: {
-    pillar: string;
-    subCategory: string;
-    finding: string;
-  }[];
+  keyFindings: KeyFinding[];
   criticalRisks: {
     type: string;
     message: string;

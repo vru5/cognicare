@@ -1,4 +1,5 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import { mask } from "@yellowsakura/js-pii-mask";
 import { prisma } from "../../lib/prisma.js";
 import { startOfDay, endOfDay, format } from "date-fns";
 import crypto from "crypto";
@@ -84,10 +85,11 @@ export async function getAIInsightsSummary(patientId: string, startDate: string,
   const genAI = new GoogleGenerativeAI(apiKey);
   const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
-  // Format logs for the prompt
+  // Format logs for the prompt (Apply PII masking)
   const formattedLogs = logs.map((log: SymptomLog) => {
     const dateStr = format(new Date(log.createdAt), "yyyy-MM-dd");
     const source = log.isFromCarer ? "Carer" : "Patient";
+    const safeText = mask(log.rawText || "");
     const pillars = [
       log.physical && `Physical: ${log.physical} (${log.physicalSeverity}/10)`,
       log.mood && `Mood: ${log.mood} (${log.moodSeverity}/10)`,
@@ -98,7 +100,7 @@ export async function getAIInsightsSummary(patientId: string, startDate: string,
       .filter(Boolean)
       .join(", ");
 
-    return `[${dateStr}] [${source}] ${pillars}${log.rawText ? ` - "${log.rawText}"` : ""}`;
+    return `[${dateStr}] [${source}] ${pillars}${safeText ? ` - "${safeText}"` : ""}`;
   }).join("\n");
 
   const prompt = AI_INSIGHTS_PROMPT(startDate, endDate, formattedLogs);
