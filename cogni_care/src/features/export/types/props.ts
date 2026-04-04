@@ -1,13 +1,16 @@
-import { ReportData } from "./report";
+import { ReportData, BaseReportPageProps } from "./report";
+import { MajorSymptomsResponse } from "../../insights/types/insightsTypes";
 
-export interface SummaryPageProps {
+export interface SummaryPageProps extends BaseReportPageProps {
   data: ReportData;
 }
 
-export interface AIInsightsPageProps {
+export interface AIInsightsPageProps extends BaseReportPageProps {
   patient: ReportData["patient"];
   ai: ReportData["ai"];
   summary: ReportData["summary"];
+  period: ReportData["period"];
+  isContinuation?: boolean;
 }
 
 export interface ComparisonPageProps {
@@ -18,7 +21,11 @@ export interface CarePlanPageProps {
   data: ReportData;
 }
 
-export interface MemoPageProps {
+export interface MemoPageProps extends BaseReportPageProps {
+  data: ReportData;
+}
+
+export interface NhsGuidancePageProps extends BaseReportPageProps {
   data: ReportData;
 }
 
@@ -30,7 +37,7 @@ export interface ReportHeaderProps {
   periodInfo?: {
     label: string;
     value: string;
-    sub: string;
+    sub?: string;
     patientCount?: number;
     carerCount?: number;
   };
@@ -72,4 +79,5 @@ export interface ExportMenuProps {
   endDate: Date;
   joinedAt: Date;
   accentColor: string;
+  majorSymptoms?: MajorSymptomsResponse;
 }

@@ -4,11 +4,11 @@ import { Stethoscope, AlertCircle, ClipboardList } from "lucide-react";
 import { MemoPageProps } from "../../types/props";
 import { TITLE_PROFESSIONAL_MEMO, SUBTITLE_MEMO, LABEL_NOTICE, TEXT_MEMO_DISCLAIMER, TEXT_MEMO_PURPOSE, TITLE_CARER_NOTES, LABEL_SIGNATURE, TEXT_SYNTHESIZED_BY, TEXT_VERSION } from "../../constants/report";
 
-export const MemoPage: React.FC<MemoPageProps> = ({ data }) => {
+export const MemoPage: React.FC<MemoPageProps> = ({ data, pageNum, totalPages }) => {
   const { patient, summary } = data;
 
   return (
-    <PageShell pageNum={5} totalPages={5} patientName={patient.name} patientId={patient.id}>
+    <PageShell pageNum={pageNum} totalPages={totalPages} patientName={patient.name} patientId={patient.id}>
       <div className="pro-header" style={{
         background: '#1a1a2e',
         padding: '24px 40px',

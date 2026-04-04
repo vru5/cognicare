@@ -8,7 +8,7 @@ export default function SharedLayout({
 }) {
     return (
         <ProtectedRoute>
-            <div className="pb-24 pt-[calc(2rem+env(safe-area-inset-top,0px))] px-4">
+            <div className="min-h-0 pb-20 px-4">
                 {children}
             </div>
             <BottomNavbar />

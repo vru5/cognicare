@@ -71,6 +71,7 @@ export interface MajorSymptomsCardProps {
   alerts: InsightAlert[];
   symptoms: MajorSymptom[];
   accentColor: string;
+  onHelpClick?: () => void;
 }
 
 export interface AiInsightSectionProps {
@@ -89,6 +90,12 @@ export interface SymptomDatePickerProps {
 export interface InsightsDashboardProps {
   patientId: string;
   accentColor: string;
+}
+
+export interface CalculationModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  type?: "symptoms" | "average";
 }
 
 

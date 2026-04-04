@@ -39,6 +39,9 @@ export const SYMPTOM_ROWS = [
   "Loss in Vision Focus",
   "Dark Thoughts",
   "Loss of Sense of Time",
+  "Personality & personality changes",
+  "Getting lost, confusion with time",
+  "Difficulties with movement and balance",
 ];
 
 export const PILLARS = ["physical", "cognitive", "mood", "sleep", "social"];

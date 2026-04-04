@@ -173,13 +173,14 @@ export async function generateDoctorFormDataAction(
     const maskedLogsText = allLogs.slice(0, 10).map(l => `[${format(new Date(l.createdAt), "dd/MM/yyyy")}]: ${mask(l.rawText || "")}`).join("\n");
 
     const prompt = DOCTOR_FORM_PREFILL_PROMPT(
-        patientName,
+        mask(patientName),
         format(new Date(), "dd/MM/yyyy"),
         monthsSinceFirst,
         format(diagnosisDate, "dd MMM yyyy"),
         maskedLogsText,
         symptomMetrics,
-        SYMPTOM_ROWS
+        SYMPTOM_ROWS,
+        (patientProfile as any).age
     );
 
     // 5. Query Gemini
@@ -301,7 +302,17 @@ export async function gradeHistoryRiskAction(
     const genAI = new GoogleGenerativeAI(apiKey);
     const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
-    const prompt = HISTORY_GRADING_PROMPT(history);
+    const maskedHistory: HistoryData = {
+        ...history,
+        stoppedChores: mask(history.stoppedChores || ""),
+        drinking: mask(history.drinking || ""),
+        nonPrescription: mask(history.nonPrescription || ""),
+        diet: mask(history.diet || ""),
+        familyHistory: mask(history.familyHistory || ""),
+        supportNetwork: mask(history.supportNetwork || ""),
+    };
+
+    const prompt = HISTORY_GRADING_PROMPT(maskedHistory);
 
     try {
         const result = await model.generateContent(prompt);

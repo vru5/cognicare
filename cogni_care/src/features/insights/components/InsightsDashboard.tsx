@@ -36,6 +36,7 @@ import ExportMenu from "@/features/export/components/ExportMenu";
 import DateRangePicker from "@/components/shared/DateRangePicker";
 import SymptomBarChart from "./SymptomBarChart";
 import AiInsightSection from "./AiInsightSection";
+import CalculationModal from "./CalculationModal";
 
 export default function InsightsDashboard({
   patientId,
@@ -72,6 +73,7 @@ export default function InsightsDashboard({
     useState<SymptomDataPoint | null>(null);
   const [aiSummary, setAiSummary] = useState<AiInsightSummary | null>(null);
   const [loadingAi, setLoadingAi] = useState(false);
+  const [helpModalType, setHelpModalType] = useState<"symptoms" | "average" | null>(null);
 
   // Initial Setup: Eligibility & Major Symptoms
   useEffect(() => {
@@ -186,6 +188,7 @@ export default function InsightsDashboard({
             endDate={dateRange.end}
             joinedAt={joinedAt}
             accentColor={accentColor}
+            majorSymptoms={majorSymptoms}
           />
         ) : null
       }
@@ -243,6 +246,7 @@ export default function InsightsDashboard({
             alerts={majorSymptoms.alerts}
             symptoms={majorSymptoms.topSymptoms}
             accentColor={accentColor}
+            onHelpClick={() => setHelpModalType("symptoms")}
           />
 
           <div className="space-y-4">
@@ -250,6 +254,7 @@ export default function InsightsDashboard({
               title={HEALTH_REPORT_TITLE}
               subtitle={SYMPTOM_COMPARISON_SUBTITLE}
               accentColor={accentColor}
+              onHelpClick={() => setHelpModalType("average")}
             >
               <div className="space-y-8">
                 {/* Range Presets Selector */}
@@ -383,6 +388,11 @@ export default function InsightsDashboard({
           </div>
         </div>
       )}
+      <CalculationModal 
+        isOpen={!!helpModalType} 
+        type={helpModalType || "symptoms"}
+        onClose={() => setHelpModalType(null)} 
+      />
     </MobilePageLayout>
   );
 }

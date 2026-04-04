@@ -143,7 +143,7 @@ export async function processBrainDumpAction(
     const log: SymptomRecord = await prisma.symptomLog.create({
       data: {
         patientId: profile.id,
-        rawText: safeText,
+        rawText,
         isFromCarer,
         carerId,
         physical: analysis.physical,

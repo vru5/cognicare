@@ -31,9 +31,9 @@ export default function MobilePageLayout({
   // If we have onBack, the container usually looks better as solid white/standard unless overridden
   const finalIconContainerClass = iconContainerClass || "bg-white shadow-sm";
   return (
-    <div className="w-full flex flex-col space-y-4 md:space-y-8 animate-in fade-in duration-500 max-w-2xl mx-auto">
+    <div className="w-full flex flex-col max-w-2xl mx-auto">
       {/* Header Area styled exactly like old dashboard but with icon layout */}
-      <header className={`sticky top-0 z-20 -mx-4 -mt-[calc(2rem+env(safe-area-inset-top,0px))] px-4 pt-[calc(2.5rem+env(safe-area-inset-top,0px))] pb-4 mb-2 ${headerBgClass} backdrop-blur-xl border-b border-white/40 shadow-sm flex flex-col gap-3`}>
+      <header className={`sticky top-0 z-20 -mx-4 px-4 py-4 ${headerBgClass} backdrop-blur-xl border-b border-white/40 shadow-sm flex flex-col gap-3`}>
         <div className="flex items-center justify-between w-full">
           <div className="flex items-center gap-4">
             
@@ -81,7 +81,7 @@ export default function MobilePageLayout({
       </header>
 
       {/* Content Area - Transparent to allow global body background to show */}
-      <div className="w-full pb-24">
+      <div className="w-full pt-6">
         {children}
       </div>
     </div>

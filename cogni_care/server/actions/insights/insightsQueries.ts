@@ -203,7 +203,7 @@ export async function getMajorSymptomsQuery(patientId: string) {
         lastSeen: data.lastSeen,
         isRisk: data.isRisk,
         frequency: data.patientCount + data.carerCount,
-        source: data.patientCount >= data.carerCount ? 'patient' : 'carer'
+        source: (data.patientCount >= data.carerCount ? 'patient' : 'carer') as 'patient' | 'carer'
     }))
     .sort((a, b) => {
         // 1. Priority: Risks
