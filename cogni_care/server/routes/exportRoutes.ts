@@ -9,8 +9,8 @@ import { AppError } from "server/types/logsApi.js";
 
 const router = express.Router();
 
-router.get("/professional", async (req: express.Request, res: express.Response) => {
-  const { patientId, dateA, dateB } = req.query;
+router.post("/professional", async (req: express.Request, res: express.Response) => {
+  const { patientId, dateA, dateB, majorSymptoms } = req.body;
 
   if (!patientId || !dateA || !dateB) {
     return res.status(400).json({ success: false, error: "Missing required parameters" });
@@ -20,7 +20,8 @@ router.get("/professional", async (req: express.Request, res: express.Response) 
     const result = await generateProfessionalReportAction(
       patientId as string,
       dateA as string,
-      dateB as string
+      dateB as string,
+      majorSymptoms
     );
     res.json(result);
   } catch (err: unknown) {

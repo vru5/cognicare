@@ -43,7 +43,6 @@ export const EXPORT_STRINGS = {
     
     TEXT_BURDEN_BY_PILLAR: "Overall Symptom Burden by Pillar",
     TEXT_BURDEN_DESC: "Percentage contribution of each pillar to total symptom load since",
-    TEXT_TREND_TITLE: "6-Month Trend per Pillar",
     TEXT_PILLAR_OVERVIEW: "PILLAR OVERVIEW",
     
     LABEL_AI_INSIGHTS_PERC: "AI Insights — Perception & Alignment",

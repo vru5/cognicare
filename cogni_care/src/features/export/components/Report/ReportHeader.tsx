@@ -1,7 +1,7 @@
 import React from "react";
 import { format } from "date-fns";
 import { ReportHeaderProps } from "../../types/props";
-import { LABEL_ID, LABEL_AGE, LABEL_PERIOD, LABEL_SINCE, LABEL_LOGS_SUFFIX, LABEL_GENERATED, LABEL_PATIENT_UPPER, LABEL_CARER_UPPER, LABEL_COMPARISON } from "../../constants/report";
+import { LABEL_ID, LABEL_AGE, LABEL_PERIOD, LABEL_SINCE, LABEL_LOGS_SUFFIX, LABEL_GENERATED } from "../../constants/report";
 
 export const ReportHeader: React.FC<ReportHeaderProps> = ({
   title,
@@ -53,11 +53,11 @@ export const ReportHeader: React.FC<ReportHeaderProps> = ({
       marginTop: -4
     }}>
       <div style={{ fontSize: 9, letterSpacing: 3, textTransform: 'uppercase', color: 'rgba(255,255,255,0.45)', fontWeight: 800, marginBottom: 6 }}>{LABEL_PERIOD}</div>
-      <div style={{ fontSize: 18, fontWeight: 900, color: '#5fa8d3', marginBottom: 4 }}>
-        {periodInfo?.label === LABEL_COMPARISON ? periodInfo.value : `${LABEL_SINCE} ${summary.diagnosisDate}`}
+      <div style={{ fontSize: 16, fontWeight: 900, color: '#5fa8d3', marginBottom: 4 }}>
+        {periodInfo ? periodInfo.value : `${LABEL_SINCE} ${summary.diagnosisDate}`}
       </div>
       <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', fontWeight: 700 }}>
-        {periodInfo?.label === LABEL_COMPARISON ? periodInfo.sub : `${summary.totalLogs} ${LABEL_LOGS_SUFFIX}`}
+        {periodInfo?.sub || `${summary.totalLogs} ${LABEL_LOGS_SUFFIX}`}
       </div>
       <div style={{ fontSize: 9, color: 'rgba(255,255,255,0.25)', marginTop: 10, fontWeight: 600 }}>
         {LABEL_GENERATED} {format(new Date(), 'd MMM yyyy')}

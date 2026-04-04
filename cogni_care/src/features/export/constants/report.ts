@@ -12,6 +12,9 @@ export const SUBTITLE_SYMPTOM_ANALYSIS = "Overall Symptom Analysis — Since Dia
 
 export const TITLE_AI_ANALYSIS = "AI CLINICAL ANALYSIS";
 export const SUBTITLE_OVERALL_PATTERNS = "AI Insights — Overall Patterns";
+export const LABEL_SAFETY_ALERTS = "High-Priority Safety Alerts";
+export const LABEL_CLINICAL_CONCERN = "Primary Clinical Concern";
+export const TEXT_CONTINUATION = "(Continuation)";
 
 export const LABEL_DIAGNOSIS_DATE = "DIAGNOSIS DATE";
 export const LABEL_TOTAL_LOGS = "TOTAL LOGS";
@@ -19,7 +22,6 @@ export const LABEL_HIGHEST_BURDEN = "HIGHEST BURDEN";
 export const LABEL_MOST_MANAGED = "MOST MANAGED";
 
 export const TITLE_BURDEN_BY_PILLAR = "Overall Symptom Burden by Pillar";
-export const TITLE_TRENDS_BY_PILLAR = "6-Month Trend per Pillar";
 
 export const TEXT_BURDEN_DESCRIPTION = "Percentage contribution of each pillar to total symptom load since";
 
@@ -43,8 +45,18 @@ export const LABEL_WORSENED = "Worsened";
 export const LABEL_IMPROVED = "Improved";
 export const LABEL_STABLE = "Stable";
 
+export const STATUS_IMPROVING = "Improving";
+export const STATUS_WORSENING = "Worsening";
+export const STATUS_STABLE_CAPS = "Stable";
+
 export const TITLE_CARE_PLAN_POINTS = "Care Plan Discussion Points";
 export const SUBTITLE_CARE_PLAN = "Consultation priorities generated from AI synthesis";
+
+export const TITLE_NHS_GUIDANCE = "AI-Synthesized NHS Guidance";
+export const SUBTITLE_CLINICAL_ALIGNMENT = "Clinical Alignment & Management Strategy";
+export const LABEL_DIAGNOSTIC_STEPS = "Suggested Diagnostic Steps";
+export const LABEL_CARERS_CORNER = "Carers Corner";
+export const LABEL_NHS_REFERENCE = "NHS.uk Reference Context";
 
 export const TITLE_PROFESSIONAL_MEMO = "Professional Evaluation Memo";
 export const SUBTITLE_MEMO = "Clinical review and notes secondary storage";

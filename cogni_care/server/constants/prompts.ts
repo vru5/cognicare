@@ -1,4 +1,5 @@
 import { HistoryData, SymptomMetrics } from "../types/doctorForm.js";
+import { format } from "date-fns";
 
 export const HISTORY_GRADING_PROMPT = (history: HistoryData) => `You are a clinical neuro-specialist. Evaluate the following patient history responses for risk factors associated with Traumatic Encephalopathy Syndrome (TES).
 
@@ -26,11 +27,12 @@ export const DOCTOR_FORM_PREFILL_PROMPT = (
   firstLogDate: string,
   maskedLogsText: string,
   symptomMetrics: SymptomMetrics,
-  SYMPTOM_ROWS: string[]
+  SYMPTOM_ROWS: string[],
+  age?: number | string | null
 ) => `You are a clinical assistant pre-filling a CTE TES assessment form from patient symptom log data.
 
 PATIENT:
-- Name: ${patientName}, Age: 47
+- Name: ${patientName}${age ? `, Age: ${age}` : ""}
 - Evaluation date: ${evaluationDate}
 - Months since first log: ${monthsSinceFirst} (first log: ${firstLogDate})
 - Contact sports: 0 years, Concussions recorded: 0
@@ -96,3 +98,49 @@ Return the result STRICTLY as a JSON object:
 
 Ensure the language is empathetic and avoids overly clinical jargon where possible. Focus on what is most helpful for the family to know right now.`;
 
+
+export const NHS_GUIDANCE_PROMPT = (
+  patientName: string,
+  startTime: Date,
+  endTime: Date,
+  overallPillarAvg: Record<string, number>,
+  scoresA: Record<string, number>,
+  scoresB: Record<string, number>,
+  monthlyTrend: Record<string, (number | null)[]>,
+  logsInPeriod: string,
+  riskKeywords: string[]
+) => `You are a professional clinical CTE health analyst. 
+Generate "AI-Synthesized NHS Guidance" for patient: ${patientName}.
+
+Data Summary:
+- Selected Period: ${format(startTime, "dd-MM-yyyy")} to ${format(endTime, "dd-MM-yyyy")}
+- All-time Pillar Averages: ${JSON.stringify(overallPillarAvg)}
+- Comparison: Date A Scores: ${JSON.stringify(scoresA)}, Date B Scores: ${JSON.stringify(scoresB)}
+- Trends (Last 6 months): ${JSON.stringify(monthlyTrend)}
+- Specific Patient Logs (Range Context): ${logsInPeriod}
+
+Clinical Safety Markers (RISK_KEYWORDS): ${JSON.stringify(riskKeywords)}
+
+Task:
+Generate "AI-Synthesized NHS Guidance" (Page 3). This should include:
+   - "clinicalAlignment": A 3-4 sentence synthesized "Patient Background" narrative. Summarize how the patient's specific logs in this date range align with NHS CTE markers (Cognitive, Mood, Physical). 
+   - IMPORTANT: Explicitly scan the provided logs for any of the Clinical Safety Markers (RISK_KEYWORDS). If ANY match is found (even partial), prioritize mentioning this high-risk concern at the start of your narrative.
+   - "suggestedDiagnosticSteps": Specific NHS tests (GPCOG, 6-CIT, Blood tests, MRI) to discuss with a GP.
+   - "carersCorner": 2-3 specific management tips for the carer based on the observed patterns.
+
+Output strictly as JSON:
+{
+  "nhsGuidance": {
+    "clinicalAlignment": "...",
+    "suggestedDiagnosticSteps": ["...", "...", "..."],
+    "carersCorner": ["...", "...", "..."]
+  }
+}
+
+Knowledge Context (NHS.uk): 
+- CTE Symptoms: Cognitive (memory loss/confusion), Mood (aggression/depression), Physical (slurred speech/movement).
+- Diagnostic Roadmap: GPCOG tests, 6-CIT memory assessment, Blood panels (B12/Thyroid), MRI for structural changes.
+- Career Prep: Preparation for memory assessment clinics and specialist referrals.
+- Dimentia Care: Looking after someone with Dimentia, Dimentia and relationships, Coping with dementia behaviour changes.
+
+Tone: Professional, clinical, and expert. Avoid generic filler.`;

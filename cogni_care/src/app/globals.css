@@ -108,7 +108,7 @@
 
   html,
   body {
-    min-height: 100vh;
+    height: 100%;
   }
 
   body {
@@ -132,7 +132,7 @@
       width: 100%;
       position: relative;
       /* Fix for mobile browser toolbars */
-      min-height: -webkit-fill-available;
+      height: -webkit-fill-available;
       /* Disable pinch-zoom and horizontal swiping */
       touch-action: pan-y;
       /* Prevent bounce-back effect on some mobile browsers */

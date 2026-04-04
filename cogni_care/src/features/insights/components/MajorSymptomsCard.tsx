@@ -6,7 +6,7 @@ import InsightsCard from "@/components/shared/InsightsCard"
 import { format } from "date-fns"
 import { getPillarColor } from "../constants/insightsConstants"
 
-export default function MajorSymptomsCard({ alerts, symptoms, accentColor }: MajorSymptomsCardProps) {
+export default function MajorSymptomsCard({ alerts, symptoms, accentColor, onHelpClick }: MajorSymptomsCardProps) {
   // Use specific icons based on pillar
   const getPillarIcon = (pillar: string) => {
     switch (pillar.toLowerCase()) {
@@ -55,11 +55,12 @@ export default function MajorSymptomsCard({ alerts, symptoms, accentColor }: Maj
         </div>
       )}
 
-      {/* Major Symptoms Section (7-Day Window) */}
+      {/* Major Symptoms Section (Fixed Window) */}
       <InsightsCard 
         title="Major Symptoms" 
         subtitle="Frequent indicators from recent logs (Last 7 days)"
         accentColor={accentColor}
+        onHelpClick={onHelpClick}
       >
         <div className="grid grid-cols-1 gap-3">
           {displaySymptoms.map((symptom, idx) => {

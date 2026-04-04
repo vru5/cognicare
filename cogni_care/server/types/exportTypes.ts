@@ -6,10 +6,45 @@ export interface AIInsight {
   body: string;
 }
 
+export interface MajorSymptom {
+  name: string;
+  severity: number;
+  pillar: string;
+  lastSeen: Date | string;
+  source: 'patient' | 'carer';
+  isRisk?: boolean;
+}
+
+export interface InsightAlert {
+  type: string;
+  message: string;
+  date: Date | string;
+}
+
+export interface KeyFinding {
+  pillar: string;
+  subCategory: string;
+  finding: string;
+}
+
 export interface AIInsights {
-  overallInsights: AIInsight[];
-  comparisonInsights: AIInsight[];
-  careTeamPoints: string[];
+  summary: string;
+  status: "improving" | "worsening" | "stable";
+  topConcern: {
+    pillar: string;
+    reason: string;
+  } | null;
+  keyFindings: KeyFinding[];
+  criticalRisks: {
+    type: string;
+    message: string;
+    priority: "high" | "medium";
+  }[];
+  nhsGuidance: {
+    clinicalAlignment: string;
+    suggestedDiagnosticSteps: string[];
+    carersCorner: string[];
+  };
 }
 
 export interface PillarDiff {
@@ -36,10 +71,13 @@ export interface ProfessionalReportResponse {
     };
     overall: {
       pillarAvg: Record<string, number>;
+      periodPillarAvg: Record<string, number>;
       patientPillarAvg: Record<string, number>;
       carerPillarAvg: Record<string, number>;
       patientPillarLogs: Record<string, number>;
       carerPillarLogs: Record<string, number>;
+      patientPeriodPillarLogs: Record<string, number>;
+      carerPeriodPillarLogs: Record<string, number>;
       monthlyTrend: Record<string, (number | null)[]>;
       patientMonthlyTrend: Record<string, (number | null)[]>;
       carerMonthlyTrend: Record<string, (number | null)[]>;
@@ -79,6 +117,10 @@ export interface ProfessionalReportResponse {
       carerLogsCount: number;
       highestBurden: { label: string; color: string };
       mostManaged: { label: string; color: string };
+      majorSymptoms: {
+        topSymptoms: MajorSymptom[];
+        alerts: InsightAlert[];
+      };
     };
   };
   error?: string;

@@ -1,15 +1,28 @@
-export interface AIInsight {
+export interface KeyFinding {
   pillar: string;
-  icon: string;
-  type: string;
-  title: string;
-  body: string;
+  subCategory: string;
+  finding: string;
 }
 
-export interface ProcessedInsight extends AIInsight {
+export interface MajorSymptom {
+  name: string;
+  severity: number;
+  pillar: string;
+  lastSeen: Date | string;
+  source: 'patient' | 'carer';
+  isRisk?: boolean;
+}
+
+export interface InsightAlert {
+  type: string;
+  message: string;
+  date: Date | string;
+}
+
+export interface ProcessedFinding extends KeyFinding {
   color: string;
   borderColor: string;
-  isLast: boolean;
+  icon: string;
 }
 
 export interface ReportData {
@@ -26,10 +39,13 @@ export interface ReportData {
   };
   overall: {
     pillarAvg: Record<string, number>;
+    periodPillarAvg: Record<string, number>;
     patientPillarAvg: Record<string, number>;
     carerPillarAvg: Record<string, number>;
     patientPillarLogs: Record<string, number>;
     carerPillarLogs: Record<string, number>;
+    patientPeriodPillarLogs: Record<string, number>;
+    carerPeriodPillarLogs: Record<string, number>;
     monthlyTrend: Record<string, (number | null)[]>;
     patientMonthlyTrend: Record<string, (number | null)[]>;
     carerMonthlyTrend: Record<string, (number | null)[]>;
@@ -62,9 +78,23 @@ export interface ReportData {
     mostStable: { pillar: string; label: string; diff: number; scoreA: number; scoreB: number };
   };
   ai: {
-    overallInsights: AIInsight[];
-    comparisonInsights: Array<AIInsight & { color?: string; bg?: string }>;
-    careTeamPoints: string[];
+    summary: string;
+    status: "improving" | "worsening" | "stable";
+    topConcern: {
+      pillar: string;
+      reason: string;
+    } | null;
+    keyFindings: KeyFinding[];
+    criticalRisks: {
+      type: string;
+      message: string;
+      priority: "high" | "medium";
+    }[];
+    nhsGuidance: {
+      clinicalAlignment: string;
+      suggestedDiagnosticSteps: string[];
+      carersCorner: string[];
+    };
   };
   summary: {
     diagnosisDate: string;
@@ -73,6 +103,10 @@ export interface ReportData {
     carerLogsCount: number;
     highestBurden: { label: string; color: string };
     mostManaged: { label: string; color: string };
+    majorSymptoms: {
+      topSymptoms: MajorSymptom[];
+      alerts: InsightAlert[];
+    };
   };
 }
 
@@ -81,4 +115,13 @@ export interface PillarConfig {
   label: string;
   icon: string;
   color: string;
+}
+
+export interface BaseReportPageProps {
+  pageNum: number;
+  totalPages: number;
+}
+
+export interface ReportTemplateProps {
+  data: ReportData;
 }

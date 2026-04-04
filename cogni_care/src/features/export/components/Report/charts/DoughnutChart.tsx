@@ -4,11 +4,11 @@ import { PillarConfig } from "../../../types/report";
 import { DoughnutChartProps } from "../../../types/props";
 
 export const DoughnutChart: React.FC<DoughnutChartProps> = ({ 
-  averages,
-  patientPillarLogs,
-  carerPillarLogs
+  averages = {},
+  patientPillarLogs = {},
+  carerPillarLogs = {}
 }) => {
-  const total = Object.values(averages).reduce((a: number, b: number) => a + b, 0) || 1;
+  const total = Object.values(averages || {}).reduce((a: number, b: number) => a + b, 0) || 1;
   const data = PILLARS_CONFIG.map((p: PillarConfig) => ({
     ...p,
     value: averages[p.key] || 0,
@@ -42,9 +42,12 @@ export const DoughnutChart: React.FC<DoughnutChartProps> = ({
               cy={100}
             />
             {data.map((p, i) => {
+              if (p.percent <= 0) return null;
+              
               const segmentLength = (p.percent / 100) * circumference;
               const previousSegments = data.slice(0, i);
               const offset = previousSegments.reduce((sum, curr) => sum + (curr.percent / 100) * circumference, 0);
+              const dashGap = 1.5;
               
               return (
                 <circle
@@ -52,7 +55,7 @@ export const DoughnutChart: React.FC<DoughnutChartProps> = ({
                   stroke={p.color}
                   fill="transparent"
                   strokeWidth={strokeWidth}
-                  strokeDasharray={`${segmentLength - 1.5} ${circumference}`}
+                  strokeDasharray={`${Math.max(0, segmentLength - dashGap)} ${circumference}`}
                   strokeDashoffset={-offset}
                   r={normalizedRadius}
                   cx={100}

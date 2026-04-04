@@ -10,7 +10,7 @@ import { ReportData } from "../types/report";
 import { ExportMenuProps } from "../types/props";
 import { EXPORT_STRINGS } from "../constants/exportStrings";
 
-export default function ExportMenu({ patientId, startDate, endDate, joinedAt, accentColor }: ExportMenuProps) {
+export default function ExportMenu({ patientId, startDate, endDate, joinedAt, accentColor, majorSymptoms }: ExportMenuProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatingStatus, setGeneratingStatus] = useState("");
@@ -34,12 +34,10 @@ export default function ExportMenu({ patientId, startDate, endDate, joinedAt, ac
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // 1. Generate a unique cache key for the current inputs
   const cacheKey = useMemo(() => {
     return `${patientId}-${startDate.toISOString().split('T')[0]}-${endDate.toISOString().split('T')[0]}`;
   }, [patientId, startDate, endDate]);
 
-  // 2. Track the key used for the currently stored reportData
   const [cachedKey, setCachedKey] = useState<string | null>(null);
 
   const handleProfessionalDownload = async () => {
@@ -49,15 +47,12 @@ export default function ExportMenu({ patientId, startDate, endDate, joinedAt, ac
 
     try {
       let data = reportData;
-
-      // 3. Skip API call if we already have the data for this specific selection
       if (data && cachedKey === cacheKey) {
         setGeneratingStatus(EXPORT_STRINGS.MENU.STATUS_CACHED);
       } else {
         setGeneratingStatus(EXPORT_STRINGS.MENU.STATUS_ANALYZING);
-        data = await getProfessionalReportData(patientId, startDate, endDate);
+        data = await getProfessionalReportData(patientId, startDate, endDate, majorSymptoms);
         if (!data) throw new Error(EXPORT_STRINGS.MENU.ITEM_DOWNLOAD_AI); 
-
         setReportData(data);
         setCachedKey(cacheKey);
       }
@@ -83,7 +78,6 @@ export default function ExportMenu({ patientId, startDate, endDate, joinedAt, ac
           setTimeout(() => setGeneratingStatus(""), 3000);
         }
       }, 1000);
-
     } catch (error) {
       console.error("Export Error:", error);
       alert(EXPORT_STRINGS.MENU.ITEM_DOWNLOAD_AI); 
@@ -166,7 +160,6 @@ export default function ExportMenu({ patientId, startDate, endDate, joinedAt, ac
         </div>
       )}
 
-      {/* Template for PDF capture - keep in DOM but invisible to user */}
       {reportData && (
         <div
           style={{ position: "fixed", top: 0, left: "-9999px", opacity: 0, pointerEvents: "none", zIndex: -100 }}
