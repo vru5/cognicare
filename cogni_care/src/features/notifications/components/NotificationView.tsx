@@ -56,6 +56,7 @@ export default function NotificationsView() {
         <MobilePageLayout
             title="Notifications"
             icon={Bell}
+            onBack={() => router.push('/logs')}
             iconContainerClass="bg-gradient-to-br from-primary to-[#0A4B75] shadow-lg shadow-primary/20"
             iconColorClass="text-white"
             actionRight={

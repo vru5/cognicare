@@ -7,11 +7,13 @@ import { useState, useMemo, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import LogEntryCard from "@/features/logs/components/LogEntryCard";
 import AddLogModal from "@/features/logs/components/AddLogModal";
-import { ChevronLeft, ChevronRight, ArrowLeft, Plus } from "lucide-react";
+import { ChevronLeft, ChevronRight, ArrowLeft, Plus, Bell } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLogs } from "@/contexts/LogsContext";
+import { useNotifications } from "@/contexts/NotificationContext";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { LogSummaryCard } from "../types/logTypes";
 import { ADD_LOG_TEXT, BACK_BUTTON, EMPTY_DAY_LOG_TEXT, SELECTED_DATE_ENTRIES } from "../constants/logPage";
 
@@ -20,6 +22,7 @@ type LogViewType = "day" | "week" | "month";
 export default function LogsView({ initialLogs, patientId, focusedLogId }: { initialLogs: LogSummaryCard[], patientId: string, focusedLogId?: string }) {
     const { user } = useAuth();
     const { updateLogInCache, deleteLogFromCache } = useLogs();
+    const { unreadCount } = useNotifications();
     const router = useRouter();
     const [viewMode, setViewMode] = useState<LogViewType>("day");
     const [logs, setLogs] = useState<LogSummaryCard[]>([]);
@@ -352,15 +355,30 @@ export default function LogsView({ initialLogs, patientId, focusedLogId }: { ini
                             {selectedLogs.length}
                         </span>
                     </h3>
-                    {user?.isCarer && !isFutureDate(selectedDate) && (
-                        <Button
-                            size="sm"
-                            onClick={() => setIsAddModalOpen(true)}
-                            className="rounded-full bg-primary text-white shadow-md shadow-primary/20 flex items-center gap-2 hover:scale-105 transition-transform px-4"
-                        >
-                            <Plus className="w-4 h-4" />
-                            <span className="text-xs font-black uppercase tracking-wider">{ADD_LOG_TEXT}</span>
-                        </Button>
+                    {user?.isCarer ? (
+                        !isFutureDate(selectedDate) && (
+                            <Button
+                                size="sm"
+                                onClick={() => setIsAddModalOpen(true)}
+                                className="rounded-full bg-primary text-white shadow-md shadow-primary/20 flex items-center gap-2 hover:scale-105 transition-transform px-4"
+                            >
+                                <Plus className="w-4 h-4" />
+                                <span className="text-xs font-black uppercase tracking-wider">{ADD_LOG_TEXT}</span>
+                            </Button>
+                        )
+                    ) : (
+                        <Link href="/notifications">
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                className="rounded-full bg-muted/50 hover:bg-muted relative"
+                            >
+                                <Bell className="w-5 h-5 text-muted-foreground" />
+                                {unreadCount > 0 && (
+                                    <span className="absolute top-1 right-1 flex h-2 w-2 rounded-full bg-destructive" />
+                                )}
+                            </Button>
+                        </Link>
                     )}
                 </div>
 
