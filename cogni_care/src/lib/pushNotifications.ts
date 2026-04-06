@@ -1,10 +1,21 @@
-import { PushNotifications } from '@capacitor/push-notifications';
+import { PushNotifications, ActionPerformed, Token } from '@capacitor/push-notifications';
 import { LocalNotifications } from '@capacitor/local-notifications';
 import { Capacitor } from '@capacitor/core';
+import { App } from '@capacitor/app';
 import { API_BASE_URL } from '@/constants/auth';
+import { parseChatNotificationPayload, buildChatRoute } from '@/features/care-circle/utils/chatUtils';
+import { ChatNotificationData } from '@/features/care-circle/types/chatTypes';
+import { CHAT_ENDPOINTS } from '@/features/care-circle/constants/chatConstants';
+
+let isInitialized = false;
 
 export const PushNotificationService = {
   async initialize(userId: string, onNavigate?: (path: string) => void) {
+    if (isInitialized) {
+      console.log('[PushNotificationService] Already initialized, skipping...');
+      return;
+    }
+
     if (Capacitor.getPlatform() === 'web') {
       console.log('[PushNotificationService] Push notifications not supported on web');
       return;
@@ -50,7 +61,7 @@ export const PushNotificationService = {
       console.log('[PushNotificationService] Registration successful, token:', token.value);
       
       try {
-        const response = await fetch(`${API_BASE_URL}/api/auth/push-token`, {
+        const response = await fetch(`${API_BASE_URL}${CHAT_ENDPOINTS.PUSH_TOKEN}`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ userId, pushToken: token.value }),
@@ -73,62 +84,67 @@ export const PushNotificationService = {
 
     // Listen for notification arrival (when app is foreground)
     PushNotifications.addListener('pushNotificationReceived', async (notification) => {
-      console.log('[PushNotificationService] Notification received in foreground:', notification);
+      console.log('[PushNotificationService] Notification received:', notification);
       
-      // Manual trigger of a system popup since Android doesn't show FCM popups in foreground
-      await LocalNotifications.schedule({
-        notifications: [
-          {
-            title: notification.title || 'New Notification',
-            body: notification.body || '',
-            id: Math.floor(Math.random() * 1000000),
-            extra: notification.data,
-            channelId: 'default',
-            smallIcon: 'ic_launcher',
-          }
-        ]
-      });
+      const appState = await App.getState();
+      
+      // ONLY trigger a manual system popup if the app is ACTIVE (foreground).
+      // If it's background/inactive, the OS handles the FCM popup automatically.
+      if (appState.isActive) {
+        await LocalNotifications.schedule({
+          notifications: [
+            {
+              title: notification.title || 'New Notification',
+              body: notification.body || '',
+              id: Math.floor(Math.random() * 1000000),
+              extra: notification.data,
+              channelId: 'default',
+              smallIcon: 'ic_notif_push',
+            }
+          ]
+        });
+      }
     });
 
-    const getTargetId = (data: unknown) => {
-      if (!data) return null;
-      let parsedData: any = data;
-      // Some platforms stringify the data object inside the notification data
-      if (typeof data === 'string') {
-        try { 
-          parsedData = JSON.parse(data); 
-        } catch (e) { 
-          return null; 
-        }
-      }
-      
-      const obj = parsedData as Record<string, unknown>;
-      return (obj?.logId as string) || (obj?.note_id as string) || null;
-    };
 
     // Handle taps on Push Notifications (Background/Closed state)
     PushNotifications.addListener('pushNotificationActionPerformed', (action) => {
       console.log('[PushNotificationService] Push Action:', action);
-      const targetId = getTargetId(action.notification.data);
+      const data = action.notification.data as ChatNotificationData;
+      const chatParams = parseChatNotificationPayload(data);
       
-      if (targetId && onNavigate) {
-        onNavigate(`/logs?logId=${targetId}`);
-      } else if (onNavigate) {
-        onNavigate('/logs');
+      if (onNavigate) {
+        if (chatParams) {
+          const route = buildChatRoute(chatParams);
+          onNavigate(route);
+        } else if (data.logId || data.note_id) {
+          const logId = data.logId || data.note_id;
+          onNavigate(`/logs?logId=${logId}`);
+        } else {
+          onNavigate('/logs');
+        }
       }
     });
 
     // Handle taps on Local Notifications (Foreground popup taps)
     LocalNotifications.addListener('localNotificationActionPerformed', (action) => {
       console.log('[PushNotificationService] Local Action:', action);
-      const targetId = getTargetId(action.notification.extra);
+      const data = action.notification.extra as ChatNotificationData;
+      const chatParams = parseChatNotificationPayload(data);
 
-      if (targetId && onNavigate) {
-        onNavigate(`/logs?logId=${targetId}`);
-      } else if (onNavigate) {
-        onNavigate('/logs');
+      if (onNavigate) {
+        if (chatParams) {
+          const route = buildChatRoute(chatParams);
+          onNavigate(route);
+        } else if (data.logId || data.note_id) {
+          const logId = data.logId || data.note_id;
+          onNavigate(`/logs?logId=${logId}`);
+        } else {
+          onNavigate('/logs');
+        }
       }
     });
+    isInitialized = true;
   },
 
   async removeListeners() {
@@ -136,6 +152,7 @@ export const PushNotificationService = {
       await PushNotifications.removeAllListeners();
       await LocalNotifications.removeAllListeners();
     }
+    isInitialized = false;
   }
 };
 

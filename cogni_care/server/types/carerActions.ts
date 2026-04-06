@@ -3,6 +3,7 @@ export interface CarerPatient {
     name: string;
     hasNewLog: boolean;
     accessSymptomLogs: boolean;
+    accessCareCircle: boolean;
 }
 
 export interface CarerPatientsResponse {

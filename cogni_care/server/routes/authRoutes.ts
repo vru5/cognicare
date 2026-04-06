@@ -46,6 +46,8 @@ router.post("/push-token", async (req, res) => {
         return res.status(400).json({ success: false, error: "Missing required fields" });
     }
 
+    console.log(`[Auth] Attempting to REGISTER PUSH TOKEN for user: ${userId}`);
+
     try {
         const patientResult = await prisma.profilePatient.updateMany({
             where: { userId },
@@ -53,6 +55,7 @@ router.post("/push-token", async (req, res) => {
         });
 
         if (patientResult.count > 0) {
+            console.log(`[Auth] SUCCESS: Registered push token for Patient ${userId}`);
             return res.json({ success: true, message: "Patient push token updated" });
         }
 
@@ -62,9 +65,11 @@ router.post("/push-token", async (req, res) => {
         });
 
         if (carerResult.count > 0) {
+            console.log(`[Auth] SUCCESS: Registered push token for Carer ${userId}`);
             return res.json({ success: true, message: "Carer push token updated" });
         }
 
+        console.warn(`[Auth] FAILED: User profile for ${userId} not found during token registration`);
         res.status(404).json({ success: false, error: "User profile not found" });
     } catch (error) {
         console.error("Failed to register push token:", error);

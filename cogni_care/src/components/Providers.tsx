@@ -3,6 +3,7 @@
 import { AuthProvider } from "@/contexts/AuthContext";
 import { NotificationProvider } from "@/contexts/NotificationContext";
 import { LogsProvider } from "@/contexts/LogsContext";
+import { ChatProvider } from "@/contexts/ChatContext";
 import GlobalErrorBoundary from "./GlobalErrorBoundary";
 
 export default function Providers({ children }: { children: React.ReactNode }) {
@@ -10,12 +11,13 @@ export default function Providers({ children }: { children: React.ReactNode }) {
         <GlobalErrorBoundary>
             <AuthProvider>
                 <NotificationProvider>
-                    <LogsProvider>
-                        {children}
-                    </LogsProvider>
+                    <ChatProvider>
+                        <LogsProvider>
+                            {children}
+                        </LogsProvider>
+                    </ChatProvider>
                 </NotificationProvider>
             </AuthProvider>
         </GlobalErrorBoundary>
     );
 }
-

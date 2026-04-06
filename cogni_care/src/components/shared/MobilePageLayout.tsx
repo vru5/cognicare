@@ -33,7 +33,7 @@ export default function MobilePageLayout({
   return (
     <div className="w-full flex flex-col max-w-2xl mx-auto">
       {/* Header Area styled exactly like old dashboard but with icon layout */}
-      <header className={`sticky top-0 z-20 -mx-4 px-4 py-4 ${headerBgClass} backdrop-blur-xl border-b border-white/40 shadow-sm flex flex-col gap-3`}>
+      <header className={`sticky top-0 z-20 -mx-4 px-4 pb-4 pt-[calc(2rem+env(safe-area-inset-top,0px))] ${headerBgClass} backdrop-blur-xl border-b border-white/40 shadow-sm flex flex-col gap-3`}>
         <div className="flex items-center justify-between w-full">
           <div className="flex items-center gap-4">
             
