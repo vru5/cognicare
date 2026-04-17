@@ -4,9 +4,8 @@ const nextConfig: NextConfig = {
   /* config options here */
   output: 'export',
   images: {
-    unoptimized: true, // Static export doesn't support Next.js Image Optimization
+    unoptimized: true,
   },
-  // reactCompiler: true,
 };
 
 export default nextConfig;

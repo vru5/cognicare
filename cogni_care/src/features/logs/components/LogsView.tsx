@@ -227,7 +227,7 @@ export default function LogsView({ initialLogs, patientId, focusedLogId }: { ini
     };
 
     return (
-        <div className="w-full max-w-xl mx-auto p-4 sm:p-6 min-h-screen flex flex-col gap-6 text-foreground">
+        <div className="w-full max-w-xl mx-auto pt-14 pt-safe pb-4 min-h-screen flex flex-col gap-6 text-foreground">
             {user?.isCarer && (
                 <Button
                     variant="ghost"

@@ -18,8 +18,10 @@ import { AiBadge } from "@/components/shared/AiBadge";
 import {
   SECTIONS,
   DEFAULT_TES,
-  DEFAULT_HISTORY
+  DEFAULT_HISTORY,
+  CTE_LIKELIHOODS
 } from "../constants/docFormConfig";
+import { calculateSeverityScore } from "../utils/scoring";
 import { DOC_FORM_STRINGS } from "../constants/docStrings";
 import {
   TesData,
@@ -114,6 +116,27 @@ export default function DocFormView() {
     run();
   }, [patientId]);
 
+  // AI Auto-suggestion for Likelihood based on score
+  useEffect(() => {
+    if (activeSection === "summary" && !tes.cte_likelihood) {
+      const scores = calculateSeverityScore(symptomChecks, history, tes, aiHistoryGrade);
+      let suggested = "";
+      
+      if (scores.total >= 70) suggested = "Probable CTE";
+      else if (scores.total >= 35) suggested = "Possible CTE";
+      else suggested = "Unlikely CTE";
+
+      if (suggested && suggested !== tes.cte_likelihood) {
+          setTes(prev => ({ ...prev, cte_likelihood: suggested }));
+          setAiFilledKeys(prev => {
+              const next = new Set(prev);
+              next.add("cte_likelihood");
+              return next;
+          });
+      }
+    }
+  }, [activeSection, symptomChecks, history, tes.cte_likelihood, aiHistoryGrade]);
+
   const updateTes = (k: string, v: string | boolean) => {
     setAiFilledKeys((p) => { const n = new Set(p); n.delete(k); return n; });
     setTes(p => ({ ...p, [k]: v }));
@@ -146,7 +169,7 @@ export default function DocFormView() {
       const rhiMet = ['rhi_concussions4', 'rhi_moderate2', 'rhi_sports6', 'rhi_military', 'rhi_other'].some(k => tes[k as keyof typeof tes]);
       const a2Met = ['core_cognitive', 'core_behavioral', 'core_mood'].some(k => tes[k as keyof typeof tes]);
       const a3Met = ['sup_decline', 'sup_delayed', 'sup_impulsivity', 'sup_anxiety', 'sup_apathy', 'sup_paranoia', 'sup_suicidality', 'sup_headache', 'sup_motor'].filter(k => tes[k as keyof typeof tes]).length >= 2;
-      return rhiMet && a2Met && a3Met && !!tes.subtype && !!tes.course && !!tes.cte_likelihood;
+      return rhiMet && a2Met && a3Met && !!tes.subtype && !!tes.course;
     }
     return true;
   }, [activeSection, symptomChecks, tes, history]);
@@ -220,6 +243,30 @@ export default function DocFormView() {
                       {activeSection === "summary" && (
                         <div className="space-y-6">
                           <SeverityMeter tes={tes} symptomChecks={symptomChecks} history={history} aiHistoryGrade={aiHistoryGrade} />
+                          
+                          {/* Section C: CTE Likelihood (Relocated from TES) */}
+                          <div className={`px-2 py-8 bg-slate-50/50 rounded-[28px] border-2 border-slate-100 mb-6`}>
+                            <div className="text-[14px] font-black tracking-tight text-slate-800 flex items-center mb-5 px-4">
+                              <span className="bg-red-500/80 text-white rounded-md px-2 py-0.5 text-[10px] font-bold tracking-wide mr-2 uppercase">likelihood</span>
+                              {DOC_FORM_STRINGS.CTE.SECTION_TITLE} <span className="text-[10px] text-slate-400 ml-2 font-bold tracking-widest uppercase">{DOC_FORM_STRINGS.CTE.SUBTITLE}</span>
+                            </div>
+                            <div className="bg-white/95 backdrop-blur-xl border-l-[4px] border-l-amber-500 border border-amber-100 rounded-2xl p-4 shadow-sm text-xs text-amber-700 font-medium flex items-start gap-3 mb-6 mx-4">
+                              <span className="text-base leading-none mt-0.5">ℹ️</span>
+                              <span className="leading-relaxed">{DOC_FORM_STRINGS.CTE.NOTICE}</span>
+                            </div>
+                            <div className="flex flex-wrap gap-2.5 px-4">
+                              {CTE_LIKELIHOODS.map(s => (
+                                <button
+                                  key={s} onClick={() => updateTes("cte_likelihood", tes.cte_likelihood === s ? "" : s)}
+                                  className={`px-5 py-3 rounded-2xl text-[13px] transition-all border-2 flex items-center gap-2 ${tes.cte_likelihood === s ? 'border-[#0ea5e9] bg-[#0ea5e9]/10 text-[#0ea5e9] font-black shadow-md' : 'border-slate-100 bg-white text-slate-400 font-bold hover:border-[#0ea5e9]/30 hover:bg-slate-50/50'}`}
+                                >
+                                  {s}
+                                  {aiFilledKeys.has("cte_likelihood") && tes.cte_likelihood === s && <AiBadge />}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+
                           <div className="bg-sky-50/50 text-card-foreground rounded-2xl border border-sky-100 p-6 shadow-sm">
                             <div className="text-[13px] font-black flex items-center mb-3 uppercase tracking-widest text-[#0ea5e9]">{DOC_FORM_STRINGS.SUMMARY.VIEW_TITLE}</div>
                             <p className="text-[13px] leading-relaxed font-bold text-sky-800/70">{DOC_FORM_STRINGS.SUMMARY.VIEW_DESC}</p>

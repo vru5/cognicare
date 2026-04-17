@@ -57,12 +57,12 @@ export async function transcribeAudioAction(base64Audio: string, patientId?: str
       result = await model.generateContent(promptParams);
     } catch (apiErr: unknown) {
       const err = apiErr as AppError;
-      if (err.status === 503 || err.message?.includes("503")) {
+      if (err.status === 503 || err.message?.includes("503") || err.message?.includes("overloaded")) {
         console.warn(
-          "Gemini 2.5 is overloaded (503), falling back to 1.5-flash...",
+          "Gemini 2.5 Flash is overloaded, falling back to 2.5 Pro...",
         );
         const fallbackModel = genAI.getGenerativeModel({
-          model: "gemini-1.5-flash",
+          model: "gemini-2.5-flash-lite",
         });
         result = await fallbackModel.generateContent(promptParams);
       } else {

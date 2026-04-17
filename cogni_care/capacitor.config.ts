@@ -5,6 +5,7 @@ const config: CapacitorConfig = {
   appName: 'CogniCare',
   webDir: 'out',
   server: {
+    url: 'http://localhost:3001',
     androidScheme: 'http',
     cleartext: true
   },

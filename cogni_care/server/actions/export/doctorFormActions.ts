@@ -184,7 +184,19 @@ export async function generateDoctorFormDataAction(
     );
 
     // 5. Query Gemini
-    const result = await model.generateContent(prompt);
+    let result;
+    try {
+      result = await model.generateContent(prompt);
+    } catch (apiErr: unknown) {
+      const errorMessage = apiErr instanceof Error ? apiErr.message : String(apiErr);
+      if (errorMessage.includes("503") || errorMessage.includes("overloaded")) {
+          console.warn("[DocForm] Flash 2.5 overloaded, falling back to Lite...");
+          const fallbackModel = genAI.getGenerativeModel({ model: "gemini-2.5-flash-lite" });
+          result = await fallbackModel.generateContent(prompt);
+      } else {
+          throw apiErr;
+      }
+    }
     const responseText = result.response.text().replace(/```json/g, "").replace(/```/g, "").trim();
     
     let parsedData: { tes: Partial<TesData>, symptomChecks: Record<string, SymptomCheck> } = { tes: {}, symptomChecks: {} };
@@ -315,7 +327,19 @@ export async function gradeHistoryRiskAction(
     const prompt = HISTORY_GRADING_PROMPT(maskedHistory);
 
     try {
-        const result = await model.generateContent(prompt);
+        let result;
+        try {
+          result = await model.generateContent(prompt);
+        } catch (apiErr: unknown) {
+          const errorMessage = apiErr instanceof Error ? apiErr.message : String(apiErr);
+          if (errorMessage.includes("503") || errorMessage.includes("overloaded")) {
+              console.warn("[GradeHistory] Flash 2.5 overloaded, falling back to Lite...");
+              const fallbackModel = genAI.getGenerativeModel({ model: "gemini-2.5-flash-lite" });
+              result = await fallbackModel.generateContent(prompt);
+          } else {
+              throw apiErr;
+          }
+        }
         const responseText = result.response.text().replace(/```json/g, "").replace(/```/g, "").trim();
         const parsed = JSON.parse(responseText);
         return { 

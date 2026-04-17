@@ -71,27 +71,5 @@ export const TesSection: React.FC<TesSectionProps> = ({ tes, updateTes, aiFilled
       </div>
     </div>
 
-    <div className={`px-2 pb-8 transition-all mb-6 ${showErrors && !tes.cte_likelihood ? 'border-2 border-red-400 bg-red-50/20 rounded-2xl p-6' : ''}`}>
-      <div className="text-[14px] font-black tracking-tight text-slate-800 flex items-center mb-5">
-        <span className="bg-red-500/80 text-white rounded-md px-2 py-0.5 text-[10px] font-bold tracking-wide mr-2">C</span>
-        {DOC_FORM_STRINGS.CTE.SECTION_TITLE} <span className="text-[10px] text-slate-400 ml-2 font-bold tracking-widest uppercase">{DOC_FORM_STRINGS.CTE.SUBTITLE}</span>
-        {showErrors && !tes.cte_likelihood && <span className="ml-auto text-[10px] font-black uppercase tracking-widest text-red-500 animate-pulse">{DOC_FORM_STRINGS.DIAGNOSTICS.SELECTION_REQUIRED}</span>}
-      </div>
-      <div className="bg-white/95 backdrop-blur-xl border-l-[4px] border-l-amber-500 border border-amber-100 rounded-xl p-3 shadow-sm text-xs text-amber-700 font-medium flex items-start gap-2 mb-4">
-        <span className="text-sm leading-none mt-[2px]">ℹ️</span>
-        <span>{DOC_FORM_STRINGS.CTE.NOTICE}</span>
-      </div>
-      <div className="flex flex-wrap gap-2">
-        {CTE_LIKELIHOODS.map(s => (
-          <button
-            key={s} onClick={() => updateTes("cte_likelihood", tes.cte_likelihood === s ? "" : s)}
-            className={`px-4 py-2 rounded-xl text-xs transition-all border-2 ${tes.cte_likelihood === s ? 'border-[#0ea5e9] bg-[#0ea5e9]/10 text-[#0ea5e9] font-black shadow-md' : 'border-slate-100 bg-slate-50/50 text-muted-foreground/60 font-bold hover:border-[#0ea5e9]/30'}`}
-          >
-            {s}
-            {aiFilledKeys.has("cte_likelihood") && tes.cte_likelihood === s && <AiBadge />}
-          </button>
-        ))}
-      </div>
-    </div>
   </div>
 );

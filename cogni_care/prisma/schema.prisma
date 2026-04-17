@@ -48,7 +48,6 @@ model ProfileCarer {
   patients      CarersOnPatients[]
   authoredThreads ChatThread[]
   directChats     DirectChat[]
-  threadParticipants ThreadParticipant[]
 
   @@map("carer_profiles")
 }
@@ -173,7 +172,6 @@ model ChatThread {
   carer             ProfileCarer   @relation(fields: [authorCarerId], references: [id])
   note              CarerNote?     @relation(fields: [noteId], references: [id])
   messages          ChatMessage[]
-  participants      ThreadParticipant[]
   
   patientLastReadAt DateTime       @default(now())
   carerLastReadAt   DateTime       @default(now())
@@ -196,17 +194,6 @@ model DirectChat {
 
   @@unique([patientId, carerId])
   @@map("direct_chats")
-}
-
-model ThreadParticipant {
-  threadId String
-  carerId  String
-  carer    ProfileCarer @relation(fields: [carerId], references: [id])
-  thread   ChatThread   @relation(fields: [threadId], references: [id])
-  lastReadAt DateTime   @default(now())
-
-  @@id([threadId, carerId])
-  @@map("thread_participants")
 }
 
 model ChatMessage {

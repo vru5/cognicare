@@ -59,7 +59,7 @@ RULES:
 Respond ONLY in valid JSON. Use this exact structure:
 {
   "tes":{"name":"","evalDate":"","rhi_concussions4":false,"rhi_sports6":false,"rhi_military":false,"rhi_other":false,"rhi_notes":"","core_cognitive":false,"core_behavioral":false,"core_mood":false,"sup_decline":false,"sup_delayed":false,"sup_impulsivity":false,"sup_anxiety":false,"sup_apathy":false,"sup_paranoia":false,"sup_suicidality":false,"sup_headache":false,"sup_motor":false,"symptoms_12months":"","subtype":"","course":"","cte_likelihood":""},
-  "symptomChecks": ${JSON.stringify(Object.fromEntries(SYMPTOM_ROWS.map(s => [s, { present: false, duration: "", trend: "" }] )))}
+  "symptomChecks": ${JSON.stringify(Object.fromEntries(SYMPTOM_ROWS.map(s => [s, { present: false, duration: "", trend: "" }])))}
 }`;
 
 
@@ -144,3 +144,22 @@ Knowledge Context (NHS.uk):
 - Dimentia Care: Looking after someone with Dimentia, Dimentia and relationships, Coping with dementia behaviour changes.
 
 Tone: Professional, clinical, and expert. Avoid generic filler.`;
+
+
+export const PROCESS_BRAIN_DUMP_PROMPT = (safeText: string) => `Analyze the following patient health log.
+    Extract the symptoms into the following pillars: physical, mood, cognitive, sleep, social.
+    
+    For each pillar, provide TWO fields in the JSON:
+    1. The pillar name (e.g., 'physical'): A single word or very short phrase describing the symptom (e.g., 'Headache', 'Happy').
+    2. The severity field (e.g., 'physicalSeverity'): A number from 1 to 10 evaluating how severe the symptom is based on the language used.
+    
+    If a category is not mentioned or the input is nonsensical/gibberish, return null for the string field and 0 or null for the severity field.
+    DO NOT make up information. If the input is just random characters or unrelated to health, return null for ALL fields.
+    Return output strictly as a JSON object, for example:
+    {
+      "physical": "Headache", "physicalSeverity": 8,
+      "sleep": "Insomnia", "sleepSeverity": 9,
+      "mood": null, "moodSeverity": null
+    }
+    
+    Log: "${safeText}"`;
