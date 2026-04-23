@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { format, subDays, subMonths } from "date-fns";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Activity, Loader2, Lock, Sparkles } from "lucide-react";
+import { Activity, Loader2, Lock, Sparkles, ArrowRight, ChevronUp } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import MobilePageLayout from "@/components/shared/MobilePageLayout";
 import {
@@ -53,6 +53,7 @@ export default function InsightsDashboard({
   const [daysCount, setDaysCount] = useState(0);
   const [hasOneMonthData, setHasOneMonthData] = useState<boolean>(false);
   const [joinedAt, setJoinedAt] = useState<Date>(new Date());
+  const [showAiInsights, setShowAiInsights] = useState(false);
 
   // Date State
   const [preset, setPreset] = useState<
@@ -144,6 +145,7 @@ export default function InsightsDashboard({
       setAggregateData(data);
       setAiSummary(ai);
       setSelectedSymptom(null);
+      setShowAiInsights(false); // Reset when date range changes to avoid overwhelming
       setFetchingData(false);
       setLoadingAi(false);
     }
@@ -326,9 +328,6 @@ export default function InsightsDashboard({
                       <h3 className="text-2xl font-black text-slate-800 tracking-tight mb-2">
                         Getting AI Insights
                       </h3>
-                      <p className="text-sm font-bold text-sky-400 uppercase tracking-[0.2em] animate-pulse">
-                        Mapping symptoms to TES criteria...
-                      </p>
                     </motion.div>
                   ) : (
                     <motion.div
@@ -338,8 +337,8 @@ export default function InsightsDashboard({
                       className="space-y-8"
                     >
                       {/* Aggregated Chart View */}
-                      <div className="relative min-h-[250px]">
-                        <div className="mb-6 flex flex-col items-center">
+                      <div className="relative">
+                        <div className="mb-4 flex flex-col items-center">
                           <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">
                             Combined Average
                           </p>
@@ -362,23 +361,68 @@ export default function InsightsDashboard({
                         />
                       </div>
 
-                      {/* Visual Divider */}
-                      <div className="h-[1.5px] w-full bg-slate-400 my-12" />
+                      {/* AI Insights Reveal Logic */}
+                      <div className="pt-0 flex flex-col items-center">
+                        <AnimatePresence mode="wait">
+                          {!showAiInsights ? (
+                            <motion.div
+                              key="view-btn-container"
+                              initial={{ opacity: 0, y: 5 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              exit={{ opacity: 0, scale: 0.95 }}
+                              className="flex flex-col items-center w-full mt-2"
+                            >
+                              <button
+                                onClick={() => setShowAiInsights(true)}
+                                className="group relative px-10 py-5 bg-gradient-to-br from-primary to-[#0A4B75] text-white rounded-[2rem] flex items-center gap-4 active:scale-95 transition-all shadow-xl shadow-primary/20 hover:scale-[1.02] hover:shadow-primary/30 overflow-hidden"
+                              >
+                                {/* Button Shine Effect */}
+                                <div className="absolute inset-0 bg-gradient-to-tr from-white/0 via-white/20 to-white/0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
+                                
+                                <div className="flex items-center justify-center">
+                                  <span className="text-base font-black tracking-tight flex items-center gap-3">
+                                    See AI Insights 
+                                    <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                                  </span>
+                                </div>
+                              </button>
+                            </motion.div>
+                          ) : (
+                            <motion.div
+                              key="ai-content"
+                              initial={{ opacity: 0, height: 0 }}
+                              animate={{ opacity: 1, height: "auto" }}
+                              transition={{ duration: 0.5, ease: [0.23, 1, 0.32, 1] }}
+                              className="overflow-hidden w-full"
+                            >
+                              <div className="flex items-center justify-between mb-6 mt-4 px-2">
+                                <div className="px-4 py-1 bg-primary/10 rounded-full border border-primary/20">
+                                  <span className="text-[9px] font-black text-primary uppercase tracking-widest">AI Clinical Analysis</span>
+                                </div>
+                                <button 
+                                  onClick={() => setShowAiInsights(false)}
+                                  className="w-8 h-8 flex items-center justify-center bg-slate-50 border border-slate-200 rounded-xl text-slate-400 hover:text-primary active:scale-90 transition-all"
+                                >
+                                  <ChevronUp className="w-5 h-5" />
+                                </button>
+                              </div>
 
-                      {/* AI Insights Section */}
-                      <div className="pt-6">
-                        {aiSummary ? (
-                          <AiInsightSection
-                            insights={aiSummary}
-                            accentColor={accentColor}
-                          />
-                        ) : (
-                          <div className="text-center py-8">
-                            <p className="text-xs font-bold text-slate-400">
-                              Add more logs to generate AI insights.
-                            </p>
-                          </div>
-                        )}
+                              {aiSummary ? (
+                                <AiInsightSection
+                                  insights={aiSummary}
+                                  accentColor={accentColor}
+                                />
+                              ) : (
+                                <div className="text-center py-12 bg-slate-50/50 rounded-[2rem] border border-dashed border-slate-200">
+                                  <p className="text-xs font-bold text-slate-400">
+                                    Add more logs to generate AI insights.
+                                  </p>
+                                </div>
+                              )}
+                              
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
                       </div>
                     </motion.div>
                   )}
