@@ -288,30 +288,26 @@ export default function InsightsDashboard({
               <div className="space-y-8">
                 {/* Range Presets Selector */}
                 <div className="flex flex-wrap gap-2 justify-center">
-                  {DATE_PRESETS.map((p) => (
-                    <button
-                      key={p.key}
-                      onClick={() =>
-                        !(fetchingData || loadingAi) &&
-                        handlePresetChange(p.key)
-                      }
-                      disabled={fetchingData || loadingAi}
-                      className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all
-                        ${
-                          preset === p.key
-                            ? "bg-slate-900 text-white shadow-lg scale-105"
-                            : "bg-slate-50 text-slate-500 hover:bg-slate-100 hover:text-slate-700"
-                        }
-                        ${
-                          fetchingData || loadingAi
-                            ? "opacity-50 cursor-not-allowed"
-                            : ""
-                        }
-                      `}
-                    >
-                      {p.label}
-                    </button>
-                  ))}
+                  {DATE_PRESETS.map((p) => {
+                    const isDisabled = fetchingData || loadingAi || loadingPredictive;
+                    return (
+                      <button
+                        key={p.key}
+                        onClick={() => !isDisabled && handlePresetChange(p.key)}
+                        disabled={isDisabled}
+                        className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all
+                          ${
+                            preset === p.key
+                              ? "bg-slate-900 text-white shadow-lg scale-105"
+                              : "bg-slate-50 text-slate-500 hover:bg-slate-100 hover:text-slate-700"
+                          }
+                          ${isDisabled ? "opacity-50 cursor-not-allowed" : ""}
+                        `}
+                      >
+                        {p.label}
+                      </button>
+                    );
+                  })}
                 </div>
 
                 {/* Custom Range Picker */}
@@ -323,7 +319,7 @@ export default function InsightsDashboard({
                       minDate={joinedAt}
                       maxDate={new Date()}
                       accentColor={accentColor}
-                      disabled={fetchingData || loadingAi}
+                      disabled={fetchingData || loadingAi || loadingPredictive}
                       onRangeChange={(start, end) =>
                         setDateRange({ start, end })
                       }
@@ -401,7 +397,8 @@ export default function InsightsDashboard({
                             >
                               <button
                                 onClick={() => setShowAiInsights(true)}
-                                className="group relative w-full px-10 py-5 bg-gradient-to-br from-primary to-[#0A4B75] text-white rounded-[2rem] flex items-center justify-center gap-4 active:scale-95 transition-all shadow-xl shadow-primary/20 hover:scale-[1.02] hover:shadow-primary/30 overflow-hidden"
+                                disabled={fetchingData || loadingAi || loadingPredictive}
+                                className="group relative w-full px-10 py-5 bg-gradient-to-br from-primary to-[#0A4B75] text-white rounded-[2rem] flex items-center justify-center gap-4 active:scale-95 disabled:opacity-50 disabled:scale-100 disabled:cursor-not-allowed transition-all shadow-xl shadow-primary/20 hover:scale-[1.02] hover:shadow-primary/30 overflow-hidden"
                               >
                                 <div className="absolute inset-0 bg-gradient-to-tr from-white/0 via-white/20 to-white/0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
                                 <span className="text-base font-black tracking-tight flex items-center gap-3">
@@ -412,8 +409,8 @@ export default function InsightsDashboard({
 
                               <button
                                 onClick={handleFetchPredictive}
-                                disabled={loadingPredictive}
-                                className="group relative w-full px-10 py-5 bg-gradient-to-br from-primary to-[#0A4B75] text-white rounded-[2rem] flex items-center justify-center gap-4 active:scale-95 transition-all shadow-xl shadow-primary/20 hover:scale-[1.02] hover:shadow-primary/30 overflow-hidden"
+                                disabled={fetchingData || loadingAi || loadingPredictive}
+                                className="group relative w-full px-10 py-5 bg-gradient-to-br from-primary to-[#0A4B75] text-white rounded-[2rem] flex items-center justify-center gap-4 active:scale-95 disabled:opacity-50 disabled:scale-100 disabled:cursor-not-allowed transition-all shadow-xl shadow-primary/20 hover:scale-[1.02] hover:shadow-primary/30 overflow-hidden"
                               >
                                 {/* Button Shine Effect */}
                                 <div className="absolute inset-0 bg-gradient-to-tr from-white/0 via-white/20 to-white/0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
