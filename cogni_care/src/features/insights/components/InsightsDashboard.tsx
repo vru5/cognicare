@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { format, subDays, subMonths } from "date-fns";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Activity, Loader2, Lock, Sparkles } from "lucide-react";
+import { Activity, Loader2, Lock, Sparkles, ArrowRight, ChevronUp, Telescope } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import MobilePageLayout from "@/components/shared/MobilePageLayout";
 import {
@@ -11,12 +11,15 @@ import {
   getSymptomAggregate,
   getMajorSymptoms,
   getAiSummary,
+  getPredictiveAnalysis,
 } from "../services/insightsService";
+import { useAuth } from "@/contexts/AuthContext";
 import {
   DailyAverage,
   MajorSymptomsResponse,
   SymptomDataPoint,
   AiInsightSummary,
+  PredictiveAnalysis,
   InsightsDashboardProps,
 } from "../types/insightsTypes";
 import {
@@ -36,7 +39,9 @@ import ExportMenu from "@/features/export/components/ExportMenu";
 import DateRangePicker from "@/components/shared/DateRangePicker";
 import SymptomBarChart from "./SymptomBarChart";
 import AiInsightSection from "./AiInsightSection";
+import PredictiveAnalysisSection from "./PredictiveAnalysisSection";
 import CalculationModal from "./CalculationModal";
+import HelpTooltip from "@/components/shared/HelpTooltip";
 
 export default function InsightsDashboard({
   patientId,
@@ -44,6 +49,9 @@ export default function InsightsDashboard({
 }: InsightsDashboardProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { user } = useAuth();
+  const isCarer = user?.isCarer || false;
+  const userRole = isCarer ? "carer" : "patient";
   const urlPatientId = searchParams?.get("patientId");
 
   // UI State
@@ -53,6 +61,8 @@ export default function InsightsDashboard({
   const [daysCount, setDaysCount] = useState(0);
   const [hasOneMonthData, setHasOneMonthData] = useState<boolean>(false);
   const [joinedAt, setJoinedAt] = useState<Date>(new Date());
+  const [showAiInsights, setShowAiInsights] = useState(false);
+  const [showPredictive, setShowPredictive] = useState(false);
 
   // Date State
   const [preset, setPreset] = useState<
@@ -72,8 +82,11 @@ export default function InsightsDashboard({
   const [selectedSymptom, setSelectedSymptom] =
     useState<SymptomDataPoint | null>(null);
   const [aiSummary, setAiSummary] = useState<AiInsightSummary | null>(null);
+  const [predictiveAnalysis, setPredictiveAnalysis] = useState<PredictiveAnalysis | null>(null);
   const [loadingAi, setLoadingAi] = useState(false);
-  const [helpModalType, setHelpModalType] = useState<"symptoms" | "average" | null>(null);
+  const [loadingPredictive, setLoadingPredictive] = useState(false);
+  const [errorPredictive, setErrorPredictive] = useState<string | null>(null);
+  const [helpModalType, setHelpModalType] = useState<"symptoms" | "average" | "predictive" | null>(null);
 
   // Initial Setup: Eligibility & Major Symptoms
   useEffect(() => {
@@ -138,17 +151,37 @@ export default function InsightsDashboard({
 
       const [data, ai] = await Promise.all([
         getSymptomAggregate(patientId, dateRange.start, dateRange.end),
-        getAiSummary(patientId, dateRange.start, dateRange.end),
+        getAiSummary(patientId, dateRange.start, dateRange.end, userRole),
       ]);
 
       setAggregateData(data);
       setAiSummary(ai);
       setSelectedSymptom(null);
+      setShowAiInsights(false);
+      setShowPredictive(false);
+      setErrorPredictive(null);
       setFetchingData(false);
       setLoadingAi(false);
     }
     fetchData();
   }, [patientId, eligible, dateRange.start, dateRange.end]);
+
+  const handleFetchPredictive = async () => {
+    if (predictiveAnalysis) {
+      setShowPredictive(true);
+      return;
+    }
+    setLoadingPredictive(true);
+    setErrorPredictive(null);
+    const data = await getPredictiveAnalysis(patientId, userRole);
+    if (data) {
+      setPredictiveAnalysis(data);
+      setShowPredictive(true);
+    } else {
+      setErrorPredictive("API quota reached or server error. Please try again in a few minutes.");
+    }
+    setLoadingPredictive(false);
+  };
 
   // Format data for chart
   const chartData = useMemo(() => {
@@ -189,6 +222,8 @@ export default function InsightsDashboard({
             joinedAt={joinedAt}
             accentColor={accentColor}
             majorSymptoms={majorSymptoms}
+            hasDataInRange={!!aggregateData}
+            hasOneMonthData={hasOneMonthData}
           />
         ) : null
       }
@@ -259,30 +294,25 @@ export default function InsightsDashboard({
               <div className="space-y-8">
                 {/* Range Presets Selector */}
                 <div className="flex flex-wrap gap-2 justify-center">
-                  {DATE_PRESETS.map((p) => (
-                    <button
-                      key={p.key}
-                      onClick={() =>
-                        !(fetchingData || loadingAi) &&
-                        handlePresetChange(p.key)
-                      }
-                      disabled={fetchingData || loadingAi}
-                      className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all
-                        ${
-                          preset === p.key
+                  {DATE_PRESETS.map((p) => {
+                    const isDisabled = fetchingData || loadingAi || loadingPredictive;
+                    return (
+                      <button
+                        key={p.key}
+                        onClick={() => !isDisabled && handlePresetChange(p.key)}
+                        disabled={isDisabled}
+                        className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all
+                          ${preset === p.key
                             ? "bg-slate-900 text-white shadow-lg scale-105"
                             : "bg-slate-50 text-slate-500 hover:bg-slate-100 hover:text-slate-700"
-                        }
-                        ${
-                          fetchingData || loadingAi
-                            ? "opacity-50 cursor-not-allowed"
-                            : ""
-                        }
-                      `}
-                    >
-                      {p.label}
-                    </button>
-                  ))}
+                          }
+                          ${isDisabled ? "opacity-50 cursor-not-allowed" : ""}
+                        `}
+                      >
+                        {p.label}
+                      </button>
+                    );
+                  })}
                 </div>
 
                 {/* Custom Range Picker */}
@@ -294,7 +324,7 @@ export default function InsightsDashboard({
                       minDate={joinedAt}
                       maxDate={new Date()}
                       accentColor={accentColor}
-                      disabled={fetchingData || loadingAi}
+                      disabled={fetchingData || loadingAi || loadingPredictive}
                       onRangeChange={(start, end) =>
                         setDateRange({ start, end })
                       }
@@ -326,9 +356,6 @@ export default function InsightsDashboard({
                       <h3 className="text-2xl font-black text-slate-800 tracking-tight mb-2">
                         Getting AI Insights
                       </h3>
-                      <p className="text-sm font-bold text-sky-400 uppercase tracking-[0.2em] animate-pulse">
-                        Mapping symptoms to TES criteria...
-                      </p>
                     </motion.div>
                   ) : (
                     <motion.div
@@ -338,8 +365,8 @@ export default function InsightsDashboard({
                       className="space-y-8"
                     >
                       {/* Aggregated Chart View */}
-                      <div className="relative min-h-[250px]">
-                        <div className="mb-6 flex flex-col items-center">
+                      <div className="relative">
+                        <div className="mb-4 flex flex-col items-center">
                           <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">
                             Combined Average
                           </p>
@@ -362,23 +389,136 @@ export default function InsightsDashboard({
                         />
                       </div>
 
-                      {/* Visual Divider */}
-                      <div className="h-[1.5px] w-full bg-slate-400 my-12" />
+                      {/* AI & Predictive Insights Reveal Logic */}
+                      <div className="pt-0 flex flex-col items-center gap-4 w-full">
+                        <AnimatePresence mode="wait">
+                          {!showAiInsights && !showPredictive ? (
+                            <motion.div
+                              key="view-btns-container"
+                              initial={{ opacity: 0, y: 5 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              exit={{ opacity: 0, scale: 0.95 }}
+                              className="flex flex-col gap-4 w-full mt-2"
+                            >
+                              <button
+                                onClick={() => setShowAiInsights(true)}
+                                disabled={fetchingData || loadingAi || loadingPredictive}
+                                className="group relative w-full px-10 py-5 bg-gradient-to-br from-primary to-[#0A4B75] text-white rounded-[2rem] flex items-center justify-center gap-4 active:scale-95 disabled:opacity-50 disabled:scale-100 disabled:cursor-not-allowed transition-all shadow-xl shadow-primary/20 hover:scale-[1.02] hover:shadow-primary/30 overflow-hidden"
+                              >
+                                <div className="absolute inset-0 bg-gradient-to-tr from-white/0 via-white/20 to-white/0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
+                                <span className="text-base font-black tracking-tight flex items-center gap-3">
+                                  See AI Insights
+                                  <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                                </span>
+                              </button>
 
-                      {/* AI Insights Section */}
-                      <div className="pt-6">
-                        {aiSummary ? (
-                          <AiInsightSection
-                            insights={aiSummary}
-                            accentColor={accentColor}
-                          />
-                        ) : (
-                          <div className="text-center py-8">
-                            <p className="text-xs font-bold text-slate-400">
-                              Add more logs to generate AI insights.
-                            </p>
-                          </div>
-                        )}
+                              <button
+                                onClick={handleFetchPredictive}
+                                disabled={fetchingData || loadingAi || loadingPredictive}
+                                className="group relative w-full px-10 py-5 bg-gradient-to-br from-primary to-[#0A4B75] text-white rounded-[2rem] flex items-center justify-center gap-4 active:scale-95 disabled:opacity-50 disabled:scale-100 disabled:cursor-not-allowed transition-all shadow-xl shadow-primary/20 hover:scale-[1.02] hover:shadow-primary/30 overflow-hidden"
+                              >
+                                {/* Button Shine Effect */}
+                                <div className="absolute inset-0 bg-gradient-to-tr from-white/0 via-white/20 to-white/0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
+
+                                {loadingPredictive ? (
+                                  <Loader2 className="w-5 h-5 animate-spin text-white" />
+                                ) : (
+                                  <span className="text-base font-black tracking-tight flex items-center gap-3">
+                                    See Predictive Analysis
+                                    <Telescope className="w-5 h-5 group-hover:rotate-12 transition-transform" />
+                                  </span>
+                                )}
+                              </button>
+                            </motion.div>
+                          ) : showAiInsights ? (
+                            <motion.div
+                              key="ai-content"
+                              initial={{ opacity: 0, height: 0 }}
+                              animate={{ opacity: 1, height: "auto" }}
+                              transition={{ duration: 0.5, ease: [0.23, 1, 0.32, 1] }}
+                              className="overflow-hidden w-full"
+                            >
+                              <div className="flex items-center justify-between mb-6 mt-4 px-2">
+                                <div className="px-4 py-1 bg-primary/10 rounded-full border border-primary/20">
+                                  <span className="text-[9px] font-black text-primary uppercase tracking-widest">AI Clinical Analysis</span>
+                                </div>
+                                <button
+                                  onClick={() => setShowAiInsights(false)}
+                                  className="w-8 h-8 flex items-center justify-center bg-slate-50 border border-slate-200 rounded-xl text-slate-400 hover:text-primary active:scale-90 transition-all"
+                                >
+                                  <ChevronUp className="w-5 h-5" />
+                                </button>
+                              </div>
+
+                              {aiSummary ? (
+                                <AiInsightSection
+                                  insights={aiSummary}
+                                  accentColor={accentColor}
+                                />
+                              ) : (
+                                <div className="text-center py-12 bg-slate-50/50 rounded-[2rem] border border-dashed border-slate-200">
+                                  <p className="text-xs font-bold text-slate-400">
+                                    Add more logs to generate AI insights.
+                                  </p>
+                                </div>
+                              )}
+                            </motion.div>
+                          ) : (
+                            <motion.div
+                              key="predictive-content"
+                              initial={{ opacity: 0, height: 0 }}
+                              animate={{ opacity: 1, height: "auto" }}
+                              transition={{ duration: 0.5, ease: [0.23, 1, 0.32, 1] }}
+                              className="overflow-hidden w-full"
+                            >
+                              <div className="flex items-center justify-between mb-6 mt-4 px-2">
+                                <div className="px-4 py-1 bg-amber-50 rounded-full border border-amber-200">
+                                  <span className="text-[9px] font-black text-amber-700 uppercase tracking-widest">7-Day Health Outlook</span>
+                                </div>
+
+                                <div className="flex items-center gap-3">
+                                  <HelpTooltip
+                                    content={(close) => (
+                                      <>
+                                        Learn more how the prediction is generated{" "}
+                                        <button
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            close();
+                                            setHelpModalType("predictive");
+                                          }}
+                                          className="inline font-black text-white underline decoration-sky-300 underline-offset-2 hover:text-sky-200 transition-colors uppercase tracking-widest"
+                                        >
+                                          here
+                                        </button>
+                                      </>
+                                    )}
+                                    buttonClassName="w-4 h-4"
+                                  />
+                                  <button
+                                    onClick={() => setShowPredictive(false)}
+                                    className="w-8 h-8 flex items-center justify-center bg-slate-50 border border-slate-200 rounded-xl text-slate-400 hover:text-primary active:scale-90 transition-all"
+                                  >
+                                    <ChevronUp className="w-5 h-5" />
+                                  </button>
+                                </div>
+                              </div>
+
+                              {predictiveAnalysis ? (
+                                <PredictiveAnalysisSection
+                                  analysis={predictiveAnalysis}
+                                  accentColor={accentColor}
+                                />
+                              ) : (
+                                <div className="text-center py-12 bg-slate-50/50 rounded-[2rem] border border-dashed border-slate-200">
+                                  <p className="text-xs font-bold text-rose-500 max-w-[200px] mx-auto">
+                                    {errorPredictive || "Could not generate predictive analysis."}
+                                  </p>
+                                </div>
+                              )}
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
                       </div>
                     </motion.div>
                   )}
@@ -388,10 +528,10 @@ export default function InsightsDashboard({
           </div>
         </div>
       )}
-      <CalculationModal 
-        isOpen={!!helpModalType} 
+      <CalculationModal
+        isOpen={!!helpModalType}
         type={helpModalType || "symptoms"}
-        onClose={() => setHelpModalType(null)} 
+        onClose={() => setHelpModalType(null)}
       />
     </MobilePageLayout>
   );

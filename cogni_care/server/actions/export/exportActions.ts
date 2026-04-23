@@ -279,9 +279,11 @@ export async function generateProfessionalReportAction(
       startTime,
       endTime,
       overallPillarAvg,
+      periodPillarAvg,
       scoresA,
       scoresB,
       monthlyTrend,
+      months.length || 1,
       maskedLogsText,
       RISK_KEYWORDS
     );

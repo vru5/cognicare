@@ -10,6 +10,7 @@ export const SummaryConcernsPage: React.FC<SummaryConcernsPageProps> = ({
   patient,
   mergedPatient,
   totalPages,
+  pageNum,
   scoreData,
   concerns,
   aiHistoryGrade
@@ -26,7 +27,7 @@ export const SummaryConcernsPage: React.FC<SummaryConcernsPageProps> = ({
 
   return (
     <div className="report-page">
-      <PageShell pageNum={5} totalPages={totalPages} patient={patient}>
+      <PageShell pageNum={pageNum} totalPages={totalPages} patient={patient}>
         <DocFormHeader title={`${DOC_FORM_STRINGS.GENERAL.DOC_FORM_TITLE} — ${DOC_FORM_STRINGS.SUMMARY.SEVERITY_CONCERNS}`} patient={mergedPatient} />
 
         <div style={{ padding: "18px 40px 0" }}>

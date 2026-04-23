@@ -10,11 +10,12 @@ export const TesCriteriaPage: React.FC<TesCriteriaPageProps> = ({
   patient,
   mergedPatient,
   totalPages,
+  pageNum,
   tes,
 }) => {
   return (
     <div className="report-page">
-      <PageShell pageNum={4} totalPages={totalPages} patient={patient}>
+      <PageShell pageNum={pageNum} totalPages={totalPages} patient={patient}>
         <DocFormHeader title={`${DOC_FORM_STRINGS.GENERAL.DOC_FORM_TITLE} — ${DOC_FORM_STRINGS.TES.SECTION_TITLE}`} patient={mergedPatient} />
 
         <div style={{ padding: "18px 40px 0" }}>

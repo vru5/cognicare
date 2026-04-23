@@ -209,3 +209,11 @@ model ChatMessage {
 
   @@map("chat_messages")
 }
+model PredictiveAnalysisCache {
+  patientId String   @id
+  hash      String
+  data      Json
+  updatedAt DateTime @updatedAt
+
+  @@map("predictive_analysis_cache")
+}

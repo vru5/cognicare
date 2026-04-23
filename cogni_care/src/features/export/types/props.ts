@@ -80,4 +80,6 @@ export interface ExportMenuProps {
   joinedAt: Date;
   accentColor: string;
   majorSymptoms?: MajorSymptomsResponse;
+  hasDataInRange?: boolean;
+  hasOneMonthData?: boolean;
 }
