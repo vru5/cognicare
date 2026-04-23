@@ -2,13 +2,15 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Brain, FileText, LayoutDashboard, LineChart, Settings } from "lucide-react";
+import { Brain, FileText, LayoutDashboard, LineChart, Settings, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
+import { useChat } from "@/contexts/ChatContext";
 
 const BottomNavbar = () => {
     const pathname = usePathname();
     const { user } = useAuth();
+    const { totalUnreadCount } = useChat();
 
     if (pathname.includes("/doc-form")) {
         return null;
@@ -32,6 +34,12 @@ const BottomNavbar = () => {
             icon: FileText,
             href: "/logs",
             show: !user?.isCarer,
+        },
+        {
+            label: "Care Circle",
+            icon: Users,
+            href: "/care-circle",
+            show: true,
         },
         {
             label: "Insights",
@@ -62,6 +70,11 @@ const BottomNavbar = () => {
                     >
                         <div className="relative">
                             <item.icon className={cn("h-6 w-6", isActive && "animate-pulse")} />
+                            {item.label === "Care Circle" && totalUnreadCount > 0 && (
+                                <div className="absolute -top-2 -right-2 bg-red-500 text-white text-[10px] font-bold min-w-[16px] h-[16px] rounded-full flex items-center justify-center px-1 border-2 border-white shadow-sm">
+                                    {totalUnreadCount > 9 ? "9+" : totalUnreadCount}
+                                </div>
+                            )}
                         </div>
                         <span className="text-[10px] sm:text-xs">{item.label}</span>
                         {isActive && (

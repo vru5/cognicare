@@ -111,8 +111,9 @@ export async function getAIInsightsSummary(patientId: string, startDate: string,
       result = await model.generateContent(prompt);
     } catch (apiErr: unknown) {
       const errorMessage = apiErr instanceof Error ? apiErr.message : String(apiErr);
-      if (errorMessage.includes("503")) {
-          const fallbackModel = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+      if (errorMessage.includes("503") || errorMessage.includes("overloaded")) {
+          console.warn("[Insights] Flash 2.5 overloaded, falling back to Lite...");
+          const fallbackModel = genAI.getGenerativeModel({ model: "gemini-2.5-flash-lite" });
           result = await fallbackModel.generateContent(prompt);
       } else {
           throw apiErr;
@@ -155,8 +156,13 @@ export async function getAIInsightsSummary(patientId: string, startDate: string,
     }
 
     return finalResult;
-  } catch (error) {
-    console.error("Gemini Insights Error:", error);
-    throw new Error("Failed to generate AI insights.");
+  } catch (error: any) {
+    console.error("Gemini Insights Error Details:", {
+      name: error?.name,
+      status: error?.status,
+      message: error?.message,
+      stack: error?.stack
+    });
+    throw new Error(`Failed to generate AI insights: ${error?.message || 'Unknown error'}`);
   }
 }

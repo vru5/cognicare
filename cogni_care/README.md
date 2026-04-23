@@ -1,26 +1,20 @@
 cognicare/
 ├── src/
-│   ├── app/                    # Next.js App Router
-│   │   ├── (auth)/             # Auth routes (Login, Signup)
-│   │   ├── (dashboard)/        # Main App Layout
-│   │   │   ├── brain-dump/     # Entry point for the AI text/voice
-│   │   │   ├── circle/         # Care Circle management
-│   │   │   └── timeline/       # Shared health feed
-│   │   └── api/                # Global API routes
-│   ├── features/               # Domain-driven logic
-│   │   ├── brain-dump/         # 🧠 NLP & "Normalization" Logic
-│   │   │   ├── components/     # Unstructured text & Voice UI
-│   │   │   ├── services/       # OpenAI / Whisper integration
-│   │   │   └── types/          # 5 Pillars TypeScript interfaces
-│   │   ├── care-circle/        # ⭕ RBAC & Permissions
-│   │   │   ├── components/     # Permission toggles, Invite forms
-│   │   │   └── server/         # The "Permission Gatekeeper" logic
-│   │   ├── monitoring/         # 📈 Clinical Summary & Exports
-│   │   │   ├── components/     # Weekly Trends graphs
-│   │   │   └── actions/        # PDF Generation logic
-│   │   └── messaging/          # 💬 Real-time Socket.io chat
-│   ├── components/             # Shared UI (shadcn/ui)
-│   ├── lib/                    # Global utilities (Prisma client, PII Redactor)
-│   └── hooks/                  # Global hooks (useAuth, useNativeMicrophone)
-├── prisma/                     # Database Schema
-└── capacitor.config.ts         # Mobile bridge configuration
+│   ├── app/                    # Next.js App Router (Pages & API routes)
+│   │   ├── (auth)/             # Login & Registration flows
+│   │   └── (dashboard)/        # User-facing dashboard (Brain Dump, Circle, Insights)
+│   ├── features/               # Domain-driven logic (Brain Dump, Insights, Care Circle)
+│   ├── components/             # Reusable UI components (shadcn/ui)
+│   ├── lib/                    # Client-side utilities 
+│   └── hooks/                  # Custom React hooks (Native APIs, Auth)
+├── server/                     # Unified Backend Logic
+│   ├── actions/                # Server Actions (Brain Dump processing, Insights)
+│   ├── routes/                 # Custom routing logic
+│   └── lib/                    # Server utilities (Prisma, Sockets, Notifications)
+├── prisma/                     # Database Schema & Migrations
+├── android/                    # Capacitor Android Studio project
+├── ios/                        # Capacitor Xcode project
+├── scripts/                    # Deployment & Maintenance scripts
+├── public/                     # Static assets (Images, Lottie files)
+├── capacitor.config.ts         # Mobile bridge configuration
+└── cognicare_documentation.md  # Detailed Architecture & Concept Documentation

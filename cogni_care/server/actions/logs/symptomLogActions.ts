@@ -38,9 +38,9 @@ export async function createSymptomLogAction(patientId: string, rawText: string)
                     result = await model.generateContent(prompt);
                 } catch (err: unknown) {
                     const apiErr = err as ApiError;
-                    if (apiErr?.message?.includes("503")) {
-                        console.warn("Gemini 2.5 is overloaded, falling back to 1.5-flash...");
-                        const fallbackModel = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+                    if (apiErr?.message?.includes("503") || apiErr?.message?.includes("overloaded")) {
+                        console.warn("Gemini 1.5 Flash is overloaded, falling back to Pro 1.5...");
+                        const fallbackModel = genAI.getGenerativeModel({ model: "gemini-1.5-pro" });
                         result = await fallbackModel.generateContent(prompt);
                     } else {
                         throw apiErr;
@@ -87,18 +87,22 @@ export async function createSymptomLogAction(patientId: string, rawText: string)
             include: { notes: true },
         });
 
-        // Real-time notification
+        // Real-time notification (Silent refresh for both patient and associated carers)
         try {
             const io = getIO();
-            io.to(patientId).emit("new_notification", {
-                type: "PATIENT_LOG",
-                title: "New Patient Entry",
-                body: "A new health entry has been recorded.",
-                data: { note_id: log.id }
-            });
+            // Refresh patient dashboard
             io.to(patientId).emit("new_log", { patientId });
+            
+            // Refresh associated carers' dashboards
+            const patientCarers = await prisma.carersOnPatients.findMany({
+                where: { patientId },
+                select: { carerId: true },
+            });
+            patientCarers.forEach((pc) => {
+                io.to(pc.carerId).emit("new_log", { patientId });
+            });
         } catch (err) {
-            console.warn("[Socket] Failed to emit PATIENT_LOG notification:", err);
+            console.warn("[Socket] Failed to emit new_log refresh to patient/carers:", err);
         }
 
         return { success: true, log: { ...log, type: "patient" as const, comments: [] } };
@@ -146,8 +150,9 @@ export async function updateSymptomLogAction(logId: string, patientId: string, n
                     result = await model.generateContent(prompt);
                 } catch (err: unknown) {
                     const apiErr = err as ApiError;
-                    if (apiErr?.message?.includes("503")) {
-                        const fallbackModel = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+                    if (apiErr?.message?.includes("503") || apiErr?.message?.includes("overloaded")) {
+                        console.warn("Gemini 2.5 Flash is overloaded, falling back to Lite...");
+                        const fallbackModel = genAI.getGenerativeModel({ model: "gemini-2.5-flash-lite" });
                         result = await fallbackModel.generateContent(prompt);
                     } else {
                         throw apiErr;
@@ -185,15 +190,12 @@ export async function updateSymptomLogAction(logId: string, patientId: string, n
             },
         });
 
-        // Real-time notification for update
+        // Real-time notification for update (Silent refresh)
         try {
             const io = getIO();
-            io.to(patientId).emit("new_notification", {
-                type: "PATIENT_LOG",
-            });
             io.to(patientId).emit("new_log", { patientId });
         } catch (err) {
-            console.warn("[Socket] Failed to emit PATIENT_LOG notification on update:", err);
+            console.warn("[Socket] Failed to emit new_log refresh on update:", err);
         }
 
         return {
@@ -239,15 +241,12 @@ export async function deleteSymptomLogAction(logId: string, patientId: string, r
         await prisma.carerNote.deleteMany({ where: { logId: logId } });
         await prisma.symptomLog.delete({ where: { id: logId } });
 
-        // Real-time notification for delete
+        // Real-time notification for delete (Silent refresh)
         try {
             const io = getIO();
-            io.to(patientId).emit("new_notification", {
-                type: "PATIENT_LOG",
-            });
             io.to(patientId).emit("new_log", { patientId });
         } catch (err) {
-            console.warn("[Socket] Failed to emit PATIENT_LOG notification on delete:", err);
+            console.warn("[Socket] Failed to emit new_log refresh on delete:", err);
         }
 
         return { success: true };

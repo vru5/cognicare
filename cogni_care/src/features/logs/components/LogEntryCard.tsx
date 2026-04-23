@@ -13,12 +13,15 @@ import { MessageSquare, BadgeCheck } from "lucide-react";
 import { PILLAR_CONFIG } from "../constants/pillarConfig";
 import SymptomSeveritySliders from "./SymptomSeveritySliders";
 import { updateBrainDumpSeverity } from "@/features/brain-dump/services/updateSeverity";
+import { createThreadFromNote } from "@/features/care-circle/services/careCircleService";
+import { useRouter } from "next/navigation";
 
 export default function LogEntryCard({ log, patientId, onUpdate, onDelete, highlighted }: { log: LogSummaryCard, patientId: string, onUpdate: (log: LogSummaryCard) => void, onDelete?: (logId: string) => void, highlighted?: boolean }) {
     const { user } = useAuth();
     const isCarer = Boolean(user?.isCarer);
     const profileId = user?.profileId;
     const cardRef = useRef<HTMLDivElement>(null);
+    const router = useRouter();
 
     const [isEditing, setIsEditing] = useState(false);
     const [newText, setNewText] = useState(log.rawText);
@@ -28,6 +31,7 @@ export default function LogEntryCard({ log, patientId, onUpdate, onDelete, highl
     const [isCommenting, setIsCommenting] = useState(false);
     const [commentText, setCommentText] = useState("");
     const [isSavingComment, setIsSavingComment] = useState(false);
+    const [isStartingDiscussion, setIsStartingDiscussion] = useState(false);
     const [localSeverities, setLocalSeverities] = useState<Record<string, number | null>>({});
 
     const [mounted, setMounted] = useState(false);
@@ -280,6 +284,34 @@ export default function LogEntryCard({ log, patientId, onUpdate, onDelete, highl
                                                 <span>{comment.carerName || "Carer"}</span>
                                                 <div className="flex items-center gap-2">
                                                     <span>{mounted ? new Date(comment.createdAt).toLocaleDateString() : ""}</span>
+                                                     {!isCarer && (
+                                                        <button 
+                                                            disabled={isStartingDiscussion}
+                                                            onClick={async () => {
+                                                                setIsStartingDiscussion(true);
+                                                                try {
+                                                                    const result = await createThreadFromNote(comment.id, patientId, comment.carerId);
+                                                                    if (result.success) {
+                                                                        router.push(`/care-circle?chatId=${result.thread.id}&type=thread&title=${encodeURIComponent(result.thread.title)}`);
+                                                                    }
+                                                                } catch (error) {
+                                                                    console.error("Failed to start discussion:", error);
+                                                                    alert("Failed to start discussion. Please try again.");
+                                                                } finally {
+                                                                    setIsStartingDiscussion(false);
+                                                                }
+                                                            }}
+                                                            className="p-1 hover:bg-primary/10 rounded-lg text-primary transition-colors flex items-center gap-1 disabled:opacity-50"
+                                                            title="Discuss this note"
+                                                        >
+                                                            {isStartingDiscussion ? (
+                                                                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                                            ) : (
+                                                                <MessageSquare className="w-3.5 h-3.5" />
+                                                            )}
+                                                            <span className="text-[9px]">Discuss</span>
+                                                        </button>
+                                                    )}
                                                     {isCarer && comment.carerId === profileId && (
                                                         <button 
                                                             onClick={async () => {

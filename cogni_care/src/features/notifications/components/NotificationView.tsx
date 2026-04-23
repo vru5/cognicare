@@ -10,11 +10,14 @@ import { useRouter } from "next/navigation";
 
 import { NotificationRecord, NotificationData } from "@/features/notifications/types/notificationType";
 import MobilePageLayout from "@/components/shared/MobilePageLayout";
+import { useChatNavigation } from "@/features/care-circle/hooks/useChatNavigation";
+import { parseChatNotificationPayload } from "@/features/care-circle/utils/chatUtils";
+import { ChatNotificationData } from "@/features/care-circle/types/chatTypes";
 
 export default function NotificationsView() {
     const { notifications, unreadCount, markAsRead, markAllAsRead } = useNotifications();
     const router = useRouter();
-
+    const { navigateToChat } = useChatNavigation();
     const handleNotificationClick = async (notification: NotificationRecord) => {
         // Mark as read immediately in UI
         if (!notification.read) {
@@ -23,23 +26,25 @@ export default function NotificationsView() {
 
         // Deep link logic
         try {
-            let data: NotificationData = {};
+            let notificationData: ChatNotificationData = {};
             
             if (typeof notification.data === 'string') {
                 try { 
-                    data = JSON.parse(notification.data) as NotificationData; 
+                    notificationData = JSON.parse(notification.data) as ChatNotificationData; 
                 } catch (e) { 
-                    data = {}; 
+                    notificationData = {}; 
                 }
             } else if (notification.data) {
-                // If data is already an object, use it directly
-                data = notification.data as NotificationData;
+                notificationData = notification.data as ChatNotificationData;
             }
 
-            // Both logId (comment on log) and note_id (direct log) work as targetId
-            const targetId = data.logId || data.note_id;
+            const chatParams = parseChatNotificationPayload(notificationData);
             
-            if (targetId) {
+            if (chatParams) {
+                console.log(`[NotificationsPage] Navigating to chat: ${chatParams.chatId}`);
+                navigateToChat(chatParams);
+            } else if (notificationData.logId || notificationData.note_id) {
+                const targetId = notificationData.logId || notificationData.note_id;
                 console.log(`[NotificationsPage] Navigating to log: ${targetId}`);
                 router.push(`/logs?logId=${targetId}`);
             } else {

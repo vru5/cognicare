@@ -12,6 +12,7 @@ import settingsRoutes from "./routes/settingsRoutes.js";
 import brainDumpRoutes from "./routes/brainDumpRoutes.js";
 import insightsRoutes from "./routes/insightsRoutes.js";
 import exportRoutes from "./routes/exportRoutes.js";
+import chatRoutes from "./routes/chatRoutes.js";
 
 console.log("Loading environment variables...");
 dotenv.config({ path: "../.env" }); // Load from root .env
@@ -35,6 +36,7 @@ app.use("/api/settings", settingsRoutes);
 app.use("/api/brain-dump", brainDumpRoutes);
 app.use("/api/insights", insightsRoutes);
 app.use("/api/export", exportRoutes);
+app.use("/api/chat", chatRoutes);
 
 const server = app.listen(port, () => {
     console.log(`Backend Server running on port ${port}`);

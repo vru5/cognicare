@@ -8,6 +8,16 @@ import { generatePdfFromElement } from "@/features/export/services/pdfService";
 import { ReportData } from "@/features/export/types/report";
 import { Loader2, Download, ArrowLeft } from "lucide-react";
 import { format } from "date-fns";
+import { 
+  LOADING_REPORT, 
+  ERROR_LOAD_REPORT, 
+  CLOSE_WINDOW, 
+  LIVE_REVIEW_SUBTITLE, 
+  PROCESSING, 
+  DOWNLOAD_PDF, 
+  FOOTER_BRANDING 
+} from "@/features/export/constants/reportPage";
+
 
 export default function ClinicalReportPage() {
   const searchParams = useSearchParams();
@@ -58,7 +68,7 @@ export default function ClinicalReportPage() {
       <div className="flex flex-col items-center justify-center min-h-screen bg-slate-50 gap-4">
         <Loader2 className="w-10 h-10 animate-spin text-primary" />
         <p className="text-slate-500 font-bold animate-pulse uppercase tracking-widest text-xs">
-          Synthesizing Clinical AI Insights...
+          {LOADING_REPORT}
         </p>
       </div>
     );
@@ -67,9 +77,9 @@ export default function ClinicalReportPage() {
   if (!data) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-slate-50 gap-4">
-        <p className="text-red-500 font-bold">Failed to load report data.</p>
+        <p className="text-red-500 font-bold">{ERROR_LOAD_REPORT}</p>
         <button onClick={() => window.close()} className="text-primary underline text-sm font-bold">
-          Close Window
+          {CLOSE_WINDOW}
         </button>
       </div>
     );
@@ -91,7 +101,7 @@ export default function ClinicalReportPage() {
               {data.patient.name}
             </h1>
             <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mt-1">
-              Live Clinical Report Review
+              {LIVE_REVIEW_SUBTITLE}
             </p>
           </div>
         </div>
@@ -104,12 +114,12 @@ export default function ClinicalReportPage() {
           {isDownloading ? (
             <>
               <Loader2 className="w-3 h-3 animate-spin" />
-              <span>{status || "Processing..."}</span>
+              <span>{status || PROCESSING}</span>
             </>
           ) : (
             <>
               <Download className="w-4 h-4" />
-              <span>Download Official PDF</span>
+              <span>{DOWNLOAD_PDF}</span>
             </>
           )}
         </button>
@@ -122,7 +132,7 @@ export default function ClinicalReportPage() {
 
       {/* Footer Branding */}
       <footer className="mt-20 py-10 border-t border-black/5 text-center text-[10px] font-black uppercase tracking-[0.2em] text-slate-500/50 cursor-default select-none">
-        CogniCare Intelligence Systems · Protected Medical Document
+        {FOOTER_BRANDING}
       </footer>
 
       <style jsx global>{`

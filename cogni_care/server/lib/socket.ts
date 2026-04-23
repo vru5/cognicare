@@ -17,7 +17,21 @@ export function initSocket(server: HttpServer) {
         socket.on("join", (profileId: string) => {
             if (profileId) {
                 socket.join(profileId);
-                console.log(`[Socket] Client ${socket.id} joined room: ${profileId}`);
+                console.log(`[Socket] Client ${socket.id} joined personal room: ${profileId}`);
+            }
+        });
+
+        socket.on("join_room", (roomId: string) => {
+            if (roomId) {
+                socket.join(roomId);
+                console.log(`[Socket] Client ${socket.id} joined chat room: ${roomId}`);
+            }
+        });
+
+        socket.on("leave_room", (roomId: string) => {
+            if (roomId) {
+                socket.leave(roomId);
+                console.log(`[Socket] Client ${socket.id} left room: ${roomId}`);
             }
         });
 

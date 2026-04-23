@@ -16,6 +16,7 @@ model User {
   createdAt DateTime        @default(now())
   carer     ProfileCarer?
   patient   ProfilePatient?
+  messages  ChatMessage[]
 
   @@map("users")
 }
@@ -30,6 +31,8 @@ model ProfilePatient {
   familyMembers FamilyMember[]
   user          User               @relation(fields: [userId], references: [id])
   logs          SymptomLog[]
+  chatThreads   ChatThread[]
+  directChats   DirectChat[]
 
   @@map("patient_profiles")
 }
@@ -42,7 +45,9 @@ model ProfileCarer {
   notes     CarerNote[]
   symptomLogs SymptomLog[]
   user      User               @relation(fields: [userId], references: [id])
-  patients  CarersOnPatients[]
+  patients      CarersOnPatients[]
+  authoredThreads ChatThread[]
+  directChats     DirectChat[]
 
   @@map("carer_profiles")
 }
@@ -105,6 +110,7 @@ model CarerNote {
   carer     ProfileCarer   @relation(fields: [carerId], references: [id])
   log       SymptomLog?    @relation(fields: [logId], references: [id])
   patient   ProfilePatient @relation(fields: [patientId], references: [id])
+  chatThread ChatThread?
 
   @@map("carer_notes")
 }
@@ -151,4 +157,55 @@ model AiInsightCache {
 
   @@id([patientId, startDate, endDate])
   @@map("ai_insight_cache")
+}
+
+model ChatThread {
+  id                String         @id @default(cuid())
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+  title             String
+  isResolved        Boolean        @default(false)
+  patientId         String
+  authorCarerId     String
+  noteId            String?        @unique
+  patient           ProfilePatient @relation(fields: [patientId], references: [id])
+  carer             ProfileCarer   @relation(fields: [authorCarerId], references: [id])
+  note              CarerNote?     @relation(fields: [noteId], references: [id])
+  messages          ChatMessage[]
+  
+  patientLastReadAt DateTime       @default(now())
+  carerLastReadAt   DateTime       @default(now())
+
+  @@map("chat_threads")
+}
+
+model DirectChat {
+  id                String         @id @default(cuid())
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+  patientId         String
+  carerId           String
+  patient           ProfilePatient @relation(fields: [patientId], references: [id])
+  carer             ProfileCarer   @relation(fields: [carerId], references: [id])
+  messages          ChatMessage[]
+
+  patientLastReadAt DateTime       @default(now())
+  carerLastReadAt   DateTime       @default(now())
+
+  @@unique([patientId, carerId])
+  @@map("direct_chats")
+}
+
+model ChatMessage {
+  id           String      @id @default(cuid())
+  createdAt    DateTime    @default(now())
+  content      String
+  senderId     String
+  threadId     String?
+  directChatId String?
+  sender       User        @relation(fields: [senderId], references: [id])
+  thread       ChatThread? @relation(fields: [threadId], references: [id])
+  directChat   DirectChat? @relation(fields: [directChatId], references: [id])
+
+  @@map("chat_messages")
 }

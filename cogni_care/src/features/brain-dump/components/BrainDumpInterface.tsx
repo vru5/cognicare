@@ -98,7 +98,7 @@ export default function BrainDumpInterface() {
             transcription.text,
             patientId || "",
             Boolean(user?.isCarer),
-            user?.profileId || undefined
+            user?.isCarer ? user?.profileId || undefined : undefined
           );
 
           if (response.success && response.log) {
@@ -145,7 +145,12 @@ export default function BrainDumpInterface() {
     setProcessedText("");
 
     try {
-      const response = await processBrainDump(text, patientId || "", Boolean(user?.isCarer), user?.profileId || undefined);
+      const response = await processBrainDump(
+        text, 
+        patientId || "", 
+        Boolean(user?.isCarer), 
+        user?.isCarer ? user?.profileId || undefined : undefined
+      );
 
       if (response.success && response.log) {
         setProcessedText(text);

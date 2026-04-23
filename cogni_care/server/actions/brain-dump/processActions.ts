@@ -5,6 +5,7 @@ import { prisma } from "../../lib/prisma.js";
 import { Analysis, AppError } from "../../types/logsApi.js";
 import { getIO } from "../../lib/socket.js";
 import { LogActionResponse } from "../../types/logActions.js";
+import { PROCESS_BRAIN_DUMP_PROMPT } from "server/constants/prompts";
 
 export async function processBrainDumpAction(
   rawText: string,
@@ -25,28 +26,13 @@ export async function processBrainDumpAction(
         status: "analyzing",
         message: "Analyzing...",
       });
-  } catch (e) {}
+  } catch (e) { }
 
   try {
     const safeText = mask(rawText || "");
 
-    const prompt = `Analyze the following patient health log.
-    Extract the symptoms into the following pillars: physical, mood, cognitive, sleep, social.
-    
-    For each pillar, provide TWO fields in the JSON:
-    1. The pillar name (e.g., 'physical'): A single word or very short phrase describing the symptom (e.g., 'Headache', 'Happy').
-    2. The severity field (e.g., 'physicalSeverity'): A number from 1 to 10 evaluating how severe the symptom is based on the language used.
-    
-    If a category is not mentioned or the input is nonsensical/gibberish, return null for the string field and 0 or null for the severity field.
-    DO NOT make up information. If the input is just random characters or unrelated to health, return null for ALL fields.
-    Return output strictly as a JSON object, for example:
-    {
-      "physical": "Headache", "physicalSeverity": 8,
-      "sleep": "Insomnia", "sleepSeverity": 9,
-      "mood": null, "moodSeverity": null
-    }
-    
-    Log: "${safeText}"`;
+    const prompt = PROCESS_BRAIN_DUMP_PROMPT(safeText);
+
 
     let responseText: string;
     let analysis: Analysis = {};
@@ -57,12 +43,13 @@ export async function processBrainDumpAction(
         result = await model.generateContent(prompt);
       } catch (apiErr: unknown) {
         const err = apiErr as AppError;
-        if (err.message?.includes("503")) {
+        // 503 = Service Overloaded
+        if (err.message?.includes("503") || err.message?.includes("overloaded")) {
           console.warn(
-            "Gemini 2.5 is overloaded (503), falling back to 1.5-flash...",
+            "Gemini Flash 2.5 is overloaded, falling back to Gemini Pro 2.5...",
           );
           const fallbackModel = genAI.getGenerativeModel({
-            model: "gemini-1.5-flash",
+            model: "gemini-2.5-flash-lite",
           });
           result = await fallbackModel.generateContent(prompt);
         } else {
@@ -75,7 +62,7 @@ export async function processBrainDumpAction(
         .replace(/```/g, "")
         .trim();
       analysis = JSON.parse(responseText || "{}");
-      console.log("AI Analysis Result:", JSON.stringify(analysis, null, 2));
+      //console.log("AI Analysis Result:", JSON.stringify(analysis, null, 2));
 
       // Post-processing: If AI returns "General wellness" or similar for nonsensical input, treat as null
       const genericPhrases = [
@@ -145,7 +132,7 @@ export async function processBrainDumpAction(
         patientId: profile.id,
         rawText,
         isFromCarer,
-        carerId,
+        carerId: isFromCarer ? carerId : undefined,
         physical: analysis.physical,
         physicalSeverity: analysis.physicalSeverity,
         mood: analysis.mood,
@@ -164,12 +151,7 @@ export async function processBrainDumpAction(
       const io = getIO();
       const patientId = profile.id;
 
-      // 1. Notify the patient room (for real-time page updates)
-      io.to(patientId).emit("new_notification", {
-        type: "PATIENT_LOG",
-        title: "New Symptom Log",
-        body: isFromCarer ? "Your carer added a new log." : "A new symptom log has been recorded.",
-      });
+      // 1. Silent refresh for the patient's dashboard
       io.to(patientId).emit("new_log", { patientId });
 
       // 2. Notify carers individually (for dashboard green dots)
@@ -178,11 +160,12 @@ export async function processBrainDumpAction(
         select: { carerId: true },
       });
       patientCarers.forEach((pc) => {
+        // Silent refresh for all carers
         io.to(pc.carerId).emit("new_log", { patientId: profile.id });
       });
-      console.log(
-        `[Socket] Notified ${patientCarers.length} carers about new Mind Dump log`,
-      );
+      // console.log(
+      //   `[Socket] Notified ${patientCarers.length} carers about new Mind Dump log`,
+      // );
     } catch (e) {
       console.warn("[Socket] Failed to notify carers:", e);
     }

@@ -286,7 +286,19 @@ export async function generateProfessionalReportAction(
       RISK_KEYWORDS
     );
 
-    const result = await model.generateContent(prompt);
+    let result;
+    try {
+      result = await model.generateContent(prompt);
+    } catch (apiErr: unknown) {
+      const errorMessage = apiErr instanceof Error ? apiErr.message : String(apiErr);
+      if (errorMessage.includes("503") || errorMessage.includes("overloaded")) {
+          console.warn("[Report] Flash 2.5 overloaded, falling back to Lite...");
+          const fallbackModel = genAI.getGenerativeModel({ model: "gemini-2.5-flash-lite" });
+          result = await fallbackModel.generateContent(prompt);
+      } else {
+          throw apiErr;
+      }
+    }
     const responseText = result.response.text().replace(/```json/g, "").replace(/```/g, "").trim();
     const guidance = JSON.parse(responseText || "{}") as Pick<AIInsights, 'nhsGuidance'>;
     aiInsights.nhsGuidance = guidance.nhsGuidance;

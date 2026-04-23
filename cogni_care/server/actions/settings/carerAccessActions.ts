@@ -4,6 +4,10 @@ import { CarersResponse, UpdateAccessResponse } from "../../types/settingActions
 
 export async function getPatientCarersAction(patientProfileId: string): Promise<CarersResponse> {
     try {
+        // Resolve User ID for unread filtering
+        const patientProfile = await prisma.profilePatient.findUnique({ where: { id: patientProfileId } });
+        const userId = patientProfile?.userId || "";
+
         const relations = await prisma.carersOnPatients.findMany({
             where: { patientId: patientProfileId },
             include: {
@@ -20,12 +24,36 @@ export async function getPatientCarersAction(patientProfileId: string): Promise<
             }
         });
 
-        const carers = relations.map(rel => ({
-            id: rel.carer.id,
-            name: rel.carer.user.name || "Unknown Carer",
-            email: rel.carer.user.email,
-            accessSymptomLogs: rel.accessSymptomLogs,
-            accessCareCircle: rel.accessCareCircle,
+        const carers = await Promise.all(relations.map(async (rel) => {
+            // Fetch unread count for this specific direct chat
+            const chat = await prisma.directChat.findUnique({
+                where: {
+                    patientId_carerId: {
+                        patientId: rel.patientId,
+                        carerId: rel.carerId
+                    }
+                }
+            });
+
+            let unreadCount = 0;
+            if (chat) {
+                unreadCount = await prisma.chatMessage.count({
+                    where: {
+                        directChatId: chat.id,
+                        senderId: { not: userId }, // Exclude patient's own messages
+                        createdAt: { gt: (chat as any).patientLastReadAt }
+                    }
+                });
+            }
+
+            return {
+                id: rel.carer.id,
+                name: rel.carer.user.name || "Unknown Carer",
+                email: rel.carer.user.email,
+                accessSymptomLogs: rel.accessSymptomLogs,
+                accessCareCircle: rel.accessCareCircle,
+                unreadCount
+            };
         }));
 
         return { success: true, carers };
