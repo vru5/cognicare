@@ -13,6 +13,7 @@ import {
   getAiSummary,
   getPredictiveAnalysis,
 } from "../services/insightsService";
+import { useAuth } from "@/contexts/AuthContext";
 import {
   DailyAverage,
   MajorSymptomsResponse,
@@ -48,6 +49,9 @@ export default function InsightsDashboard({
 }: InsightsDashboardProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { user } = useAuth();
+  const isCarer = user?.isCarer || false;
+  const userRole = isCarer ? "carer" : "patient";
   const urlPatientId = searchParams?.get("patientId");
 
   // UI State
@@ -147,7 +151,7 @@ export default function InsightsDashboard({
 
       const [data, ai] = await Promise.all([
         getSymptomAggregate(patientId, dateRange.start, dateRange.end),
-        getAiSummary(patientId, dateRange.start, dateRange.end),
+        getAiSummary(patientId, dateRange.start, dateRange.end, userRole),
       ]);
 
       setAggregateData(data);
@@ -169,7 +173,7 @@ export default function InsightsDashboard({
     }
     setLoadingPredictive(true);
     setErrorPredictive(null);
-    const data = await getPredictiveAnalysis(patientId);
+    const data = await getPredictiveAnalysis(patientId, userRole);
     if (data) {
       setPredictiveAnalysis(data);
       setShowPredictive(true);

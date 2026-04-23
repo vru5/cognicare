@@ -10,13 +10,13 @@ const router = express.Router();
 
 // GET /api/insights/predictive
 router.get("/predictive", async (req, res) => {
-    const { patientId } = req.query;
+    const { patientId, role } = req.query;
     if (!patientId || typeof patientId !== "string") {
         return res.status(400).json({ success: false, error: "Missing patientId" });
     }
     
     try {
-        const result = await getPredictiveAnalysis(patientId);
+        const result = await getPredictiveAnalysis(patientId, (role as "patient" | "carer") || "carer");
         res.json({ success: true, data: result });
     } catch (error) {
         console.error(error);
@@ -26,13 +26,13 @@ router.get("/predictive", async (req, res) => {
 
 // GET /api/insights/ai-summary
 router.get("/ai-summary", async (req, res) => {
-    const { patientId, date, endDate } = req.query;
+    const { patientId, date, endDate, role } = req.query;
     if (!patientId || typeof patientId !== "string" || !date || typeof date !== "string" || !endDate || typeof endDate !== "string") {
         return res.status(400).json({ success: false, error: "Missing required fields" });
     }
     
     try {
-        const result = await getAIInsightsSummary(patientId, date, endDate);
+        const result = await getAIInsightsSummary(patientId, date, endDate, (role as "patient" | "carer") || "carer");
         res.json({ success: true, data: result });
     } catch (error) {
         console.error(error);

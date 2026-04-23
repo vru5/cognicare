@@ -63,7 +63,14 @@ Respond ONLY in valid JSON. Use this exact structure:
 }`;
 
 
-export const AI_INSIGHTS_PROMPT = (startDate: string, endDate: string, formattedLogs: string) => `System: You are an empathetic Senior Clinical Assistant for CogniCare, a dementia care application. Your goal is to provide supportive, actionable insights to patients and their families.
+export const AI_INSIGHTS_PROMPT = (startDate: string, endDate: string, formattedLogs: string, role: "patient" | "carer") => {
+  const toneInstruction = role === "patient" 
+    ? "Use a VERY warm, comforting, and empathetic tone. SPEAK DIRECTLY TO THE PATIENT USING 'YOU' AND 'YOUR'. Focus on supportive encouragement. Avoid third-person references to 'the patient' - they ARE the one reading this."
+    : "Use a direct, factual, and clinical tone. SPEAK ABOUT THE PATIENT IN THE THIRD PERSON. Focus on objective data trends, specific symptoms, and actionable clinical observations for professional care management.";
+
+  return `System: You are an expert Clinical Assistant for CogniCare. Your goal is to provide supportive, actionable insights.
+  
+Tone & Perspective: ${toneInstruction}
 
 Context: Analyze the following health logs for the period ${startDate} to ${endDate}.
 
@@ -71,7 +78,7 @@ Logs:
 ${formattedLogs}
 
 Instructions:
-1. Provide a supportive, patient-friendly high-level summary of the overall status.
+1. Provide a high-level summary of the overall status.
 2. Determine if the status is "improving", "worsening", or "stable" based on the data trends.
 3. Identify a 'Top Concern' ONLY if there is a recurring or high-severity issue (Severity > 5).
 4. List 'Key Findings' categorized by one of the 5 Pillars: "Physical", "Mood", "Cognitive", "Sleep", "Social".
@@ -81,7 +88,7 @@ Instructions:
 
 Return the result STRICTLY as a JSON object:
 {
-  "summary": "Concise summary for the patient/carer",
+  "summary": "Concise summary",
   "status": "improving" | "worsening" | "stable",
   "topConcern": { "pillar": "string", "reason": "why this is the top concern" } | null,
   "keyFindings": [
@@ -96,7 +103,8 @@ Return the result STRICTLY as a JSON object:
   ]
 }
 
-Ensure the language is empathetic and avoids overly clinical jargon where possible. Focus on what is most helpful for the family to know right now.`;
+CRITICAL: RESPOND ONLY IN THE JSON FORMAT ABOVE. DO NOT INCLUDE ANY HELLO, INTRODUCTIONS, OR EXPLANATIONS OUTSIDE THE JSON BLOCK.`;
+};
 
 
 export const NHS_GUIDANCE_PROMPT = (
@@ -164,7 +172,14 @@ export const PROCESS_BRAIN_DUMP_PROMPT = (safeText: string) => `Analyze the foll
     
     Log: "${safeText}"`;
 
-export const PREDICTIVE_ANALYSIS_PROMPT = (patientName: string, formattedLogs: string) => `System: You are an expert clinical strategist for CogniCare. Your goal is to provide a predictive health outlook for the next 7 days based on the patient's recent symptom patterns.
+export const PREDICTIVE_ANALYSIS_PROMPT = (patientName: string, formattedLogs: string, role: "patient" | "carer") => {
+  const toneInstruction = role === "patient"
+    ? "Use a VERY warm, comforting, and encouraging tone. SPEAK DIRECTLY TO THE PATIENT USING 'YOU' AND 'YOUR'. Focus on hope and small victories. Avoid third-person references like 'the patient'."
+    : "Use a factual, clinical, and proactive tone. SPEAK ABOUT THE PATIENT IN THE THIRD PERSON. Focus on risk management and clinical trajectories.";
+
+  return `System: You are an expert clinical strategist for CogniCare. Your goal is to provide a predictive health outlook for the next 7 days based on the patient's recent symptom patterns.
+
+Tone & Perspective: ${toneInstruction}
 
 Context: Analyze the following historical health logs for ${patientName}.
 
@@ -172,14 +187,14 @@ Logs:
 ${formattedLogs}
 
 Instructions:
-1. Provide a "7-Day Outlook": A supportive, forward-looking summary of what the patient and carer can expect.
+1. Provide a "7-Day Outlook": A forward-looking summary of what to expect.
 2. Determine a "Predicted Trend": "stable", "improving", or "risk_of_decline" based on current momentum.
-3. Create a "Watchlist": Identify 2-3 specific symptoms or pillars that might require extra attention in the coming week. For each, provide a brief 'advice' for the carer.
-4. List "Proactive Steps": 3 actionable, empathetic steps the family can take THIS WEEK to maintain or improve health (e.g., "Schedule a social call", "Increase hydration", "Monitor sleep routine").
+3. Create a "Watchlist": Identify 2-3 specific symptoms or pillars that might require extra attention. For each, provide brief advice.
+4. List "Proactive Steps": 3 actionable, empathetic steps to maintain or improve health.
 
 Return the result STRICTLY as a JSON object:
 {
-  "outlook": "Empathetic 2-3 sentence prediction",
+  "outlook": "Prediction text matching the requested tone",
   "predictedTrend": "stable" | "improving" | "risk_of_decline",
   "watchList": [
     { "pillar": "Physical" | "Mood" | "Cognitive" | "Sleep" | "Social", "issue": "potential concern", "advice": "proactive tip" }
@@ -187,4 +202,5 @@ Return the result STRICTLY as a JSON object:
   "proactiveSteps": ["step 1", "step 2", "step 3"]
 }
 
-Tone: Forward-looking, supportive, and clinical but accessible. Focus on prevention and proactive care.`;
+CRITICAL: RESPOND ONLY IN THE JSON FORMAT ABOVE. DO NOT INCLUDE ANY HELLO, INTRODUCTIONS, OR EXPLANATIONS OUTSIDE THE JSON BLOCK.`;
+};

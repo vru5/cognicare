@@ -7,7 +7,7 @@ import { AiInsightSummary } from "../../../src/features/insights/types/insightsT
 import { Prisma, SymptomLog } from "@prisma/client";
 import { AI_INSIGHTS_PROMPT, PREDICTIVE_ANALYSIS_PROMPT } from "../../constants/prompts.js";
 
-export async function getAIInsightsSummary(patientId: string, startDate: string, endDate: string) {
+export async function getAIInsightsSummary(patientId: string, startDate: string, endDate: string, role: "patient" | "carer" = "carer") {
   const apiKey = (process.env.GEMINI_API_KEY || "").trim();
   if (!apiKey) {
     throw new Error("GEMINI_API_KEY is not configured.");
@@ -42,10 +42,10 @@ export async function getAIInsightsSummary(patientId: string, startDate: string,
     };
   }
 
-  // Generate hash from logs to detect data changes
+  // Generate hash from logs AND role to detect data/tone changes
   const logsHash = crypto
     .createHash("md5")
-    .update(JSON.stringify(logs.map((l: SymptomLog) => ({ id: l.id, t: l.createdAt.getTime() }))))
+    .update(JSON.stringify(logs.map((l: SymptomLog) => ({ id: l.id, t: l.createdAt.getTime() }))) + role)
     .digest("hex");
 
   // Check cache with safety fallback
@@ -71,16 +71,14 @@ export async function getAIInsightsSummary(patientId: string, startDate: string,
   // If cache exists and hash matches, return cached data
   if (cachedResult) {
     if (cachedResult.hash === logsHash) {
-      console.log(`[AI-CACHE] Cache HIT for patient ${patientId} (${normStart} to ${normEnd})`);
+      console.log(`[AI-CACHE] Cache HIT for patient ${patientId} (${normStart} to ${normEnd}) [Role: ${role}]`);
       return cachedResult.data as unknown as AiInsightSummary;
     } else {
-      console.log(`[AI-CACHE] Cache STALE for patient ${patientId}. DB Hash: ${cachedResult.hash}, New Hash: ${logsHash}`);
+      console.log(`[AI-CACHE] Cache STALE/ROLECHANGE for patient ${patientId}.`);
     }
-  } else {
-    console.log(`[AI-CACHE] Cache MISS for patient ${patientId}. No entry found for ${normStart} to ${normEnd}`);
   }
 
-  console.log(`[AI-CACHE] Generating new insights for patient ${patientId}...`);
+  console.log(`[AI-CACHE] Generating new ${role} insights for patient ${patientId}...`);
 
   const genAI = new GoogleGenerativeAI(apiKey);
   const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
@@ -103,7 +101,7 @@ export async function getAIInsightsSummary(patientId: string, startDate: string,
     return `[${dateStr}] [${source}] ${pillars}${safeText ? ` - "${safeText}"` : ""}`;
   }).join("\n");
 
-  const prompt = AI_INSIGHTS_PROMPT(startDate, endDate, formattedLogs);
+  const prompt = AI_INSIGHTS_PROMPT(startDate, endDate, formattedLogs, role);
 
   try {
     let result;
@@ -121,7 +119,14 @@ export async function getAIInsightsSummary(patientId: string, startDate: string,
     }
 
     let responseText = result.response.text();
-    responseText = responseText.replace(/```json/g, "").replace(/```/g, "").trim();
+    // Robust extraction: find first { and last }
+    const startIdx = responseText.indexOf("{");
+    const endIdx = responseText.lastIndexOf("}");
+    if (startIdx !== -1 && endIdx !== -1) {
+      responseText = responseText.substring(startIdx, endIdx + 1);
+    } else {
+      responseText = responseText.replace(/```json/g, "").replace(/```/g, "").trim();
+    }
     
     const finalResult = JSON.parse(responseText);
 
@@ -162,7 +167,7 @@ export async function getAIInsightsSummary(patientId: string, startDate: string,
   }
 }
 
-export async function getPredictiveAnalysis(patientId: string) {
+export async function getPredictiveAnalysis(patientId: string, role: "patient" | "carer" = "carer") {
   const apiKey = (process.env.GEMINI_API_KEY || "").trim();
   if (!apiKey) {
     throw new Error("GEMINI_API_KEY is not configured.");
@@ -187,10 +192,10 @@ export async function getPredictiveAnalysis(patientId: string) {
     };
   }
 
-  // Generate hash for logs to detect data changes
+  // Generate hash for logs AND role to detect data/tone changes
   const logsHash = crypto
     .createHash("md5")
-    .update(JSON.stringify(logs.map((l: SymptomLog) => ({ id: l.id, t: l.createdAt.getTime() }))))
+    .update(JSON.stringify(logs.map((l: SymptomLog) => ({ id: l.id, t: l.createdAt.getTime() }))) + role)
     .digest("hex");
 
   let cachedResult = null;
@@ -203,11 +208,11 @@ export async function getPredictiveAnalysis(patientId: string) {
   }
 
   if (cachedResult && cachedResult.hash === logsHash) {
-    console.log(`[PREDICTIVE-CACHE] HIT for patient ${patientId}`);
+    console.log(`[PREDICTIVE-CACHE] HIT for patient ${patientId} [Role: ${role}]`);
     return cachedResult.data;
   }
 
-  console.log(`[PREDICTIVE-CACHE] MISS. Generating new prediction for patient ${patientId}...`);
+  console.log(`[PREDICTIVE-CACHE] MISS/ROLECHANGE. Generating new ${role} prediction for patient ${patientId}...`);
 
   const genAI = new GoogleGenerativeAI(apiKey);
   // Default to 2.5 flash as it has separate quota
@@ -225,7 +230,7 @@ export async function getPredictiveAnalysis(patientId: string) {
     return `[${dateStr}] ${pillars} - "${mask(log.rawText || "")}"`;
   }).join("\n");
 
-  const prompt = PREDICTIVE_ANALYSIS_PROMPT("the patient", formattedLogs);
+  const prompt = PREDICTIVE_ANALYSIS_PROMPT("the patient", formattedLogs, role);
 
   try {
     let result;
@@ -240,7 +245,15 @@ export async function getPredictiveAnalysis(patientId: string) {
     }
 
     let responseText = result.response.text();
-    responseText = responseText.replace(/```json/g, "").replace(/```/g, "").trim();
+    // Robust extraction: find first { and last }
+    const startIdx = responseText.indexOf("{");
+    const endIdx = responseText.lastIndexOf("}");
+    if (startIdx !== -1 && endIdx !== -1) {
+      responseText = responseText.substring(startIdx, endIdx + 1);
+    } else {
+      responseText = responseText.replace(/```json/g, "").replace(/```/g, "").trim();
+    }
+    
     const finalResult = JSON.parse(responseText);
 
     try {

@@ -7,9 +7,9 @@ import {
     PredictiveAnalysis
 } from "../types/insightsTypes";
 
-export async function getPredictiveAnalysis(patientId: string): Promise<PredictiveAnalysis | null> {
+export async function getPredictiveAnalysis(patientId: string, userRole: "patient" | "carer" = "carer"): Promise<PredictiveAnalysis | null> {
     try {
-        const response = await fetch(`${API_BASE_URL}/api/insights/predictive?patientId=${patientId}`);
+        const response = await fetch(`${API_BASE_URL}/api/insights/predictive?patientId=${patientId}&role=${userRole}`);
         const data = await response.json();
 
         if (!data.success) {
@@ -81,12 +81,12 @@ export async function getMajorSymptoms(patientId: string): Promise<MajorSymptoms
     }
 }
 
-export async function getAiSummary(patientId: string, startDate: Date | string, endDate: Date | string): Promise<AiInsightSummary | null> {
+export async function getAiSummary(patientId: string, startDate: Date | string, endDate: Date | string, userRole: "patient" | "carer" = "carer"): Promise<AiInsightSummary | null> {
     try {
         const startString = startDate instanceof Date ? startDate.toISOString() : new Date(startDate).toISOString();
         const endString = endDate instanceof Date ? endDate.toISOString() : new Date(endDate).toISOString();
 
-        const url = `${API_BASE_URL}/api/insights/ai-summary?patientId=${patientId}&date=${startString}&endDate=${endString}`;
+        const url = `${API_BASE_URL}/api/insights/ai-summary?patientId=${patientId}&date=${startString}&endDate=${endString}&role=${userRole}`;
         const response = await fetch(url);
         const data = await response.json();
 
