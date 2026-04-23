@@ -14,7 +14,12 @@ import { CalculationModalProps } from "../types/insightsTypes";
 
 export default function CalculationModal({ isOpen, onClose, type = "symptoms" }: CalculationModalProps) {
   const isSymptoms = type === "symptoms";
-  const content = isSymptoms ? CALCULATION_TEXT.SYMPTOMS : CALCULATION_TEXT.AVERAGE;
+  const isPredictive = type === "predictive";
+  
+  let content;
+  if (isSymptoms) content = CALCULATION_TEXT.SYMPTOMS;
+  else if (isPredictive) content = CALCULATION_TEXT.PREDICTIVE;
+  else content = CALCULATION_TEXT.AVERAGE;
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -26,7 +31,7 @@ export default function CalculationModal({ isOpen, onClose, type = "symptoms" }:
             </DialogTitle>
           </div>
           <DialogDescription className="text-slate-500 font-bold mt-1 text-center">
-            {CALCULATION_TEXT.SYMPTOMS.SUBTITLE}
+            {isPredictive ? (content as any).SUBTITLE : CALCULATION_TEXT.SYMPTOMS.SUBTITLE}
           </DialogDescription>
         </DialogHeader>
 
@@ -88,7 +93,7 @@ export default function CalculationModal({ isOpen, onClose, type = "symptoms" }:
           )}
 
           {/* Section 2: Combined Average */}
-          {!isSymptoms && (
+          {type === "average" && (
             <section className="space-y-4">
               <div className="bg-slate-50 rounded-2xl p-6 border border-slate-100">
                 <p className="text-sm text-slate-600 font-medium leading-relaxed">
@@ -102,6 +107,33 @@ export default function CalculationModal({ isOpen, onClose, type = "symptoms" }:
                 <p className="mt-4 text-xs text-slate-500 font-bold leading-relaxed">
                   {CALCULATION_TEXT.AVERAGE.FOOTER}
                 </p>
+              </div>
+            </section>
+          )}
+
+          {/* Section 4: Predictive Analysis */}
+          {isPredictive && (
+            <section className="space-y-6">
+              <div className="bg-slate-50 rounded-[2rem] p-7 border border-slate-100">
+                <p className="text-sm text-slate-600 font-medium leading-relaxed mb-6">
+                  {CALCULATION_TEXT.PREDICTIVE.LOGIC}
+                </p>
+
+                <div className="space-y-5">
+                  {CALCULATION_TEXT.PREDICTIVE.RULES.map((rule) => (
+                    <div key={rule.id} className="flex gap-4">
+                      <div className="w-8 h-8 rounded-full bg-white shadow-sm flex items-center justify-center shrink-0 text-[10px] font-black text-primary border border-primary/10">
+                        {rule.id}
+                      </div>
+                      <div>
+                        <p className="text-xs font-black text-slate-800 mb-1">{rule.title}</p>
+                        <p className="text-[11px] text-slate-500 font-bold leading-relaxed">
+                          {rule.desc}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
             </section>
           )}

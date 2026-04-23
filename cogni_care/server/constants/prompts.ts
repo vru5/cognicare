@@ -163,3 +163,28 @@ export const PROCESS_BRAIN_DUMP_PROMPT = (safeText: string) => `Analyze the foll
     }
     
     Log: "${safeText}"`;
+
+export const PREDICTIVE_ANALYSIS_PROMPT = (patientName: string, formattedLogs: string) => `System: You are an expert clinical strategist for CogniCare. Your goal is to provide a predictive health outlook for the next 7 days based on the patient's recent symptom patterns.
+
+Context: Analyze the following historical health logs for ${patientName}.
+
+Logs:
+${formattedLogs}
+
+Instructions:
+1. Provide a "7-Day Outlook": A supportive, forward-looking summary of what the patient and carer can expect.
+2. Determine a "Predicted Trend": "stable", "improving", or "risk_of_decline" based on current momentum.
+3. Create a "Watchlist": Identify 2-3 specific symptoms or pillars that might require extra attention in the coming week. For each, provide a brief 'advice' for the carer.
+4. List "Proactive Steps": 3 actionable, empathetic steps the family can take THIS WEEK to maintain or improve health (e.g., "Schedule a social call", "Increase hydration", "Monitor sleep routine").
+
+Return the result STRICTLY as a JSON object:
+{
+  "outlook": "Empathetic 2-3 sentence prediction",
+  "predictedTrend": "stable" | "improving" | "risk_of_decline",
+  "watchList": [
+    { "pillar": "Physical" | "Mood" | "Cognitive" | "Sleep" | "Social", "issue": "potential concern", "advice": "proactive tip" }
+  ],
+  "proactiveSteps": ["step 1", "step 2", "step 3"]
+}
+
+Tone: Forward-looking, supportive, and clinical but accessible. Focus on prevention and proactive care.`;

@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { format, subDays, subMonths } from "date-fns";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Activity, Loader2, Lock, Sparkles, ArrowRight, ChevronUp } from "lucide-react";
+import { Activity, Loader2, Lock, Sparkles, ArrowRight, ChevronUp, Telescope } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import MobilePageLayout from "@/components/shared/MobilePageLayout";
 import {
@@ -11,12 +11,14 @@ import {
   getSymptomAggregate,
   getMajorSymptoms,
   getAiSummary,
+  getPredictiveAnalysis,
 } from "../services/insightsService";
 import {
   DailyAverage,
   MajorSymptomsResponse,
   SymptomDataPoint,
   AiInsightSummary,
+  PredictiveAnalysis,
   InsightsDashboardProps,
 } from "../types/insightsTypes";
 import {
@@ -36,7 +38,9 @@ import ExportMenu from "@/features/export/components/ExportMenu";
 import DateRangePicker from "@/components/shared/DateRangePicker";
 import SymptomBarChart from "./SymptomBarChart";
 import AiInsightSection from "./AiInsightSection";
+import PredictiveAnalysisSection from "./PredictiveAnalysisSection";
 import CalculationModal from "./CalculationModal";
+import HelpTooltip from "@/components/shared/HelpTooltip";
 
 export default function InsightsDashboard({
   patientId,
@@ -54,6 +58,7 @@ export default function InsightsDashboard({
   const [hasOneMonthData, setHasOneMonthData] = useState<boolean>(false);
   const [joinedAt, setJoinedAt] = useState<Date>(new Date());
   const [showAiInsights, setShowAiInsights] = useState(false);
+  const [showPredictive, setShowPredictive] = useState(false);
 
   // Date State
   const [preset, setPreset] = useState<
@@ -73,8 +78,11 @@ export default function InsightsDashboard({
   const [selectedSymptom, setSelectedSymptom] =
     useState<SymptomDataPoint | null>(null);
   const [aiSummary, setAiSummary] = useState<AiInsightSummary | null>(null);
+  const [predictiveAnalysis, setPredictiveAnalysis] = useState<PredictiveAnalysis | null>(null);
   const [loadingAi, setLoadingAi] = useState(false);
-  const [helpModalType, setHelpModalType] = useState<"symptoms" | "average" | null>(null);
+  const [loadingPredictive, setLoadingPredictive] = useState(false);
+  const [errorPredictive, setErrorPredictive] = useState<string | null>(null);
+  const [helpModalType, setHelpModalType] = useState<"symptoms" | "average" | "predictive" | null>(null);
 
   // Initial Setup: Eligibility & Major Symptoms
   useEffect(() => {
@@ -145,12 +153,31 @@ export default function InsightsDashboard({
       setAggregateData(data);
       setAiSummary(ai);
       setSelectedSymptom(null);
-      setShowAiInsights(false); // Reset when date range changes to avoid overwhelming
+      setShowAiInsights(false); 
+      setShowPredictive(false);
+      setErrorPredictive(null);
       setFetchingData(false);
       setLoadingAi(false);
     }
     fetchData();
   }, [patientId, eligible, dateRange.start, dateRange.end]);
+
+  const handleFetchPredictive = async () => {
+    if (predictiveAnalysis) {
+      setShowPredictive(true);
+      return;
+    }
+    setLoadingPredictive(true);
+    setErrorPredictive(null);
+    const data = await getPredictiveAnalysis(patientId);
+    if (data) {
+      setPredictiveAnalysis(data);
+      setShowPredictive(true);
+    } else {
+      setErrorPredictive("API quota reached or server error. Please try again in a few minutes.");
+    }
+    setLoadingPredictive(false);
+  };
 
   // Format data for chart
   const chartData = useMemo(() => {
@@ -361,33 +388,47 @@ export default function InsightsDashboard({
                         />
                       </div>
 
-                      {/* AI Insights Reveal Logic */}
-                      <div className="pt-0 flex flex-col items-center">
+                      {/* AI & Predictive Insights Reveal Logic */}
+                      <div className="pt-0 flex flex-col items-center gap-4 w-full">
                         <AnimatePresence mode="wait">
-                          {!showAiInsights ? (
+                          {!showAiInsights && !showPredictive ? (
                             <motion.div
-                              key="view-btn-container"
+                              key="view-btns-container"
                               initial={{ opacity: 0, y: 5 }}
                               animate={{ opacity: 1, y: 0 }}
                               exit={{ opacity: 0, scale: 0.95 }}
-                              className="flex flex-col items-center w-full mt-2"
+                              className="flex flex-col gap-4 w-full mt-2"
                             >
                               <button
                                 onClick={() => setShowAiInsights(true)}
-                                className="group relative px-10 py-5 bg-gradient-to-br from-primary to-[#0A4B75] text-white rounded-[2rem] flex items-center gap-4 active:scale-95 transition-all shadow-xl shadow-primary/20 hover:scale-[1.02] hover:shadow-primary/30 overflow-hidden"
+                                className="group relative w-full px-10 py-5 bg-gradient-to-br from-primary to-[#0A4B75] text-white rounded-[2rem] flex items-center justify-center gap-4 active:scale-95 transition-all shadow-xl shadow-primary/20 hover:scale-[1.02] hover:shadow-primary/30 overflow-hidden"
+                              >
+                                <div className="absolute inset-0 bg-gradient-to-tr from-white/0 via-white/20 to-white/0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
+                                <span className="text-base font-black tracking-tight flex items-center gap-3">
+                                  See AI Insights 
+                                  <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                                </span>
+                              </button>
+
+                              <button
+                                onClick={handleFetchPredictive}
+                                disabled={loadingPredictive}
+                                className="group relative w-full px-10 py-5 bg-gradient-to-br from-primary to-[#0A4B75] text-white rounded-[2rem] flex items-center justify-center gap-4 active:scale-95 transition-all shadow-xl shadow-primary/20 hover:scale-[1.02] hover:shadow-primary/30 overflow-hidden"
                               >
                                 {/* Button Shine Effect */}
                                 <div className="absolute inset-0 bg-gradient-to-tr from-white/0 via-white/20 to-white/0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
                                 
-                                <div className="flex items-center justify-center">
+                                {loadingPredictive ? (
+                                  <Loader2 className="w-5 h-5 animate-spin text-white" />
+                                ) : (
                                   <span className="text-base font-black tracking-tight flex items-center gap-3">
-                                    See AI Insights 
-                                    <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                                    See Predictive Analysis
+                                    <Telescope className="w-5 h-5 group-hover:rotate-12 transition-transform" />
                                   </span>
-                                </div>
+                                )}
                               </button>
                             </motion.div>
-                          ) : (
+                          ) : showAiInsights ? (
                             <motion.div
                               key="ai-content"
                               initial={{ opacity: 0, height: 0 }}
@@ -419,7 +460,60 @@ export default function InsightsDashboard({
                                   </p>
                                 </div>
                               )}
-                              
+                            </motion.div>
+                          ) : (
+                            <motion.div
+                              key="predictive-content"
+                              initial={{ opacity: 0, height: 0 }}
+                              animate={{ opacity: 1, height: "auto" }}
+                              transition={{ duration: 0.5, ease: [0.23, 1, 0.32, 1] }}
+                              className="overflow-hidden w-full"
+                            >
+                              <div className="flex items-center justify-between mb-6 mt-4 px-2">
+                                <div className="px-4 py-1 bg-amber-50 rounded-full border border-amber-200">
+                                  <span className="text-[9px] font-black text-amber-700 uppercase tracking-widest">7-Day Health Outlook</span>
+                                </div>
+                                
+                                <div className="flex items-center gap-3">
+                                  <HelpTooltip 
+                                    content={(close) => (
+                                      <>
+                                        Learn more how the prediction is generated{" "}
+                                        <button
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            close();
+                                            setHelpModalType("predictive");
+                                          }}
+                                          className="inline font-black text-white underline decoration-sky-300 underline-offset-2 hover:text-sky-200 transition-colors uppercase tracking-widest"
+                                        >
+                                          here
+                                        </button>
+                                      </>
+                                    )}
+                                    buttonClassName="w-4 h-4"
+                                  />
+                                  <button 
+                                    onClick={() => setShowPredictive(false)}
+                                    className="w-8 h-8 flex items-center justify-center bg-slate-50 border border-slate-200 rounded-xl text-slate-400 hover:text-primary active:scale-90 transition-all"
+                                  >
+                                    <ChevronUp className="w-5 h-5" />
+                                  </button>
+                                </div>
+                              </div>
+
+                              {predictiveAnalysis ? (
+                                <PredictiveAnalysisSection
+                                  analysis={predictiveAnalysis}
+                                  accentColor={accentColor}
+                                />
+                              ) : (
+                                <div className="text-center py-12 bg-slate-50/50 rounded-[2rem] border border-dashed border-slate-200">
+                                  <p className="text-xs font-bold text-rose-500 max-w-[200px] mx-auto">
+                                    {errorPredictive || "Could not generate predictive analysis."}
+                                  </p>
+                                </div>
+                              )}
                             </motion.div>
                           )}
                         </AnimatePresence>

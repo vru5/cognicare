@@ -95,7 +95,25 @@ export interface InsightsDashboardProps {
 export interface CalculationModalProps {
   isOpen: boolean;
   onClose: () => void;
-  type?: "symptoms" | "average";
+  type: "symptoms" | "average" | "predictive";
 }
 
 
+
+export interface WatchListEntry {
+  pillar: string;
+  issue: string;
+  advice: string;
+}
+
+export interface PredictiveAnalysis {
+  outlook: string;
+  predictedTrend: "stable" | "improving" | "risk_of_decline";
+  watchList: WatchListEntry[];
+  proactiveSteps: string[];
+}
+
+export interface PredictiveAnalysisSectionProps {
+  analysis: PredictiveAnalysis;
+  accentColor: string;
+}

@@ -4,9 +4,25 @@ import {
     getRangeAverageQuery,
     getMajorSymptomsQuery 
 } from "../actions/insights/insightsQueries.js";
-import { getAIInsightsSummary } from "../actions/insights/aiInsightsActions.js";
+import { getAIInsightsSummary, getPredictiveAnalysis } from "../actions/insights/aiInsightsActions.js";
 
 const router = express.Router();
+
+// GET /api/insights/predictive
+router.get("/predictive", async (req, res) => {
+    const { patientId } = req.query;
+    if (!patientId || typeof patientId !== "string") {
+        return res.status(400).json({ success: false, error: "Missing patientId" });
+    }
+    
+    try {
+        const result = await getPredictiveAnalysis(patientId);
+        res.json({ success: true, data: result });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ success: false, error: "Server Error" });
+    }
+});
 
 // GET /api/insights/ai-summary
 router.get("/ai-summary", async (req, res) => {
