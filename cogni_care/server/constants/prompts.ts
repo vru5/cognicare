@@ -112,9 +112,11 @@ export const NHS_GUIDANCE_PROMPT = (
   startTime: Date,
   endTime: Date,
   overallPillarAvg: Record<string, number>,
+  periodPillarAvg: Record<string, number>,
   scoresA: Record<string, number>,
   scoresB: Record<string, number>,
   monthlyTrend: Record<string, (number | null)[]>,
+  trendMonths: number,
   logsInPeriod: string,
   riskKeywords: string[]
 ) => `You are a professional clinical CTE health analyst. 
@@ -122,10 +124,11 @@ Generate "AI-Synthesized NHS Guidance" for patient: ${patientName}.
 
 Data Summary:
 - Selected Period: ${format(startTime, "dd-MM-yyyy")} to ${format(endTime, "dd-MM-yyyy")}
-- All-time Pillar Averages: ${JSON.stringify(overallPillarAvg)}
+- Period-Specific Averages (The Range being Exported): ${JSON.stringify(periodPillarAvg)}
+- All-time Historical Pillar Averages: ${JSON.stringify(overallPillarAvg)}
 - Comparison: Date A Scores: ${JSON.stringify(scoresA)}, Date B Scores: ${JSON.stringify(scoresB)}
-- Trends (Last 6 months): ${JSON.stringify(monthlyTrend)}
-- Specific Patient Logs (Range Context): ${logsInPeriod}
+- Trends (Last ${trendMonths} months): ${JSON.stringify(monthlyTrend)}
+- Specific Patient Logs (Range Context - READ THESE CAREFULLY): ${logsInPeriod}
 
 Clinical Safety Markers (RISK_KEYWORDS): ${JSON.stringify(riskKeywords)}
 

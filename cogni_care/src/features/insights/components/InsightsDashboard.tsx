@@ -157,7 +157,7 @@ export default function InsightsDashboard({
       setAggregateData(data);
       setAiSummary(ai);
       setSelectedSymptom(null);
-      setShowAiInsights(false); 
+      setShowAiInsights(false);
       setShowPredictive(false);
       setErrorPredictive(null);
       setFetchingData(false);
@@ -222,6 +222,8 @@ export default function InsightsDashboard({
             joinedAt={joinedAt}
             accentColor={accentColor}
             majorSymptoms={majorSymptoms}
+            hasDataInRange={!!aggregateData}
+            hasOneMonthData={hasOneMonthData}
           />
         ) : null
       }
@@ -300,10 +302,9 @@ export default function InsightsDashboard({
                         onClick={() => !isDisabled && handlePresetChange(p.key)}
                         disabled={isDisabled}
                         className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all
-                          ${
-                            preset === p.key
-                              ? "bg-slate-900 text-white shadow-lg scale-105"
-                              : "bg-slate-50 text-slate-500 hover:bg-slate-100 hover:text-slate-700"
+                          ${preset === p.key
+                            ? "bg-slate-900 text-white shadow-lg scale-105"
+                            : "bg-slate-50 text-slate-500 hover:bg-slate-100 hover:text-slate-700"
                           }
                           ${isDisabled ? "opacity-50 cursor-not-allowed" : ""}
                         `}
@@ -406,7 +407,7 @@ export default function InsightsDashboard({
                               >
                                 <div className="absolute inset-0 bg-gradient-to-tr from-white/0 via-white/20 to-white/0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
                                 <span className="text-base font-black tracking-tight flex items-center gap-3">
-                                  See AI Insights 
+                                  See AI Insights
                                   <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                                 </span>
                               </button>
@@ -418,7 +419,7 @@ export default function InsightsDashboard({
                               >
                                 {/* Button Shine Effect */}
                                 <div className="absolute inset-0 bg-gradient-to-tr from-white/0 via-white/20 to-white/0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
-                                
+
                                 {loadingPredictive ? (
                                   <Loader2 className="w-5 h-5 animate-spin text-white" />
                                 ) : (
@@ -441,7 +442,7 @@ export default function InsightsDashboard({
                                 <div className="px-4 py-1 bg-primary/10 rounded-full border border-primary/20">
                                   <span className="text-[9px] font-black text-primary uppercase tracking-widest">AI Clinical Analysis</span>
                                 </div>
-                                <button 
+                                <button
                                   onClick={() => setShowAiInsights(false)}
                                   className="w-8 h-8 flex items-center justify-center bg-slate-50 border border-slate-200 rounded-xl text-slate-400 hover:text-primary active:scale-90 transition-all"
                                 >
@@ -474,9 +475,9 @@ export default function InsightsDashboard({
                                 <div className="px-4 py-1 bg-amber-50 rounded-full border border-amber-200">
                                   <span className="text-[9px] font-black text-amber-700 uppercase tracking-widest">7-Day Health Outlook</span>
                                 </div>
-                                
+
                                 <div className="flex items-center gap-3">
-                                  <HelpTooltip 
+                                  <HelpTooltip
                                     content={(close) => (
                                       <>
                                         Learn more how the prediction is generated{" "}
@@ -494,7 +495,7 @@ export default function InsightsDashboard({
                                     )}
                                     buttonClassName="w-4 h-4"
                                   />
-                                  <button 
+                                  <button
                                     onClick={() => setShowPredictive(false)}
                                     className="w-8 h-8 flex items-center justify-center bg-slate-50 border border-slate-200 rounded-xl text-slate-400 hover:text-primary active:scale-90 transition-all"
                                   >
@@ -527,10 +528,10 @@ export default function InsightsDashboard({
           </div>
         </div>
       )}
-      <CalculationModal 
-        isOpen={!!helpModalType} 
+      <CalculationModal
+        isOpen={!!helpModalType}
         type={helpModalType || "symptoms"}
-        onClose={() => setHelpModalType(null)} 
+        onClose={() => setHelpModalType(null)}
       />
     </MobilePageLayout>
   );

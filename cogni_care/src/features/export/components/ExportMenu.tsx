@@ -10,7 +10,7 @@ import { ReportData } from "../types/report";
 import { ExportMenuProps } from "../types/props";
 import { EXPORT_STRINGS } from "../constants/exportStrings";
 
-export default function ExportMenu({ patientId, startDate, endDate, joinedAt, accentColor, majorSymptoms }: ExportMenuProps) {
+export default function ExportMenu({ patientId, startDate, endDate, joinedAt, accentColor, majorSymptoms, hasDataInRange, hasOneMonthData }: ExportMenuProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatingStatus, setGeneratingStatus] = useState("");
@@ -18,10 +18,6 @@ export default function ExportMenu({ patientId, startDate, endDate, joinedAt, ac
   const menuRef = useRef<HTMLDivElement>(null);
   const reportRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
-
-  const hasOneMonthData = useMemo(() => {
-    return differenceInDays(new Date(), joinedAt) >= 30;
-  }, [joinedAt]);
 
   // Close menu when clicking outside
   useEffect(() => {
@@ -86,10 +82,14 @@ export default function ExportMenu({ patientId, startDate, endDate, joinedAt, ac
     }
   };
 
+  const canExportAi = hasDataInRange && (majorSymptoms?.topSymptoms?.length ?? 0) > 0;
+
   const menuItems = [
     {
       label: EXPORT_STRINGS.MENU.ITEM_DOWNLOAD_AI,
       icon: Download,
+      disabled: !canExportAi,
+      tooltip: !canExportAi ? "No logs in selected period" : undefined,
       onClick: handleProfessionalDownload,
     },
     {
@@ -139,21 +139,23 @@ export default function ExportMenu({ patientId, startDate, endDate, joinedAt, ac
                 onClick={item.disabled ? undefined : item.onClick}
                 disabled={item.disabled}
                 className={cn(
-                  "w-full flex items-center justify-between px-4 py-3 text-sm transition-colors text-left group",
+                  "w-full flex items-center px-4 py-3 text-sm transition-colors text-left group",
                   item.disabled
-                    ? "opacity-50 cursor-not-allowed bg-slate-50"
+                    ? "opacity-60 cursor-not-allowed bg-slate-50/50"
                     : "text-slate-600 hover:bg-slate-50 hover:text-primary"
                 )}
               >
-                <div className="flex items-center gap-3">
-                  <item.icon className={cn("w-4.5 h-4.5", !item.disabled && "text-slate-400 group-hover:text-primary transition-colors")} />
-                  <span className="font-bold tracking-tight">{item.label}</span>
+                <div className="flex items-start gap-3">
+                  <item.icon className={cn("w-4 h-4 mt-0.5", !item.disabled && "text-slate-400 group-hover:text-primary transition-colors")} />
+                  <div className="flex flex-col gap-1">
+                    <span className="font-bold tracking-tight leading-none">{item.label}</span>
+                    {item.disabled && item.tooltip && (
+                      <span className="text-[8px] font-black uppercase tracking-widest text-slate-400 bg-slate-200/50 px-1.5 py-0.5 rounded w-fit">
+                        {item.tooltip}
+                      </span>
+                    )}
+                  </div>
                 </div>
-                {item.disabled && item.tooltip && (
-                  <span className="text-[9px] font-black uppercase tracking-tighter bg-slate-200 text-slate-500 px-1.5 py-0.5 rounded leading-none whitespace-nowrap">
-                    {item.tooltip}
-                  </span>
-                )}
               </button>
             ))}
           </div>

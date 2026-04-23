@@ -9,12 +9,13 @@ export const SymptomPart1Page: React.FC<SymptomPart1PageProps> = ({
   patient,
   mergedPatient,
   totalPages,
+  pageNum,
   symptoms,
   presentCount
 }) => {
   return (
     <div className="report-page">
-      <PageShell pageNum={1} totalPages={totalPages} patient={patient}>
+      <PageShell pageNum={pageNum} totalPages={totalPages} patient={patient}>
         <DocFormHeader title={`${DOC_FORM_STRINGS.GENERAL.DOC_FORM_TITLE} — ${DOC_FORM_STRINGS.SYMPTOMS.REPORT_PART_1}`} patient={mergedPatient} />
 
         <div style={{ margin: "18px 40px 0" }}>

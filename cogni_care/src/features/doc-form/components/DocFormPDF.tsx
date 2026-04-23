@@ -8,11 +8,12 @@ import { SymptomPart2Page } from "./docFormPdfPages/SymptomPart2Page";
 import { PatientHistoryPage } from "./docFormPdfPages/PatientHistoryPage";
 import { TesCriteriaPage } from "./docFormPdfPages/TesCriteriaPage";
 import { SummaryConcernsPage } from "./docFormPdfPages/SummaryConcernsPage";
+import { DocFormTOCPage } from "./docFormPdfPages/DocFormTOCPage";
 import { DocFormPDFData } from "../types/docPdf";
 import { PatientDetails } from "../types/docForm";
 
 /**
- * DocFormPDF - Main Container for the 5-page clinical navigation report.
+ * DocFormPDF - Main Container for the 6-page clinical navigation report.
  * This component orchestrates data calculation and composes the individual pages.
  */
 export default function DocFormPDF({ data }: { data: DocFormPDFData }) {
@@ -34,7 +35,7 @@ export default function DocFormPDF({ data }: { data: DocFormPDFData }) {
     evaluationDate: tes?.evalDate || patient?.evaluationDate || ""
   };
 
-  const totalPages = 5;
+  const totalPages = 6;
   const scoreData = calculateSeverityScore(symptoms, history, tes, aiHistoryGrade);
 
   return (
@@ -50,43 +51,55 @@ export default function DocFormPDF({ data }: { data: DocFormPDFData }) {
         @import url('https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,700;0,800;1,400&display=swap');
       `}</style>
 
-      {/* Page 1: Symptom Checklist (1/2) */}
+      {/* Page 1: Table of Contents */}
+      <DocFormTOCPage 
+        patient={mergedPatient} 
+        pageNum={1} 
+        totalPages={totalPages} 
+      />
+
+      {/* Page 2: Symptom Checklist (1/2) */}
       <SymptomPart1Page 
         patient={patient} 
         mergedPatient={mergedPatient} 
+        pageNum={2}
         totalPages={totalPages} 
         symptoms={symptoms} 
         presentCount={scoreData.presentCount} 
       />
 
-      {/* Page 2: Symptom Checklist (2/2) */}
+      {/* Page 3: Symptom Checklist (2/2) */}
       <SymptomPart2Page 
         patient={patient} 
         mergedPatient={mergedPatient} 
+        pageNum={3}
         totalPages={totalPages} 
         symptoms={symptoms} 
       />
 
-      {/* Page 3: Patient History */}
+      {/* Page 4: Patient History */}
       <PatientHistoryPage 
         patient={patient} 
         mergedPatient={mergedPatient} 
+        pageNum={4}
         totalPages={totalPages} 
         history={history} 
       />
 
-      {/* Page 4: TES Criteria Assessment */}
+      {/* Page 5: TES Criteria Assessment */}
       <TesCriteriaPage 
         patient={patient} 
         mergedPatient={mergedPatient} 
+        pageNum={5}
         totalPages={totalPages} 
         tes={tes} 
       />
 
-      {/* Page 5: Severity & Concerns */}
+      {/* Page 6: Severity & Concerns */}
       <SummaryConcernsPage 
         patient={patient} 
         mergedPatient={mergedPatient} 
+        pageNum={6}
         totalPages={totalPages} 
         scoreData={scoreData} 
         concerns={concerns} 

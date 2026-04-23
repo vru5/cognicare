@@ -10,13 +10,14 @@ export const PatientHistoryPage: React.FC<PatientHistoryPageProps> = ({
   patient,
   mergedPatient,
   totalPages,
+  pageNum,
   history,
 }) => {
   const historyFields = HISTORY_FIELDS;
 
   return (
     <div className="report-page">
-      <PageShell pageNum={3} totalPages={totalPages} patient={patient}>
+      <PageShell pageNum={pageNum} totalPages={totalPages} patient={patient}>
         <DocFormHeader title={`${DOC_FORM_STRINGS.GENERAL.DOC_FORM_TITLE} — ${DOC_FORM_STRINGS.HISTORY.SECTION_TITLE}`} patient={mergedPatient} />
 
         <div style={{ padding: "18px 40px 0" }}>
