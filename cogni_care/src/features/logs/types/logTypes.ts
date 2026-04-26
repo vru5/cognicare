@@ -18,7 +18,9 @@ export interface CarerNote {
     createdAt: Date | string;
     text: string;
     carerId: string;
+    patientId: string;
     carerName?: string;
+    accessCareCircle?: boolean;
 }
 
 export interface LogSummaryCard extends Record<SymptomPillar, string | null | undefined> {
@@ -35,6 +37,7 @@ export interface LogSummaryCard extends Record<SymptomPillar, string | null | un
     isFromCarer?: boolean;
     carerId?: string;
     carerName?: string;
+    accessCareCircle?: boolean;
     type: "patient" | "carer";
     message?: string; // Optional message from AI analysis
     [key: string]: unknown;

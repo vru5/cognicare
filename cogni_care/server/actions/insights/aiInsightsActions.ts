@@ -111,8 +111,25 @@ export async function getAIInsightsSummary(patientId: string, startDate: string,
       const errorMessage = apiErr instanceof Error ? apiErr.message : String(apiErr);
       if (errorMessage.includes("429") || errorMessage.includes("quota") || errorMessage.includes("503") || errorMessage.includes("overloaded")) {
           console.warn("[Insights] Flash 2.5 overloaded/quota, falling back to 2.0...");
-          const fallbackModel = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
-          result = await fallbackModel.generateContent(prompt);
+          try {
+            const fallbackModel = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+            result = await fallbackModel.generateContent(prompt);
+          } catch (fallbackErr: unknown) {
+            const fallbackMsg = fallbackErr instanceof Error ? fallbackErr.message : String(fallbackErr);
+            if (fallbackMsg.includes("429") || fallbackMsg.includes("quota") || fallbackMsg.includes("503") || fallbackMsg.includes("overloaded")) {
+              console.warn("[Insights] Flash 2.0 overloaded/quota, falling back to 2.5-flash-lite...");
+              try {
+                const liteFallback = genAI.getGenerativeModel({ model: "gemini-2.5-flash-lite" });
+                result = await liteFallback.generateContent(prompt);
+              } catch (liteErr: unknown) {
+                console.warn("[Insights] Lite fallback failed, attempting Pro...");
+                const proFallback = genAI.getGenerativeModel({ model: "gemini-2.5-pro" });
+                result = await proFallback.generateContent(prompt);
+              }
+            } else {
+              throw fallbackErr;
+            }
+          }
       } else {
           throw apiErr;
       }
@@ -237,10 +254,28 @@ export async function getPredictiveAnalysis(patientId: string, role: "patient" |
     try {
       result = await model.generateContent(prompt);
     } catch (apiErr: any) {
-      if (apiErr?.message?.includes("429") || apiErr?.message?.includes("quota") || apiErr?.message?.includes("503")) {
+      const errMsg = apiErr?.message || String(apiErr);
+      if (errMsg.includes("429") || errMsg.includes("quota") || errMsg.includes("503")) {
           console.warn("[Predictive] Flash 2.5 overloaded/quota, falling back to 2.0...");
-          const fallbackModel = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
-          result = await fallbackModel.generateContent(prompt);
+          try {
+            const fallbackModel = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+            result = await fallbackModel.generateContent(prompt);
+          } catch (fallbackErr: any) {
+            const fbMsg = fallbackErr?.message || String(fallbackErr);
+            if (fbMsg.includes("429") || fbMsg.includes("quota") || fbMsg.includes("503")) {
+              console.warn("[Predictive] Flash 2.0 overloaded/quota, falling back to 2.5-flash-lite...");
+              try {
+                const liteFallback = genAI.getGenerativeModel({ model: "gemini-2.5-flash-lite" });
+                result = await liteFallback.generateContent(prompt);
+              } catch (liteErr: any) {
+                console.warn("[Predictive] Lite fallback failed, attempting Pro...");
+                const proFallback = genAI.getGenerativeModel({ model: "gemini-2.5-pro" });
+                result = await proFallback.generateContent(prompt);
+              }
+            } else {
+              throw fallbackErr;
+            }
+          }
       } else throw apiErr;
     }
 

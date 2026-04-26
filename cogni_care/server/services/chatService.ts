@@ -204,6 +204,18 @@ export const getTotalUnreadCount = async (profileId: string, isCarer: boolean) =
         userId = profile?.userId || "";
     }
 
+    // Check if the user can access Care Circle at all
+    let canAccessCareCircle = !isCarer; // Default true for patients
+    if (isCarer) {
+        const activeRelations = await prisma.carersOnPatients.count({
+            where: {
+                carerId: profileId,
+                accessCareCircle: true
+            }
+        });
+        canAccessCareCircle = activeRelations > 0;
+    }
+
     // Collect unread counts from all direct chats and threads
     let total = 0;
 
@@ -235,14 +247,14 @@ export const getTotalUnreadCount = async (profileId: string, isCarer: boolean) =
         const count = await prisma.chatMessage.count({
             where: {
                 threadId: thread.id,
-                senderId: { not: profileId },
+                senderId: { not: userId }, // Fixed: should use userId (which is the User ID, not profile ID)
                 createdAt: { gt: lastRead }
             }
         });
         total += count;
     }
 
-    return { success: true, total };
+    return { success: true, total, canAccessCareCircle };
 };
 
 export const markAsRead = async (chatId: string, type: "thread" | "direct", profileId: string, isCarer: boolean) => {
