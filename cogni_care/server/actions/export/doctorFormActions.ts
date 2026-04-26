@@ -170,10 +170,10 @@ export async function generateDoctorFormDataAction(
     symptomMetrics.irritability.durationMonths = monthsSinceFirst;
 
     // 4. Construct Prompt
-    const maskedLogsText = allLogs.slice(0, 10).map(l => `[${format(new Date(l.createdAt), "dd/MM/yyyy")}]: ${mask(l.rawText || "")}`).join("\n");
+    const maskedLogsText = allLogs.slice(0, 10).map(l => `[${format(new Date(l.createdAt), "dd/MM/yyyy")}]: ${mask(l.rawText || "", { nlp: true })}`).join("\n");
 
     const prompt = DOCTOR_FORM_PREFILL_PROMPT(
-        mask(patientName),
+        mask(patientName, { nlp: true }),
         format(new Date(), "dd/MM/yyyy"),
         monthsSinceFirst,
         format(diagnosisDate, "dd MMM yyyy"),
@@ -316,12 +316,12 @@ export async function gradeHistoryRiskAction(
 
     const maskedHistory: HistoryData = {
         ...history,
-        stoppedChores: mask(history.stoppedChores || ""),
-        drinking: mask(history.drinking || ""),
-        nonPrescription: mask(history.nonPrescription || ""),
-        diet: mask(history.diet || ""),
-        familyHistory: mask(history.familyHistory || ""),
-        supportNetwork: mask(history.supportNetwork || ""),
+        stoppedChores: mask(history.stoppedChores || "", { nlp: true }),
+        drinking: mask(history.drinking || "", { nlp: true }),
+        nonPrescription: mask(history.nonPrescription || "", { nlp: true }),
+        diet: mask(history.diet || "", { nlp: true }),
+        familyHistory: mask(history.familyHistory || "", { nlp: true }),
+        supportNetwork: mask(history.supportNetwork || "", { nlp: true }),
     };
 
     const prompt = HISTORY_GRADING_PROMPT(maskedHistory);

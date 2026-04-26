@@ -14,7 +14,7 @@ export async function createSymptomLogAction(patientId: string, rawText: string)
         if (apiKey) {
             const genAI = new GoogleGenerativeAI(apiKey);
             const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
-            const safeText = mask(rawText || "");
+            const safeText = mask(rawText || "", { nlp: true });
             const prompt = `Analyze the following patient health log.
                 Extract the symptoms into the following pillars: physical, mood, cognitive, sleep, social.
 
@@ -126,7 +126,7 @@ export async function updateSymptomLogAction(logId: string, patientId: string, n
         if (apiKey) {
             const genAI = new GoogleGenerativeAI(apiKey);
             const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
-            const safeText = mask(newText || "");
+            const safeText = mask(newText || "", { nlp: true });
             const prompt = `Analyze the following patient health log.
                 Extract the symptoms into the following pillars: physical, mood, cognitive, sleep, social.
 
