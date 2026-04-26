@@ -51,36 +51,66 @@ export async function getLogsAction(patientId: string, requesterProfileId?: stri
             }),
         ]);
 
-        const formattedSymptomLogs: SymptomRecord[] = symptomLogs.map(({ carer: logCarer, notes: logNotes, ...log }) => ({
-            ...(log as unknown as SymptomRecord),
-            type: "patient" as const,
-            carerName: logCarer?.user?.name ?? undefined,
-            notes: logNotes.map((c) => ({
-                id: c.id,
-                createdAt: c.createdAt,
-                text: c.text,
-                carerId: c.carerId,
-                patientId: c.patientId,
-                carerName: c.carer.user.name ?? undefined,
-            })),
+        const formattedSymptomLogs: SymptomRecord[] = await Promise.all(symptomLogs.map(async ({ carer: logCarer, notes: logNotes, ...log }) => {
+            const notes = await Promise.all(logNotes.map(async (c) => {
+                const relation = await prisma.carersOnPatients.findUnique({
+                    where: {
+                        carerId_patientId: {
+                            carerId: c.carerId,
+                            patientId: c.patientId,
+                        }
+                    },
+                    select: { accessCareCircle: true }
+                });
+
+                return {
+                    id: c.id,
+                    createdAt: c.createdAt,
+                    text: c.text,
+                    carerId: c.carerId,
+                    patientId: c.patientId,
+                    carerName: c.carer.user.name ?? undefined,
+                    accessCareCircle: relation?.accessCareCircle ?? true,
+                };
+            }));
+
+            return {
+                ...(log as unknown as SymptomRecord),
+                type: "patient" as const,
+                carerName: logCarer?.user?.name ?? undefined,
+                notes,
+            };
         }));
 
-        const formattedCarerLogs = carerNotes.map((log) => ({
-            id: log.id,
-            createdAt: log.createdAt,
-            patientId: log.patientId,
-            rawText: log.text,
-            isFromCarer: true,
-            type: "carer" as const,
-            carerName: log.carer.user.name ?? undefined,
-            carerId: log.carerId,
-            notes: [], // Standalone logs start with no comments
-            // Add null pillars for UI compatibility if needed
-            physical: null,
-            mood: null,
-            cognitive: null,
-            sleep: null,
-            social: null,
+        const formattedCarerLogs = await Promise.all(carerNotes.map(async (log) => {
+            const relation = await prisma.carersOnPatients.findUnique({
+                where: {
+                    carerId_patientId: {
+                        carerId: log.carerId,
+                        patientId: log.patientId,
+                    }
+                },
+                select: { accessCareCircle: true }
+            });
+
+            return {
+                id: log.id,
+                createdAt: log.createdAt,
+                patientId: log.patientId,
+                rawText: log.text,
+                isFromCarer: true,
+                type: "carer" as const,
+                carerName: log.carer.user.name ?? undefined,
+                carerId: log.carerId,
+                accessCareCircle: relation?.accessCareCircle ?? true,
+                notes: [], // Standalone logs start with no comments
+                // Add null pillars for UI compatibility if needed
+                physical: null,
+                mood: null,
+                cognitive: null,
+                sleep: null,
+                social: null,
+            };
         }));
 
         const allLogs = [...formattedSymptomLogs, ...formattedCarerLogs].sort(

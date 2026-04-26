@@ -284,7 +284,7 @@ export default function LogEntryCard({ log, patientId, onUpdate, onDelete, highl
                                                 <span>{comment.carerName || "Carer"}</span>
                                                 <div className="flex items-center gap-2">
                                                     <span>{mounted ? new Date(comment.createdAt).toLocaleDateString() : ""}</span>
-                                                     {!isCarer && (
+                                                     {!isCarer && comment.accessCareCircle !== false && (
                                                         <button 
                                                             disabled={isStartingDiscussion}
                                                             onClick={async () => {

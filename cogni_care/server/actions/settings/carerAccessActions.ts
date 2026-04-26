@@ -69,28 +69,37 @@ export async function updateCarerAccessAction(
     data: { accessSymptomLogs?: boolean; accessCareCircle?: boolean }
 ): Promise<UpdateAccessResponse> {
     try {
-        await prisma.carersOnPatients.update({
+        console.log(`[CarerAccess] RAW DATA RECEIVED:`, data);
+        
+        // Ensure boolean types
+        const updateData: any = {};
+        if (data.accessSymptomLogs !== undefined) updateData.accessSymptomLogs = Boolean(data.accessSymptomLogs);
+        if (data.accessCareCircle !== undefined) updateData.accessCareCircle = Boolean(data.accessCareCircle);
+
+        console.log(`[CarerAccess] UPDATING carer ${carerProfileId} on patient ${patientProfileId}:`, updateData);
+        
+        const updated = await prisma.carersOnPatients.update({
             where: {
                 carerId_patientId: {
                     carerId: carerProfileId,
                     patientId: patientProfileId,
                 }
             },
-            data: {
-                ...(data.accessSymptomLogs !== undefined && { accessSymptomLogs: data.accessSymptomLogs }),
-                ...(data.accessCareCircle !== undefined && { accessCareCircle: data.accessCareCircle }),
-            }
+            data: updateData
         });
+        
+        console.log(`[CarerAccess] SUCCESS. Database Record: carer=${updated.carerId}, patient=${updated.patientId}, Logs=${updated.accessSymptomLogs}, CareCircle=${updated.accessCareCircle}`);
 
         // Emit WebSocket event for real-time refresh
         try {
             const io = getIO();
+            console.log(`[Socket] Emitting permission_updated to carer ${carerProfileId}. New CC access: ${data.accessCareCircle}`);
             io.to(carerProfileId).emit("permission_updated", {
                 patientId: patientProfileId,
                 accessSymptomLogs: data.accessSymptomLogs,
                 accessCareCircle: data.accessCareCircle
             });
-            console.log(`[Socket] Emitted permission_updated to carer: ${carerProfileId}`);
+            console.log(`[Socket] EMITTED permission_updated to: ${carerProfileId}`);
         } catch (err) {
             console.warn("[Socket] Failed to emit permission_updated:", err);
         }

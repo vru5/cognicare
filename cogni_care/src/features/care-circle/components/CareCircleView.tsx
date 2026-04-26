@@ -11,6 +11,7 @@ import { ChatThread, ChatMessage, ChatNavigationParams } from "../types/chatType
 import { resolveThread, getContacts, getThreads, getOrCreateDirectChat } from "../services/careCircleService";
 import { CHAT_QUERY_PARAMS, CHAT_STRINGS, CHAT_TABS, CHAT_TYPES } from "../constants/chatConstants";
 import { useChatDeepLink } from "../hooks/useChatDeepLink";
+import { useChat } from "@/contexts/ChatContext";
 import { cn } from "@/lib/utils";
 import { HOTLINE_URL } from "@/constants/auth";
 import ChatInterface from "./ChatInterface";
@@ -18,6 +19,7 @@ import { getSocket } from "@/lib/socket";
 
 export default function CareCircleView() {
     const { user } = useAuth();
+    const { canAccessCareCircle } = useChat();
     const [activeTab, setActiveTab] = useState<typeof CHAT_TABS.THREADS | typeof CHAT_TABS.DIRECT>(CHAT_TABS.THREADS);
     const [threads, setThreads] = useState<ChatThread[]>([]);
     const [contacts, setContacts] = useState<any[]>([]);
@@ -41,11 +43,16 @@ export default function CareCircleView() {
                 getContacts(user.profileId, user.isCarer)
             ]);
 
-            if (threadsRes.success) setThreads(threadsRes.threads);
+            if (threadsRes.success) {
+                const filteredThreads = user.isCarer 
+                    ? threadsRes.threads.filter((t: any) => t.accessCareCircle !== false)
+                    : threadsRes.threads;
+                setThreads(filteredThreads);
+            }
             if (contactsRes.success) {
                 const normalized = user.isCarer 
-                    ? contactsRes.patients 
-                    : contactsRes.carers.filter((c: any) => c.accessCareCircle);
+                    ? contactsRes.patients.filter((p: any) => p.accessCareCircle !== false)
+                    : contactsRes.carers.filter((c: any) => c.accessCareCircle !== false);
                 setContacts(normalized);
             }
         } catch (error) {
@@ -66,8 +73,11 @@ export default function CareCircleView() {
                 fetchData();
             };
             socket.on("unread_update", handleUnreadUpdate);
+            socket.on("permission_updated", handleUnreadUpdate); // Re-fetch threads/contacts on permission change
+
             return () => {
                 socket.off("unread_update", handleUnreadUpdate);
+                socket.off("permission_updated", handleUnreadUpdate);
             };
         }
     }, [user?.profileId]);
@@ -102,6 +112,36 @@ export default function CareCircleView() {
             console.error("Failed to start direct chat:", error);
         }
     };
+
+    if (user?.isCarer && !canAccessCareCircle) {
+        return (
+            <MobilePageLayout
+                title="Care Circle"
+                icon={Users}
+                headerBgClass="bg-[#E3F2FD]/95" 
+                textClass="text-[#0B4063]"
+                iconContainerClass="bg-gradient-to-br from-primary to-[#0A4B75] shadow-lg shadow-primary/20"
+                iconColorClass="text-white"
+            >
+                <div className="flex flex-col items-center justify-center py-20 text-center space-y-4 px-8">
+                    <div className="p-6 bg-slate-100 rounded-full">
+                        <Users className="w-12 h-12 text-slate-400" />
+                    </div>
+                    <h2 className="text-xl font-black text-[#0B4063]">Access Restricted</h2>
+                    <p className="text-muted-foreground font-medium leading-relaxed">
+                        The patient has restricted access to the Care Circle. 
+                        Please contact the patient if you believe this is an error.
+                    </p>
+                    <Button 
+                        onClick={() => router.push("/dashboard")}
+                        className="mt-4 bg-primary text-white rounded-2xl px-8 h-14 font-black text-lg shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all"
+                    >
+                        Back to Dashboard
+                    </Button>
+                </div>
+            </MobilePageLayout>
+        );
+    }
 
     if (selectedChat) {
         return (

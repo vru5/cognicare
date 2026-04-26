@@ -10,7 +10,7 @@ import { useChat } from "@/contexts/ChatContext";
 const BottomNavbar = () => {
     const pathname = usePathname();
     const { user } = useAuth();
-    const { totalUnreadCount } = useChat();
+    const { totalUnreadCount, canAccessCareCircle } = useChat();
 
     if (pathname.includes("/doc-form")) {
         return null;
@@ -39,7 +39,7 @@ const BottomNavbar = () => {
             label: "Care Circle",
             icon: Users,
             href: "/care-circle",
-            show: true,
+            show: user?.isCarer ? canAccessCareCircle : true,
         },
         {
             label: "Insights",

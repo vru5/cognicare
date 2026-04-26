@@ -2,6 +2,7 @@ import { prisma } from "../../lib/prisma.js";
 import { CarerPatientsResponse } from "../../types/carerActions";
 
 export async function getCarerPatientsAction(carerProfileId: string): Promise<CarerPatientsResponse> {
+    console.log(`[CarerQuery] getCarerPatientsAction called for ${carerProfileId}`);
     try {
         const relations = await prisma.carersOnPatients.findMany({
             where: { 
@@ -49,6 +50,7 @@ export async function getCarerPatientsAction(carerProfileId: string): Promise<Ca
 }
 
 export async function getCarerPatientsWithCareCircleAction(carerProfileId: string): Promise<any> {
+    console.log(`[CarerQuery] getCarerPatientsWithCareCircleAction called for ${carerProfileId}`);
     try {
         // Resolve User ID for unread filtering
         const carerProfile = await prisma.profileCarer.findUnique({ where: { id: carerProfileId } });
@@ -70,6 +72,11 @@ export async function getCarerPatientsWithCareCircleAction(carerProfileId: strin
                     }
                 }
             }
+        });
+
+        console.log(`[CarerQuery] Found ${relations.length} relations for carer ${carerProfileId}:`);
+        relations.forEach(r => {
+            console.log(` - Patient ${r.patientId}: accessSymptomLogs=${r.accessSymptomLogs}, accessCareCircle=${r.accessCareCircle}`);
         });
 
         const patients = await Promise.all(relations.map(async (rel) => {
@@ -99,7 +106,7 @@ export async function getCarerPatientsWithCareCircleAction(carerProfileId: strin
                 name: rel.patient.user.name || "Unknown Patient",
                 hasNewLog: false,
                 accessSymptomLogs: rel.accessSymptomLogs,
-                accessCareCircle: true,
+                accessCareCircle: rel.accessCareCircle,
                 unreadCount
             };
         }));
