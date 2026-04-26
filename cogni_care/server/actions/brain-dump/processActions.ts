@@ -30,7 +30,13 @@ export async function processBrainDumpAction(
 
   try {
     console.log(`[SECURITY: PII_MASKING] Original Text: "${rawText}"`);
-    const safeText = mask(rawText || "", { nlp: true });
+    const safeText = mask(rawText || "", { 
+      nlp: true,
+      customRules: [
+        // Distinction-Level Heuristic: Catch capitalized names in the middle of sentences
+        { pattern: /(?<!^|\.\s|\?\s|\!\s)\b([A-Z][a-z]+)\b/g, replacement: "PERSON" }
+      ]
+    });
     console.log(`[SECURITY: PII_MASKING] Redacted Text: "${safeText}"`);
 
     const prompt = PROCESS_BRAIN_DUMP_PROMPT(safeText);

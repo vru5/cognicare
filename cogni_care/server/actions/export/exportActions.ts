@@ -273,9 +273,15 @@ export async function generateProfessionalReportAction(
         console.warn("[ProfessionalReport] Cache lookup failed:", cacheErr);
       }
     }
-    const maskedLogsText = logsInPeriod.slice(0, 50).map(l => mask(l.rawText || "", { nlp: true })).join("; ");
+    const maskedLogsText = logsInPeriod.slice(0, 50).map(l => mask(l.rawText || "", { 
+      nlp: true,
+      customRules: [{ pattern: /(?<!^|\.\s|\?\s|\!\s)\b([A-Z][a-z]+)\b/g, replacement: "PERSON" }]
+    })).join("; ");
     const prompt = NHS_GUIDANCE_PROMPT(
-      mask(patientName, { nlp: true }),
+      mask(patientName, { 
+        nlp: true,
+        customRules: [{ pattern: /(?<!^|\.\s|\?\s|\!\s)\b([A-Z][a-z]+)\b/g, replacement: "PERSON" }]
+      }),
       startTime,
       endTime,
       overallPillarAvg,

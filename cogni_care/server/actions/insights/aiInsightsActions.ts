@@ -87,7 +87,10 @@ export async function getAIInsightsSummary(patientId: string, startDate: string,
   const formattedLogs = logs.map((log: SymptomLog) => {
     const dateStr = format(new Date(log.createdAt), "yyyy-MM-dd");
     const source = log.isFromCarer ? "Carer" : "Patient";
-    const safeText = mask(log.rawText || "", { nlp: true });
+    const safeText = mask(log.rawText || "", { 
+      nlp: true,
+      customRules: [{ pattern: /(?<!^|\.\s|\?\s|\!\s)\b([A-Z][a-z]+)\b/g, replacement: "PERSON" }]
+    });
     const pillars = [
       log.physical && `Physical: ${log.physical} (${log.physicalSeverity}/10)`,
       log.mood && `Mood: ${log.mood} (${log.moodSeverity}/10)`,
@@ -244,7 +247,10 @@ export async function getPredictiveAnalysis(patientId: string, role: "patient" |
       log.sleep && `Sleep: ${log.sleepSeverity}/10`,
       log.social && `Social: ${log.socialSeverity}/10`,
     ].filter(Boolean).join(", ");
-    return `[${dateStr}] ${pillars} - "${mask(log.rawText || "", { nlp: true })}"`;
+    return `[${dateStr}] ${pillars} - "${mask(log.rawText || "", { 
+      nlp: true,
+      customRules: [{ pattern: /(?<!^|\.\s|\?\s|\!\s)\b([A-Z][a-z]+)\b/g, replacement: "PERSON" }]
+    })}"`;
   }).join("\n");
 
   const prompt = PREDICTIVE_ANALYSIS_PROMPT("the patient", formattedLogs, role);

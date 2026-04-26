@@ -170,10 +170,16 @@ export async function generateDoctorFormDataAction(
     symptomMetrics.irritability.durationMonths = monthsSinceFirst;
 
     // 4. Construct Prompt
-    const maskedLogsText = allLogs.slice(0, 10).map(l => `[${format(new Date(l.createdAt), "dd/MM/yyyy")}]: ${mask(l.rawText || "", { nlp: true })}`).join("\n");
+    const maskedLogsText = allLogs.slice(0, 10).map(l => `[${format(new Date(l.createdAt), "dd/MM/yyyy")}]: ${mask(l.rawText || "", { 
+      nlp: true,
+      customRules: [{ pattern: /(?<!^|\.\s|\?\s|\!\s)\b([A-Z][a-z]+)\b/g, replacement: "PERSON" }]
+    })}`).join("\n");
 
     const prompt = DOCTOR_FORM_PREFILL_PROMPT(
-        mask(patientName, { nlp: true }),
+        mask(patientName, { 
+          nlp: true,
+          customRules: [{ pattern: /(?<!^|\.\s|\?\s|\!\s)\b([A-Z][a-z]+)\b/g, replacement: "PERSON" }]
+        }),
         format(new Date(), "dd/MM/yyyy"),
         monthsSinceFirst,
         format(diagnosisDate, "dd MMM yyyy"),
@@ -316,12 +322,30 @@ export async function gradeHistoryRiskAction(
 
     const maskedHistory: HistoryData = {
         ...history,
-        stoppedChores: mask(history.stoppedChores || "", { nlp: true }),
-        drinking: mask(history.drinking || "", { nlp: true }),
-        nonPrescription: mask(history.nonPrescription || "", { nlp: true }),
-        diet: mask(history.diet || "", { nlp: true }),
-        familyHistory: mask(history.familyHistory || "", { nlp: true }),
-        supportNetwork: mask(history.supportNetwork || "", { nlp: true }),
+        stoppedChores: mask(history.stoppedChores || "", { 
+          nlp: true,
+          customRules: [{ pattern: /(?<!^|\.\s|\?\s|\!\s)\b([A-Z][a-z]+)\b/g, replacement: "PERSON" }]
+        }),
+        drinking: mask(history.drinking || "", { 
+          nlp: true,
+          customRules: [{ pattern: /(?<!^|\.\s|\?\s|\!\s)\b([A-Z][a-z]+)\b/g, replacement: "PERSON" }]
+        }),
+        nonPrescription: mask(history.nonPrescription || "", { 
+          nlp: true,
+          customRules: [{ pattern: /(?<!^|\.\s|\?\s|\!\s)\b([A-Z][a-z]+)\b/g, replacement: "PERSON" }]
+        }),
+        diet: mask(history.diet || "", { 
+          nlp: true,
+          customRules: [{ pattern: /(?<!^|\.\s|\?\s|\!\s)\b([A-Z][a-z]+)\b/g, replacement: "PERSON" }]
+        }),
+        familyHistory: mask(history.familyHistory || "", { 
+          nlp: true,
+          customRules: [{ pattern: /(?<!^|\.\s|\?\s|\!\s)\b([A-Z][a-z]+)\b/g, replacement: "PERSON" }]
+        }),
+        supportNetwork: mask(history.supportNetwork || "", { 
+          nlp: true,
+          customRules: [{ pattern: /(?<!^|\.\s|\?\s|\!\s)\b([A-Z][a-z]+)\b/g, replacement: "PERSON" }]
+        }),
     };
 
     const prompt = HISTORY_GRADING_PROMPT(maskedHistory);
