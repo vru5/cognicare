@@ -213,6 +213,7 @@ export const getTotalUnreadCount = async (profileId: string, isCarer: boolean) =
                 accessCareCircle: true
             }
         });
+        console.log(`[ChatService] Carer ${profileId} has ${activeRelations} patients with CC access`);
         canAccessCareCircle = activeRelations > 0;
     }
 
@@ -221,7 +222,19 @@ export const getTotalUnreadCount = async (profileId: string, isCarer: boolean) =
 
     // Direct Chats
     const directChats = await prisma.directChat.findMany({
-        where: isCarer ? { carerId: profileId } : { patientId: profileId },
+        where: isCarer 
+            ? { 
+                carerId: profileId,
+                patient: {
+                    carers: {
+                        some: {
+                            carerId: profileId,
+                            accessCareCircle: true
+                        }
+                    }
+                }
+            } 
+            : { patientId: profileId },
     });
 
     // Due to Prisma's filter complexity on related model fields, we fetch and sum
@@ -239,7 +252,19 @@ export const getTotalUnreadCount = async (profileId: string, isCarer: boolean) =
 
     // Threads
     const threads = await prisma.chatThread.findMany({
-        where: isCarer ? { authorCarerId: profileId } : { patientId: profileId },
+        where: isCarer 
+            ? { 
+                authorCarerId: profileId,
+                patient: {
+                    carers: {
+                        some: {
+                            carerId: profileId,
+                            accessCareCircle: true
+                        }
+                    }
+                }
+            } 
+            : { patientId: profileId },
     });
 
     for (const thread of threads) {
@@ -254,6 +279,7 @@ export const getTotalUnreadCount = async (profileId: string, isCarer: boolean) =
         total += count;
     }
 
+    console.log(`[ChatService] Total unread for ${profileId}: ${total}, canAccessCC: ${canAccessCareCircle}`);
     return { success: true, total, canAccessCareCircle };
 };
 

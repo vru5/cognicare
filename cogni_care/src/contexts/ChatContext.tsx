@@ -52,15 +52,17 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
 
         // Listen for real-time updates
         const socket = getSocket(user.profileId);
-        const handleUnreadUpdate = () => {
-            console.log("[ChatContext] Received unread_update, refreshing...");
+        const handleRefresh = () => {
+            console.log(`[ChatContext] Socket event received (${user?.profileId}), refreshing unread and permissions...`);
             refreshUnreadCount();
         };
 
-        socket.on("unread_update", handleUnreadUpdate);
+        socket.on("unread_update", handleRefresh);
+        socket.on("permission_updated", handleRefresh);
 
         return () => {
-            socket.off("unread_update", handleUnreadUpdate);
+            socket.off("unread_update", handleRefresh);
+            socket.off("permission_updated", handleRefresh);
         };
     }, [user, refreshUnreadCount]);
 

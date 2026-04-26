@@ -43,11 +43,16 @@ export default function CareCircleView() {
                 getContacts(user.profileId, user.isCarer)
             ]);
 
-            if (threadsRes.success) setThreads(threadsRes.threads);
+            if (threadsRes.success) {
+                const filteredThreads = user.isCarer 
+                    ? threadsRes.threads.filter((t: any) => t.accessCareCircle !== false)
+                    : threadsRes.threads;
+                setThreads(filteredThreads);
+            }
             if (contactsRes.success) {
                 const normalized = user.isCarer 
-                    ? contactsRes.patients 
-                    : contactsRes.carers.filter((c: any) => c.accessCareCircle);
+                    ? contactsRes.patients.filter((p: any) => p.accessCareCircle !== false)
+                    : contactsRes.carers.filter((c: any) => c.accessCareCircle !== false);
                 setContacts(normalized);
             }
         } catch (error) {
@@ -68,8 +73,11 @@ export default function CareCircleView() {
                 fetchData();
             };
             socket.on("unread_update", handleUnreadUpdate);
+            socket.on("permission_updated", handleUnreadUpdate); // Re-fetch threads/contacts on permission change
+
             return () => {
                 socket.off("unread_update", handleUnreadUpdate);
+                socket.off("permission_updated", handleUnreadUpdate);
             };
         }
     }, [user?.profileId]);

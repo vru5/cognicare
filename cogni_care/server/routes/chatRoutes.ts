@@ -58,7 +58,8 @@ router.post("/messages", async (req, res) => {
 router.get("/contacts", async (req, res) => {
     try {
         const { profileId, isCarer } = req.query;
-        if (isCarer === "true") {
+        const isCarerBool = String(isCarer) === "true";
+        if (isCarerBool) {
             const result = await getCarerPatientsWithCareCircleAction(String(profileId));
             res.json(result);
         } else {
@@ -75,9 +76,11 @@ router.get("/threads", async (req, res) => {
     try {
         const { profileId, isCarer } = req.query;
         
+        const isCarerBool = String(isCarer) === "true";
+        
         // Resolve User ID for unread filtering
         let userId = "";
-        if (isCarer === "true") {
+        if (isCarerBool) {
             const profile = await prisma.profileCarer.findUnique({ where: { id: String(profileId) } });
             userId = profile?.userId || "";
         } else {
@@ -85,19 +88,34 @@ router.get("/threads", async (req, res) => {
             userId = profile?.userId || "";
         }
 
+        const accessiblePatients = isCarerBool
+            ? await prisma.carersOnPatients.findMany({
+                where: { carerId: String(profileId), accessCareCircle: true },
+                select: { patientId: true, accessCareCircle: true }
+              })
+            : [];
+        
+        const accessiblePatientIds = accessiblePatients.map(p => p.patientId);
+        console.log(`[ChatRoutes] Carer ${profileId} accessible patient IDs:`, accessiblePatientIds);
+        console.log(`[ChatRoutes] Carer ${profileId} has access to ${accessiblePatientIds.length} patients' Care Circles`);
+
         const threads = await prisma.chatThread.findMany({
             where: {
-                OR: [
-                    { patientId: String(profileId) },
-                    { authorCarerId: String(profileId) }
-                ],
+                ...(isCarerBool
+                    ? { 
+                        authorCarerId: String(profileId),
+                        patientId: { in: accessiblePatientIds }
+                      } 
+                    : { patientId: String(profileId) }
+                ),
                 isResolved: false
             },
             orderBy: { createdAt: "desc" }
         });
+        console.log(`[ChatRoutes] Found ${threads.length} threads for profile ${profileId}`);
 
         const threadsWithCounts = await Promise.all(threads.map(async (thread: any) => {
-            const lastRead = (isCarer === "true") ? thread.carerLastReadAt : thread.patientLastReadAt;
+            const lastRead = isCarerBool ? thread.carerLastReadAt : thread.patientLastReadAt;
             const unreadCount = await prisma.chatMessage.count({
                 where: {
                     threadId: thread.id,
@@ -105,7 +123,22 @@ router.get("/threads", async (req, res) => {
                     createdAt: { gt: lastRead }
                 }
             });
-            return { ...thread, unreadCount };
+            // Also check permission for this specific patient
+            const relation = await prisma.carersOnPatients.findUnique({
+                where: {
+                    carerId_patientId: {
+                        carerId: String(profileId),
+                        patientId: thread.patientId,
+                    }
+                },
+                select: { accessCareCircle: true }
+            });
+
+            return { 
+                ...thread, 
+                unreadCount,
+                accessCareCircle: relation?.accessCareCircle ?? true
+            };
         }));
 
         res.json({ success: true, threads: threadsWithCounts });
