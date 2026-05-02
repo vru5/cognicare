@@ -44,3 +44,12 @@ export const getSocket = (profileId?: string) => {
 
     return socket;
 };
+
+export const disconnectSocket = () => {
+    if (socket) {
+        console.log("[Socket] Explicitly disconnecting socket...");
+        socket.disconnect();
+        socket = null;
+        currentProfileId = null;
+    }
+};

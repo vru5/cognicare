@@ -6,6 +6,7 @@ import { RegistrationBody } from "server/types/authApi";
 import { useSecureStorage } from "@/hooks/useSecureStorage";
 import { useServiceError } from "@/hooks/useServiceError";
 import { useRouter } from "next/navigation";
+import { disconnectSocket } from "@/lib/socket";
 
 const AUTH_STORAGE_KEY = "cognicare_auth";
 
@@ -135,6 +136,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
 
     const logout = async () => {
+        disconnectSocket();
         await removeItem(AUTH_STORAGE_KEY);
         setUser(null);
     };
