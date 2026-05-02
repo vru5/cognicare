@@ -6,12 +6,19 @@ let io: Server | null = null;
 export function initSocket(server: HttpServer) {
     io = new Server(server, {
         cors: {
-            origin: [
+            origin: (origin, callback) => {
+            const allowedOrigins = [
                 "https://cognicare-rosy.vercel.app",
                 "capacitor://localhost"
-            ],
+            ];
+            if (!origin || allowedOrigins.includes(origin) || origin.endsWith(".vercel.app")) {
+                callback(null, true);
+            } else {
+                callback(new Error("Not allowed by CORS"));
+            }
+        },
             methods: ["GET", "POST", "PATCH"]
-        }
+            }
     });
 
     io.on("connection", (socket) => {

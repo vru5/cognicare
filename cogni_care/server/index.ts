@@ -23,12 +23,17 @@ const port = process.env.PORT || process.env.SERVER_PORT || 4000;
 
 console.log("Setting up middleware...");
 app.use(cors({
-    origin: [
-        "https://cognicare-rosy.vercel.app",
-        "capacitor://localhost"
-    ],
-    methods: ["GET", "POST", "PATCH", "DELETE"],
-    credentials: true
+     origin: (origin, callback) => {
+        const allowedOrigins = [
+            "https://cognicare-rosy.vercel.app",
+            "capacitor://localhost"
+        ];
+        if (!origin || allowedOrigins.includes(origin) || origin.endsWith(".vercel.app")) {
+            callback(null, true);
+        } else {
+            callback(new Error("Not allowed by CORS"));
+        }
+    },
 }));
 app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ extended: true, limit: "50mb" }));
