@@ -27,6 +27,7 @@ export const registerUser = async (body: RegistrationBody) => {
   const phone = !isEmail ? emailOrPhone : null;
 
   // Use transaction to ensure atomic creation
+  console.log(`[DATABASE: TRANSACTION_START] Initializing atomic registration for role: ${role}`);
   return await prisma.$transaction(async (tx) => {
     // 1. Check if user already exists
     const existingUser = await tx.user.findFirst({
@@ -39,6 +40,7 @@ export const registerUser = async (body: RegistrationBody) => {
     });
 
     if (existingUser) {
+      console.error(`[DATABASE: TRANSACTION_ROLLBACK] User ${emailOrPhone} already exists.`);
       throw new Error("A user with this email or phone already exists");
     }
 
@@ -53,6 +55,7 @@ export const registerUser = async (body: RegistrationBody) => {
         password: hashedPassword,
       },
     });
+    console.log(`[DATABASE: TRANSACTION_PROGRESS] Core User record created: ${user.id}`);
 
     if (role === "PATIENT") {
       // 3. Create Patient Profile with Date-now ID
@@ -63,6 +66,7 @@ export const registerUser = async (body: RegistrationBody) => {
           userId: user.id,
         },
       });
+      console.log(`[DATABASE: TRANSACTION_PROGRESS] Patient Profile created: ${patientProfile.id}`);
 
       // 4. Create Family Member if details provided
       if (familyMemberName) {
@@ -76,6 +80,7 @@ export const registerUser = async (body: RegistrationBody) => {
         });
       }
 
+      console.log("[DATABASE: TRANSACTION_COMMIT] Patient account fully provisioned.");
       return {
         message: "Registration successful",
         userId: user.id,
@@ -90,6 +95,7 @@ export const registerUser = async (body: RegistrationBody) => {
           userId: user.id,
         },
       });
+      console.log(`[DATABASE: TRANSACTION_PROGRESS] Carer Profile created: ${carerProfile.id}`);
 
       // 4. Link to Patient if ID provided
       if (patientId) {
@@ -99,6 +105,7 @@ export const registerUser = async (body: RegistrationBody) => {
         });
 
         if (!patientExists) {
+          console.error(`[DATABASE: TRANSACTION_ROLLBACK] Provided Patient ID ${patientId} is invalid.`);
           throw new Error(
             `Patient ID "${patientId}" not found. Please check the ID and try again.`,
           );
@@ -110,8 +117,10 @@ export const registerUser = async (body: RegistrationBody) => {
             patientId: patientId,
           },
         });
+        console.log(`[DATABASE: TRANSACTION_PROGRESS] Care Circle link established with Patient: ${patientId}`);
       }
 
+      console.log("[DATABASE: TRANSACTION_COMMIT] Carer account fully provisioned.");
       return {
         message: "Registration successful",
         userId: user.id,

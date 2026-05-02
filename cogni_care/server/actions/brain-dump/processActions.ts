@@ -29,7 +29,15 @@ export async function processBrainDumpAction(
   } catch (e) { }
 
   try {
-    const safeText = mask(rawText || "");
+    console.log(`[SECURITY: PII_MASKING] Original Text: "${rawText}"`);
+    const safeText = mask(rawText || "", { 
+      nlp: true,
+      customRules: [
+        // Distinction-Level Heuristic: Catch capitalized names in the middle of sentences
+        { pattern: /(?<!^|\.\s|\?\s|\!\s)\b([A-Z][a-z]+)\b/g, replacement: "PERSON" }
+      ]
+    });
+    console.log(`[SECURITY: PII_MASKING] Redacted Text: "${safeText}"`);
 
     const prompt = PROCESS_BRAIN_DUMP_PROMPT(safeText);
 
@@ -46,12 +54,13 @@ export async function processBrainDumpAction(
         // 503 = Service Overloaded
         if (err.message?.includes("503") || err.message?.includes("overloaded")) {
           console.warn(
-            "Gemini Flash 2.5 is overloaded, falling back to Gemini Pro 2.5...",
+            "[AI_RESILIENCE: FALLBACK_TRIGGERED] Gemini Flash 2.5 is overloaded, pivoting to Gemini Flash-Lite...",
           );
           const fallbackModel = genAI.getGenerativeModel({
             model: "gemini-2.5-flash-lite",
           });
           result = await fallbackModel.generateContent(prompt);
+          console.log("[AI_RESILIENCE: SUCCESS] Fallback model generated content successfully.");
         } else {
           throw apiErr;
         }
@@ -127,6 +136,7 @@ export async function processBrainDumpAction(
       };
     }
 
+    console.log(`[DATABASE: PERSISTENCE] Committing validated SymptomLog to PostgreSQL for Patient: ${profile.id}`);
     const log: SymptomRecord = await prisma.symptomLog.create({
       data: {
         patientId: profile.id,
@@ -145,6 +155,7 @@ export async function processBrainDumpAction(
         socialSeverity: analysis.socialSeverity,
       },
     });
+    console.log(`[DATABASE: SUCCESS] Log ID ${log.id} persisted via Prisma.`);
 
     // Notify associated carers via WebSocket
     try {
@@ -162,6 +173,7 @@ export async function processBrainDumpAction(
       patientCarers.forEach((pc) => {
         // Silent refresh for all carers
         io.to(pc.carerId).emit("new_log", { patientId: profile.id });
+        console.log(`[SOCKET: BROADCAST] Emitted 'new_log' pulse to Carer room: ${pc.carerId}`);
       });
       // console.log(
       //   `[Socket] Notified ${patientCarers.length} carers about new Mind Dump log`,
