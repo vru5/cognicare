@@ -19,7 +19,7 @@ dotenv.config({ path: "../.env" }); // Load from root .env
 
 console.log("Initializing Express app...");
 const app = express();
-const port = process.env.SERVER_PORT || 4000;
+const port = process.env.PORT || process.env.SERVER_PORT || 4000;
 
 console.log("Setting up middleware...");
 app.use(cors());
