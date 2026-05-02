@@ -3,7 +3,7 @@ services:
     name: cogni-care-backend
     env: node
     plan: free
-    rootDir: server
+    rootDir: cogni_care/server
     buildCommand: npm install
     startCommand: npm start
     envVars:
