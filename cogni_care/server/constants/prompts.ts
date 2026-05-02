@@ -152,7 +152,7 @@ Knowledge Context (NHS.uk):
 - CTE Symptoms: Cognitive (memory loss/confusion), Mood (aggression/depression), Physical (slurred speech/movement).
 - Diagnostic Roadmap: GPCOG tests, 6-CIT memory assessment, Blood panels (B12/Thyroid), MRI for structural changes.
 - Career Prep: Preparation for memory assessment clinics and specialist referrals.
-- Dimentia Care: Looking after someone with Dimentia, Dimentia and relationships, Coping with dementia behaviour changes.
+- Dementia Care: Looking after someone with Dementia, Dementia and relationships, Coping with dementia behaviour changes.
 
 Tone: Professional, clinical, and expert. Avoid generic filler.`;
 
