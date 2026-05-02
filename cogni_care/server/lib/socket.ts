@@ -6,7 +6,10 @@ let io: Server | null = null;
 export function initSocket(server: HttpServer) {
     io = new Server(server, {
         cors: {
-            origin: "*", // Adjust in production
+            origin: [
+                "https://cognicare-rosy.vercel.app",
+                "capacitor://localhost"
+            ],
             methods: ["GET", "POST", "PATCH"]
         }
     });

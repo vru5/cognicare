@@ -153,7 +153,7 @@ export const getProfileAction = async (userId: string) => {
 };
 
 export const loginUser = async (body: { email: string; password: string }) => {
-  console.log("LOGIN ATTEMPT START:", body.email);
+  console.log("LOGIN ATTEMPT START");
   const { email, password } = body;
 
   if (!email || !password) {

@@ -58,7 +58,7 @@ export const PushNotificationService = {
 
     // Listen for registration successful
     PushNotifications.addListener('registration', async (token) => {
-      console.log('[PushNotificationService] Registration successful, token:', token.value);
+      console.log('[PushNotificationService] Registration successful');
       
       try {
         const response = await fetch(`${API_BASE_URL}${CHAT_ENDPOINTS.PUSH_TOKEN}`, {
