@@ -10,6 +10,7 @@ export function initSocket(server: HttpServer) {
                 const allowedOrigins = [
                     "https://cognicare-rosy.vercel.app",
                     "capacitor://localhost",
+                    "https://localhost",
                     "http://localhost",
                     "http://localhost:3000",
                     "http://localhost:3001"
