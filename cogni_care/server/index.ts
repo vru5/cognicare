@@ -23,14 +23,23 @@ const port = process.env.PORT || process.env.SERVER_PORT || 4000;
 
 console.log("Setting up middleware...");
 app.use(cors({
-     origin: (origin, callback) => {
+    origin: (origin, callback) => {
         const allowedOrigins = [
             "https://cognicare-rosy.vercel.app",
-            "capacitor://localhost"
+            "capacitor://localhost",
+            "http://localhost",
+            "http://localhost:3000",
+            "http://localhost:3001"
         ];
-        if (!origin || allowedOrigins.includes(origin) || origin.endsWith(".vercel.app")) {
+        
+        const isAllowed = !origin || 
+                         allowedOrigins.includes(origin) || 
+                         origin.endsWith(".vercel.app");
+
+        if (isAllowed) {
             callback(null, true);
         } else {
+            console.warn(`[CORS] Request from blocked origin: ${origin}`);
             callback(new Error("Not allowed by CORS"));
         }
     },

@@ -7,18 +7,22 @@ export function initSocket(server: HttpServer) {
     io = new Server(server, {
         cors: {
             origin: (origin, callback) => {
-            const allowedOrigins = [
-                "https://cognicare-rosy.vercel.app",
-                "capacitor://localhost"
-            ];
-            if (!origin || allowedOrigins.includes(origin) || origin.endsWith(".vercel.app")) {
-                callback(null, true);
-            } else {
-                callback(new Error("Not allowed by CORS"));
-            }
-        },
+                const allowedOrigins = [
+                    "https://cognicare-rosy.vercel.app",
+                    "capacitor://localhost",
+                    "http://localhost",
+                    "http://localhost:3000",
+                    "http://localhost:3001"
+                ];
+                if (!origin || allowedOrigins.includes(origin) || origin.endsWith(".vercel.app")) {
+                    callback(null, true);
+                } else {
+                    console.warn(`[Socket-CORS] Request from blocked origin: ${origin}`);
+                    callback(new Error("Not allowed by CORS"));
+                }
+            },
             methods: ["GET", "POST", "PATCH"]
-            }
+        }
     });
 
     io.on("connection", (socket) => {
