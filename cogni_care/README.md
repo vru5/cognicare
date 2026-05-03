@@ -1,4 +1,6 @@
-# CogniCare: AI-Powered Dementia Care Management System
+# AI Symptom Tracker - CogniCare
+
+## Introduction
 
 CogniCare is a comprehensive healthcare platform designed to bridge the gap between dementia patients and their carers. By leveraging Large Language Models (LLMs) and real-time synchronization, CogniCare transforms unstructured daily entries into actionable clinical insights.
 
