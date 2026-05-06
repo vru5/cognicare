@@ -45,3 +45,9 @@ ios/
 android/
 
 /generated/prisma
+
+# Playwright
+test-results/
+playwright-report/
+blob-report/
+playwright/.cache/
