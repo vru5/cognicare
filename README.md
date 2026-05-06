@@ -46,6 +46,15 @@ CogniCare utilizes a modern, high-performance stack designed for scalability and
 
 ---
 
+## Live Links and ANdroid APK
+**Live Web Application** -	https://cognicare-rosy.vercel.app/
+
+**Backend API** -	https://cogni-care-backend.onrender.com
+
+**Android APK Download** -	[Cognicare-v1.0.apk](https://drive.google.com/file/d/1tjyThhkdRow24a68iNztSgnxbhPtY7Oz/view?usp=sharing)
+
+> **Cold Start Warning:** This project is deployed on Render's free tier. If the application hasn't been accessed in a while, the server goes into auto-sleep. It may take 1-2 minutes for the backend to spin back up on your first request.
+
 ## Technical Deep Dive: Resilience & Performance
 
 ### AI Resilience Layer
