@@ -1,58 +1,80 @@
-[comment]: # (You may find the following markdown cheat sheet useful: https://www.markdownguide.org/cheat-sheet/. You may also consider using an online Markdown editor such as StackEdit or makeareadme.) 
+# AI Symptom Tracker - CogniCare
 
-## Project title: AI Symptom Tracker - CogniCare
+## Bridging the Gap in CTE & Neurological Care
 
-### Student name: Vrushali Hippargi
+**CogniCare** is a clinical-grade health platform designed for individuals with suspected Chronic Traumatic Encephalopathy (CTE) and their care circles. By transforming raw, unstructured "brain dumps" into structured medical data, CogniCare reduces the cognitive burden on patients while providing caregivers and clinicians with longitudinal, actionable insights.
 
-### Student email: vvh2@student.le.ac.uk
+---
 
-### Project description: 
-This project focuses on the development of a supportive health platform designed for individuals with suspected Chronic Traumatic Encephalopathy (CTE) and their care networks. The primary objective is to reduce the cognitive burden of medical documentation by allowing patients to record their daily well-being through an AI-driven "brain dump" interface. By leveraging Natural Language Processing, the system automatically extracts and categorizes symptoms into five key health pillars (Mood, Behaviour, Sleep, Physical, and Cognitive). This structured data allows caregivers to monitor patient status through a collaborative timeline and facilitates the generation of weekly clinical summaries. By automating the transition from daily narrative to professional reporting, the app ensures that critical health data is accurately captured for medical consultations while simplifying the user experience for those with cognitive impairments.
+## Key Features
 
-### List of requirements (objectives): 
+### AI-Driven "Brain Dump" Analysis
+Patients can record raw thoughts or symptoms via text or **Voice-to-Text**. Our system leverages **Google Gemini 2.5 Flash** to automatically parse and tag entries into five core health pillars:
+- **🔴 Physical** | **🟣 Mood** | **🔵 Cognitive** | **🔵 Sleep** | **🟢 Social**
 
-[comment]: # (You can add as many additional bullet points as necessary by adding an additional hyphon symbol '-' at the end of each list) 
+### Privacy-First Engineering
+Security is not an afterthought. CogniCare implements **NLP-driven PII Masking** (Personal Identifiable Information) before any data is sent to the LLM, ensuring patient anonymity is maintained at every step of the analysis.
 
-Essential:
+### Clinical Intelligence & Forecasting
+- **Peak Severity Tracking:** Unlike simple averages, our system identifies the "Peak" severity of symptoms to ensure high-risk neurological events are highlighted.
+- **Predictive Analytics:** Analyzes 30-day historical trajectories to forecast a 7-day health outlook for proactive care management.
+- **NHS-Aligned Reporting:** Generates structured PDF clinical summaries prompted to align with NHS guidance, ready for medical consultations.
 
-- AI-Driven "Brain Dump" Analysis: 
-  Patient Action: Ability to offload raw thoughts or symptoms into a simple, unstructured text interface.
-  System Action: Automatically parsing and tagging entries into the five health pillars using NLP.
+### Collaborative Care Circle
+A real-time synchronization layer (Socket.io) allows patients to invite carers with granular, pillar-specific permissions. Carers receive live "Pulse" notifications whenever a new log is processed.
 
-- Collaborative Symptom Tracking:
-  Patient Action: View a chronological feed of their categorized symptoms to track personal trends.
-  Carer Action: Ability to view the shared timeline and add "Observation Notes" to provide a second perspective on the patient's status.
+---
 
-- Granular Access Control: 
-  Patient Action: Use a "Care Circle" dashboard to invite carers and toggle permissions for specific health pillars (e.g., sharing Physical data but keeping Mood private).
-  System Action: Enforcement of role-based permissions to ensure data privacy and patient-led sharing.
+## Technical Architecture
 
-- Clinical Summary Exports: 
-  User Action: Ability to trigger the generation of a structured weekly PDF summary.
-  System Action: Compiling categorized data into a professional format suitable for medical consultations.
+CogniCare utilizes a modern, high-performance stack designed for scalability and real-time interaction.
 
+| Layer | Technology |
+| :--- | :--- |
+| **Frontend** | **Next.js 16 (React 19)**, TypeScript, Tailwind CSS 4 |
+| **Mobile** | **Capacitor** (Native iOS & Android builds) |
+| **Backend** | **Node.js**, Express.js, Socket.io |
+| **Database** | **PostgreSQL** via **Supabase**, Prisma ORM |
+| **AI/ML** | **Google Gemini 2.5 Flash** (with Flash-Lite Fallback) |
+| **UI/UX** | Framer Motion, Shadcn UI, Recharts |
+| **Testing** | Playwright (E2E Smoke Tests) |
 
-Desirable:
+### Deployment Strategy
+- **Frontend:** Hosted on **Vercel** for edge-optimized delivery.
+- **Backend:** Hosted on **Render** (Persistent Service) to support stateful WebSocket connections.
+- **Database:** Managed via **Supabase** with automated migrations.
 
-- Voice-to-Text Integration:
-  Patient Action: Ability to record audio "brain dumps" to minimize typing fatigue.
-  System Action: Converting voice recordings into text for AI analysis.
+---
 
-- Secure Care Circle Messaging: A real-time, text-based chat system for patients and authorized carers to coordinate care using Socket.io.
+## Live Links and ANdroid APK
+**Live Web Application** -	https://cognicare-rosy.vercel.app/
 
-- Supporting Document Uploads: Secure storage and sharing of medical records, prescriptions, or scan results within the Care Circle.
+**Backend API** -	https://cogni-care-backend.onrender.com
 
+**Android APK Download** -	[Cognicare-v1.0.apk](https://drive.google.com/file/d/1tjyThhkdRow24a68iNztSgnxbhPtY7Oz/view?usp=sharing)
 
-Optional:
+> **Cold Start Warning:** This project is deployed on Render's free tier. If the application hasn't been accessed in a while, the server goes into auto-sleep. It may take 1-2 minutes for the backend to spin back up on your first request.
 
-- Accessible Design (WCAG 2.1): Rigorous implementation of simplified UI and navigation standards for users with cognitive impairments. 
-- NHS Integration Framework: Mapping internal data structures to FHIR standards to demonstrate potential for future NHS system integration. 
-- Offline Entry: PWA functionality to allow symptom logging without an active internet connection.
+## Technical Deep Dive: Resilience & Performance
 
+### AI Resilience Layer
+To ensure 100% uptime, CogniCare implements a fallback mechanism. If the primary Gemini 2.5 Flash model experiences high latency or rate limits, the system automatically pivots to **Gemini 2.5 Flash-Lite**, ensuring the patient's entry is processed without delay.
 
-## Information about this repository
-This is the repository that you are going to use **individually** for developing your project. Please use the resources provided in the module to learn about **plagiarism** and how plagiarism awareness can foster your learning.
+### Smart Caching
+Clinical reports utilize a **Hash-based Cache**. By generating an MD5 hash of the patient's logs for a specific period, the system detects if data has changed. If the data is identical, it serves the cached AI insights instantly, reducing API costs and latency.
 
-Regarding the use of this repository, once a feature (or part of it) is developed and **working** or parts of your system are integrated and **working**, define a commit and push it to the remote repository. You may find yourself making a commit after a productive hour of work (or even after 20 minutes!), for example. Choose commit message wisely and be concise.
+---
 
-Please choose the structure of the contents of this repository that suits the needs of your project but do indicate in this file where the main software artefacts are located.
+## Design Philosophy
+CogniCare follows **WCAG 2.1** accessibility standards, featuring a high-contrast, simplified UI designed specifically for users with cognitive impairments. The interface uses **Glassmorphism** and **Micro-animations** (Framer Motion) to create a premium, calm, and supportive user experience.
+
+---
+
+## Future Roadmap
+-  **FHIR Integration:** Mapping internal data structures to NHS FHIR standards.
+-  **Offline Entry:** PWA functionality for symptom logging without internet.
+-  **Secure Messaging:** Socket.io-based encrypted chat for Care Circles.
+
+---
+
+> **Note:** This project was developed as a supportive health platform for CTE patients and their families, prioritizing clinical accuracy and data privacy.
