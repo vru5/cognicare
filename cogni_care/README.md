@@ -15,6 +15,7 @@ CogniCare is a comprehensive healthcare platform designed to bridge the gap betw
 
 ## Project Architecture
 
+```text
 cognicare/
 ├── src/                    # Frontend Application (Next.js)
 │   ├── app/                # Pages & Layouts (App Router)
@@ -34,7 +35,7 @@ cognicare/
 ├── public/                 # Static assets (Images, Lottie files)
 ├── capacitor.config.ts     # Mobile bridge configuration
 └── playwright.config.ts    # Test runner configuration
-
+```
 
 ## Key Features
 
